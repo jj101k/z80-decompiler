@@ -5,8 +5,10 @@ class MapReader {
      * @param {string} input_ref
      * @param {string} output_ref
      * @param {string} map_ref
+     * @param {boolean} dump
      */
-    constructor(input_ref, output_ref, map_ref) {
+    constructor(input_ref, output_ref, map_ref, dump) {
+        this.dump = dump
         /** @type {HTMLInputElement} */
         this.in = document.querySelector(input_ref)
         /** @type {HTMLCanvasElement} */
@@ -93,18 +95,11 @@ class MapReader {
             "XX",
             "YY",
         ]
-        for(let i = 0; i < 50; i++) {
-            let row = new Uint8Array(this.data, 8396 + 80 * i, 80)
-            row.forEach(n => {
-                content += M[n]
-            })
-            content += "\n"
-        }
         let ctx = this.mapOut.getContext("2d")
         let bit = (n, j) => {
             return (n >> (7-j)) & 1
         }
-        let sprite16 = (o, p) => {
+        let sprite16 = (o) => {
             let d = ctx.createImageData(16, 16)
             for(let i = 0; i < 2; i++) {
                 let x = new Uint8Array(this.data, o + i * 16, 16)
@@ -121,13 +116,14 @@ class MapReader {
                     }
                 }
             }
-            ctx.putImageData(d, 0 + p % 1280, 100 + Math.floor(p / 1280) * 16)
+            return d
         }
+        let tile_sprites = []
         for(let i = 0; i < 176; i++) {
-            sprite16(0x32ec + i * 32, i * 16)
+            tile_sprites.push(sprite16(0x32ec + i * 32))
         }
 
-        let sprite8 = (o, p) => {
+        let sprite8 = (o) => {
             let d = ctx.createImageData(8, 8)
             let x = new Uint8Array(this.data, o, 8)
             for(let r = 0; r < 8; r++) {
@@ -138,10 +134,23 @@ class MapReader {
                     d.data[r * 8 * 4 + j * 4 + 3] = 255
                 }
             }
-            ctx.putImageData(d, 100 + p, 200)
+            return d
         }
+        let letter_sprites = []
         for(let i = 0; i < 21; i++) {
-            sprite8(0x4965 + i * 8, i * 8)
+            letter_sprites.push(sprite8(0x4965 + i * 8))
+        }
+        if(!this.dump) {
+            for(let i = 0; i < 50; i++) {
+                let row = new Uint8Array(this.data, 8396 + 80 * i, 80)
+                row.forEach((n, x) => {
+                    ctx.putImageData(tile_sprites[n], x * 16, i * 16)
+                })
+            }
+        } else {
+            tile_sprites.forEach((sprite, i) => {
+                ctx.putImageData(sprite, (i % 80) * 16, Math.floor(i / 80) * 16)
+            })
         }
         this.out.textContent = content
     }
