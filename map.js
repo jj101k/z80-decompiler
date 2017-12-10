@@ -41,6 +41,11 @@ class MapReader {
             let ind = indices[i]
             content += i + " " + ind.replace(/([^])/g, s => (strings[s.charCodeAt(0)] || " ")) + "\n"
         }
+        let sprite_indices = new Uint8Array(this.data, 0x306c, 53 * 2)
+        let sprite_for = {}
+        for(let i = 0; i < 53; i++) {
+            sprite_for[i] = sprite_indices[i * 2 + 1]
+        }
         let ctx = this.mapOut.getContext("2d")
         let bit = (n, j) => {
             return (n >> (7-j)) & 1
@@ -90,7 +95,7 @@ class MapReader {
             for(let i = 0; i < 50; i++) {
                 let row = new Uint8Array(this.data, 8396 + 80 * i, 80)
                 row.forEach((n, x) => {
-                    ctx.putImageData(tile_sprites[n], x * 16, i * 16)
+                    ctx.putImageData(tile_sprites[sprite_for[n]], x * 16, i * 16)
                 })
             }
         } else {
