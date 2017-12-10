@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Map parsing test</title>
+    </head>
+    <body>
+        <script src="map.js"></script>
+        <p>
+            <input type="file" id="file"/>
+        </p>
+        <pre id="output"></pre>
+        <script>
+            let m = new MapReader("#file", "#output");
+        </script>
+    </body>
+</html>
