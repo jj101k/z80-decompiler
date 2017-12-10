@@ -4,13 +4,14 @@
         <title>Map parsing test</title>
     </head>
     <body>
+        <canvas id="map" width="1280" height="800" style="border: 1px solid black"></canvas>
         <script src="map.js"></script>
         <p>
             <input type="file" id="file"/>
         </p>
         <pre id="output"></pre>
         <script>
-            let m = new MapReader("#file", "#output");
+            let m = new MapReader("#file", "#output", "#map");
         </script>
     </body>
 </html>
