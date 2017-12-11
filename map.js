@@ -35,8 +35,8 @@ class MapReader {
         )
         let sd = s.split(/[|]/)
         sd.shift()
-        let indices = sd.slice(0, 161)
-        let strings = sd.slice(162, sd.length)
+        let indices = sd.slice(0, 162)
+        let strings = sd.slice(162, sd.length+1)
         for(let i = 0; i < indices.length; i++) {
             let ind = indices[i]
             content += i + " " + ind.replace(/([^])/g, s => (strings[s.charCodeAt(0)] || " ")) + "\n"
