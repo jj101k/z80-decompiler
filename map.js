@@ -9,6 +9,7 @@ class MapReader {
      */
     constructor(input_ref, output_ref, map_ref, dump) {
         this.dump = dump
+        this.altMap = false
         /** @type {HTMLInputElement} */
         this.in = document.querySelector(input_ref)
         /** @type {HTMLCanvasElement} */
@@ -41,37 +42,83 @@ class MapReader {
             let ind = indices[i]
             content += i + " " + ind.replace(/([^])/g, s => (strings[s.charCodeAt(0)] || " ")) + "\n"
         }
-        let sprite_indices = new Uint8Array(this.data, 0x306c, 53 * 2)
+        let tiles = 160
+        let sprite_indices = new Uint8Array(this.data, 0x306c+ (this.altMap ? 320 : 0), tiles * 2)
         let sprite_for = {}
-        for(let i = 0; i < 53; i++) {
-            sprite_for[i] = sprite_indices[i * 2 + 1]
+        for(let i = 0; i < tiles; i++) {
+            sprite_for[i] = {
+                colour: sprite_indices[i * 2 + 0],
+                sprite: sprite_indices[i * 2 + 1],
+            }
         }
         let ctx = this.mapOut.getContext("2d")
         let bit = (n, j) => {
             return (n >> (7-j)) & 1
         }
-        let sprite16 = (o) => {
+        let sprite16 = (x, colour) => {
             let d = ctx.createImageData(16, 16)
+            // ??rgBRG
+            let colour_map = {
+                2: {
+                    fg: [255, 0, 0],
+                    bg: [0, 0, 0],
+                },
+                3: {
+                    fg: [255, 0, 255],
+                    bg: [0, 0, 0],
+                },
+                4: {
+                    fg: [0, 255, 0],
+                    bg: [0, 0, 0],
+                },
+                5: {
+                    fg: [0, 255, 255],
+                    bg: [0, 0, 0],
+                },
+                6: {
+                    fg: [255, 255, 0],
+                    bg: [0, 0, 0],
+                },
+                12: {
+                    fg: [0, 255, 0],
+                    bg: [0, 0, 255],
+                },
+                13: {
+                    fg: [0, 255, 255],
+                    bg: [0, 0, 255],
+                },
+                23: {
+                    fg: [255, 255, 255],
+                    bg: [255, 0, 0],
+                },
+            }
+            let colours = colour_map[colour % 32] || {
+                fg: [255, 255, 255],
+                bg: [0, 0, 0],
+            }
             for(let i = 0; i < 2; i++) {
-                let x = new Uint8Array(this.data, o + i * 16, 16)
                 for(let r = 0; r < 8; r++) {
                     for(let j = 0; j < 8; j++) {
-                        d.data[i * 512 + r * 64 + j * 4 + 0] = 255 * bit(x[r], j)
-                        d.data[i * 512 + r * 64 + j * 4 + 1] = 255 * bit(x[r], j)
-                        d.data[i * 512 + r * 64 + j * 4 + 2] = 255 * bit(x[r], j)
+                        let a = bit(x[r + i * 16], j)
+                        let b = bit(x[r + i * 16 + 8], j)
+                        d.data[i * 512 + r * 64 + j * 4 + 0] = colours.fg[0] * a + colours.bg[0] * (1 - a)
+                        d.data[i * 512 + r * 64 + j * 4 + 1] = colours.fg[1] * a + colours.bg[1] * (1 - a)
+                        d.data[i * 512 + r * 64 + j * 4 + 2] = colours.fg[2] * a + colours.bg[2] * (1 - a)
                         d.data[i * 512 + r * 64 + j * 4 + 3] = 255
-                        d.data[i * 512 + r * 64 + 32 + j * 4 + 0] = 255 * bit(x[r + 8], j)
-                        d.data[i * 512 + r * 64 + 32 + j * 4 + 1] = 255 * bit(x[r + 8], j)
-                        d.data[i * 512 + r * 64 + 32 + j * 4 + 2] = 255 * bit(x[r + 8], j)
+                        d.data[i * 512 + r * 64 + 32 + j * 4 + 0] = colours.fg[0] * b + colours.bg[0] * (1 - b)
+                        d.data[i * 512 + r * 64 + 32 + j * 4 + 1] = colours.fg[1] * b + colours.bg[1] * (1 - b)
+                        d.data[i * 512 + r * 64 + 32 + j * 4 + 2] = colours.fg[2] * b + colours.bg[2] * (1 - b)
                         d.data[i * 512 + r * 64 + 32 + j * 4 + 3] = 255
                     }
                 }
             }
             return d
         }
-        let tile_sprites = []
+        let tile_sprite_data = []
         for(let i = 0; i < 176; i++) {
-            tile_sprites.push(sprite16(0x32ec + i * 32))
+            tile_sprite_data.push(
+                new Uint8Array(this.data, 0x32ec + i * 32, 32)
+            )
         }
 
         let sprite8 = (o) => {
@@ -95,7 +142,14 @@ class MapReader {
             for(let i = 0; i < 50; i++) {
                 let row = new Uint8Array(this.data, 8396 + 80 * i, 80)
                 row.forEach((n, x) => {
-                    ctx.putImageData(tile_sprites[sprite_for[n]], x * 16, i * 16)
+                    ctx.putImageData(
+                        sprite16(
+                            tile_sprite_data[sprite_for[n].sprite],
+                            sprite_for[n].colour
+                        ),
+                        x * 16,
+                        i * 16
+                    )
                 })
             }
         } else {
