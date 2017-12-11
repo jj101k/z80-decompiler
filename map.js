@@ -57,44 +57,11 @@ class MapReader {
         }
         let sprite16 = (x, colour) => {
             let d = ctx.createImageData(16, 16)
-            // ??rgBRG
-            let colour_map = {
-                2: {
-                    fg: [255, 0, 0],
-                    bg: [0, 0, 0],
-                },
-                3: {
-                    fg: [255, 0, 255],
-                    bg: [0, 0, 0],
-                },
-                4: {
-                    fg: [0, 255, 0],
-                    bg: [0, 0, 0],
-                },
-                5: {
-                    fg: [0, 255, 255],
-                    bg: [0, 0, 0],
-                },
-                6: {
-                    fg: [255, 255, 0],
-                    bg: [0, 0, 0],
-                },
-                12: {
-                    fg: [0, 255, 0],
-                    bg: [0, 0, 255],
-                },
-                13: {
-                    fg: [0, 255, 255],
-                    bg: [0, 0, 255],
-                },
-                23: {
-                    fg: [255, 255, 255],
-                    bg: [255, 0, 0],
-                },
-            }
-            let colours = colour_map[colour % 32] || {
-                fg: [255, 255, 255],
-                bg: [0, 0, 0],
+            // 64 = Deployment?
+            // 128 = ?
+            let colours = {
+                fg: [colour & 2, colour & 4, colour & 1].map(v => v ? 255 : 0),
+                bg: [colour & 16, colour & 32, colour & 8].map(v => v ? 255 : 0)
             }
             for(let i = 0; i < 2; i++) {
                 for(let r = 0; r < 8; r++) {
