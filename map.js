@@ -5,9 +5,9 @@ class MapReader {
      * @param {string} input_ref
      * @param {string} output_ref
      * @param {string} map_ref
-     * @param {boolean} dump
+     * @param {boolean} [dump]
      */
-    constructor(input_ref, output_ref, map_ref, dump) {
+    constructor(input_ref, output_ref, map_ref, dump = false) {
         this.dump = dump
         this.altMap = false
         /** @type {HTMLInputElement} */

@@ -8,10 +8,14 @@
         <script src="map.js"></script>
         <p>
             <input type="file" id="file"/>
+            <label>
+                <input type="checkbox" onclick="m.dump = this.checked"/>
+                Dump
+            </label>
         </p>
         <pre id="output"></pre>
         <script>
-            let m = new MapReader("#file", "#output", "#map", false)
+            let m = new MapReader("#file", "#output", "#map")
         </script>
     </body>
 </html>
