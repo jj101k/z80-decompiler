@@ -43,7 +43,11 @@ class MapReader {
             content += i + " " + ind.replace(/([^])/g, s => (strings[s.charCodeAt(0)] || " ")) + "\n"
         }
         let tiles = 160
-        let sprite_indices = new Uint8Array(this.data, 0x306c+ (this.altMap ? 320 : 0), tiles * 2)
+        let sprite_indices = new Uint8Array(
+            this.data,
+            12396 + (this.altMap ? tiles * 2 : 0),
+            tiles * 2
+        )
         let sprite_for = {}
         for(let i = 0; i < tiles; i++) {
             sprite_for[i] = {
@@ -84,7 +88,7 @@ class MapReader {
         let tile_sprite_data = []
         for(let i = 0; i < 176; i++) {
             tile_sprite_data.push(
-                new Uint8Array(this.data, 0x32ec + i * 32, 32)
+                new Uint8Array(this.data, 12396 + tiles * 4 + i * 32, 32)
             )
         }
 
@@ -103,7 +107,7 @@ class MapReader {
         }
         let letter_sprites = []
         for(let i = 0; i < 21; i++) {
-            letter_sprites.push(sprite8(0x4965 + i * 8))
+            letter_sprites.push(sprite8(18789 + i * 8))
         }
         if(!this.dump) {
             for(let i = 0; i < 50; i++) {
