@@ -124,8 +124,15 @@ class MapReader {
                 })
             }
         } else {
-            tile_sprites.forEach((sprite, i) => {
-                ctx.putImageData(sprite, (i % 80) * 16, Math.floor(i / 80) * 16)
+            tile_sprite_data.forEach((sprite, i) => {
+                ctx.putImageData(
+                    sprite16(
+                        sprite,
+                        7
+                    ),
+                    (i % 80) * 16,
+                    Math.floor(i / 80) * 16
+                )
             })
         }
         this.out.textContent = content
