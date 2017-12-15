@@ -120,6 +120,7 @@ class MapReader {
                 })
             }
         } else {
+            ctx.font = "12px sans-serif"
             tile_sprite_data.forEach((sprite, i) => {
                 ctx.putImageData(
                     sprite16(
@@ -127,7 +128,14 @@ class MapReader {
                         7
                     ),
                     (i % 80) * 16,
-                    Math.floor(i / 80) * 16
+                    Math.floor(i / 80) * 32
+                )
+                ctx.fillStyle = "red"
+                ctx.fillText(
+                    i.toString(16),
+                    (i % 80) * 16,
+                    Math.floor(i / 80) * 32 + 30,
+                    16
                 )
             })
         }
