@@ -38,10 +38,6 @@ class MapReader {
         sd.shift()
         let indices = sd.slice(0, 162)
         let strings = sd.slice(162, sd.length+1)
-        for(let i = 0; i < indices.length; i++) {
-            let ind = indices[i]
-            content += i + " " + ind.replace(/([^])/g, s => (strings[s.charCodeAt(0)] || " ")) + "\n"
-        }
         let tiles = 160
         let sprite_indices = new Uint8Array(
             this.data,
@@ -134,6 +130,16 @@ class MapReader {
                     Math.floor(i / 80) * 16
                 )
             })
+        }
+        for(let i = 0; i < indices.length; i++) {
+            let ind = indices[i]
+            let name = ind.replace(/([^])/g, s => (strings[s.charCodeAt(0)] || " "))
+            let sprite = sprite_for[i]
+            if(sprite) {
+                content += `${i} (${sprite.sprite} ${sprite.colour}) ${name}\n`
+            } else {
+                content += `${i} (no sprite) ${name}\n`
+            }
         }
         this.out.textContent = content
     }
