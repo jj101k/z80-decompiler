@@ -81,29 +81,34 @@ class MapReader {
             3794 - 0x2d,
             938
         )
+        let o = 8396 - 0x2d
         let map = new Uint8Array(
             chunk,
-            8396 - 0x2d,
+            o,
             80 * 50
         )
+        o += map.byteLength
         let sprite_indices_main = new Uint8Array(
             chunk,
-            12396 - 0x2d,
+            o,
             tiles * 2
         )
+        o += sprite_indices_main.byteLength
         let sprite_indices_alt = new Uint8Array(
             chunk,
-            12396 + tiles * 2 - 0x2d,
+            o,
             tiles * 2
         )
+        o += sprite_indices_alt.byteLength
         let sprite_contents = new Uint8Array(
             chunk,
-            12396 + tiles * 4 - 0x2d,
+            o,
             32 * 176
         )
+        o += sprite_contents.byteLength
         let letter_sprite_chunk = new Uint8Array(
             chunk,
-            18789 - 0x2d,
+            o + 91,
             8 * 21
         )
         /** @type {string} */
