@@ -75,13 +75,13 @@ class MapReader {
      */
     analyseChunk(chunk) {
         let content = ""
-        let tiles = 160
+        let tiles = 0xa0 // 160
         let strings_hunk = new Uint8Array(
             chunk,
-            3794 - 0x2d,
-            938
+            0xea5,
+            0x3aa
         )
-        let o = 8396 - 0x2d
+        let o = 0x209f
         let map = new Uint8Array(
             chunk,
             o,
@@ -103,13 +103,13 @@ class MapReader {
         let sprite_contents = new Uint8Array(
             chunk,
             o,
-            32 * 176
+            32 * 0xb0 // 176
         )
         o += sprite_contents.byteLength
         let letter_sprite_chunk = new Uint8Array(
             chunk,
-            o + 91,
-            8 * 21
+            o + 0x5b, // 91
+            8 * 0x15 // 21
         )
         /** @type {string} */
         let s = String.fromCharCode.apply(null, strings_hunk)
