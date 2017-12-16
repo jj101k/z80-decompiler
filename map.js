@@ -1,14 +1,15 @@
 "use strict"
 class MapReader {
     /**
+     * Builds the object
      *
-     * @param {string} input_ref
-     * @param {string} output_ref
-     * @param {string} map_ref
-     * @param {boolean} [dump]
+     * @param {string} input_ref eg. "input#file"
+     * @param {string} output_ref eg. "pre#output"
+     * @param {string} map_ref eg. "canvas#map"
+     * @param {string} selections_ref eg. "fieldset#selections"
      */
-    constructor(input_ref, output_ref, map_ref, dump = false) {
-        this.dump = dump
+    constructor(input_ref, output_ref, map_ref, selections_ref = null) {
+        this.dump = false
         this.altMap = false
         /** @type {HTMLInputElement} */
         this.in = document.querySelector(input_ref)
@@ -17,22 +18,67 @@ class MapReader {
         this.out = document.querySelector(output_ref)
         /** @type {ArrayBuffer} */
         this.data = null
-        this.in.onchange = () => {
-            let files = this.in.files
-            let reader = new FileReader()
-            reader.onload = e => {
-                this.data = reader.result
-                this.analyse()
+        if(selections_ref) {
+            let selections_element = document.querySelector(selections_ref)
+            this.in.onchange = () => {
+                let files = this.in.files
+                let reader = new FileReader()
+                reader.onload = e => {
+                    this.data = reader.result
+                    while(selections_element.firstChild) {
+                        selections_element.removeChild(selections_element.firstChild)
+                    }
+                    this.parse()
+                    this.tapeChunks.forEach((chunk, i) => {
+                        let input = document.createElement("input")
+                        input.type = "radio"
+                        input.name = "chunk"
+                        input.value = "" + i
+                        input.onclick = () => this.analyseChunk(chunk)
+                        let label = document.createElement("label")
+                        label.appendChild(input)
+                        label.appendChild(
+                            document.createTextNode(` chunk ${i}`)
+                        )
+                        selections_element.appendChild(label)
+                    })
+                }
+                reader.readAsArrayBuffer(files[0])
             }
-            reader.readAsArrayBuffer(files[0])
+        } else {
+            this.in.onchange = () => {
+                let files = this.in.files
+                let reader = new FileReader()
+                reader.onload = e => {
+                    this.data = reader.result
+                    this.analyse()
+                }
+                reader.readAsArrayBuffer(files[0])
+            }
         }
+        /** @type {?ArrayBuffer[]} */
+        this.tapeChunks = null
     }
+    /**
+     * Analyses the first hunk in the file, whatever it is. Suitable for
+     * single-scenario tapes.
+     */
     analyse() {
+        this.parse()
+        this.analyseChunk(this.tapeChunks[0])
+    }
+    /**
+     * Analyses a specific TAP chunk. This can't be a whole TZX file, just an
+     * 0x10 chunk.
+     *
+     * @param {ArrayBuffer} chunk
+     */
+    analyseChunk(chunk) {
         let content = ""
         /** @type {string} */
         let s = String.fromCharCode.apply(
             null,
-            new Uint8Array(this.data, 3794, 938)
+            new Uint8Array(chunk, 3794 - 0x2d, 938)
         )
         let sd = s.split(/[|]/)
         sd.shift()
@@ -40,8 +86,8 @@ class MapReader {
         let strings = sd.slice(162, sd.length+1)
         let tiles = 160
         let sprite_indices = new Uint8Array(
-            this.data,
-            12396 + (this.altMap ? tiles * 2 : 0),
+            chunk,
+            12396 + (this.altMap ? tiles * 2 : 0) - 0x2d,
             tiles * 2
         )
         let sprite_for = {}
@@ -84,13 +130,13 @@ class MapReader {
         let tile_sprite_data = []
         for(let i = 0; i < 176; i++) {
             tile_sprite_data.push(
-                new Uint8Array(this.data, 12396 + tiles * 4 + i * 32, 32)
+                new Uint8Array(chunk, 12396 + tiles * 4 + i * 32 - 0x2d, 32)
             )
         }
 
         let sprite8 = (o) => {
             let d = ctx.createImageData(8, 8)
-            let x = new Uint8Array(this.data, o, 8)
+            let x = new Uint8Array(chunk, o - 0x2d, 8)
             for(let r = 0; r < 8; r++) {
                 for(let j = 0; j < 8; j++) {
                     d.data[r * 8 * 4 + j * 4 + 0] = 255 * bit(x[r], j)
@@ -107,7 +153,7 @@ class MapReader {
         }
         if(!this.dump) {
             for(let i = 0; i < 50; i++) {
-                let row = new Uint8Array(this.data, 8396 + 80 * i, 80)
+                let row = new Uint8Array(chunk, 8396 + 80 * i - 0x2d, 80)
                 row.forEach((n, x) => {
                     ctx.putImageData(
                         sprite16(
@@ -150,5 +196,38 @@ class MapReader {
             }
         }
         this.out.textContent = content
+    }
+    /**
+     * Parses the file into tape chunks.
+     */
+    parse() {
+        this.tapeChunks = []
+        let i = 10;
+        while(i < this.data.byteLength - 1) {
+            let [type] = new Uint8Array(this.data, i, 1)
+            switch(type) {
+                case 0x10:
+                    let dv = new DataView(this.data, i + 1, 4)
+                    let delay = dv.getUint16(0, true)
+                    let length = dv.getUint16(2, true)
+                    console.log(`Normal hunk with delay ${delay}`)
+                    this.tapeChunks.push(
+                        this.data.slice(i + 1 + 4, i + 1 + 4 + length)
+                    )
+                    i += 1 + 4 + length
+                    break
+                case 0x30:
+                    let [len] = new Uint8Array(this.data, i + 1, 1)
+                    let text = String.fromCharCode.apply(
+                        null,
+                        new Uint8Array(this.data, i + 1 + 1, len)
+                    )
+                    console.log(`Text hunk: ${text}`)
+                    i += 1 + 1 + len
+                    break
+                default:
+                    throw new Error(`Cannot parse hunk ${type}`)
+            }
+        }
     }
 }
