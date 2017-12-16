@@ -75,21 +75,46 @@ class MapReader {
      */
     analyseChunk(chunk) {
         let content = ""
-        /** @type {string} */
-        let s = String.fromCharCode.apply(
-            null,
-            new Uint8Array(chunk, 3794 - 0x2d, 938)
+        let tiles = 160
+        let strings_hunk = new Uint8Array(
+            chunk,
+            3794 - 0x2d,
+            938
         )
+        let map = new Uint8Array(
+            chunk,
+            8396 - 0x2d,
+            80 * 50
+        )
+        let sprite_indices_main = new Uint8Array(
+            chunk,
+            12396 - 0x2d,
+            tiles * 2
+        )
+        let sprite_indices_alt = new Uint8Array(
+            chunk,
+            12396 + tiles * 2 - 0x2d,
+            tiles * 2
+        )
+        let sprite_contents = new Uint8Array(
+            chunk,
+            12396 + tiles * 4 - 0x2d,
+            32 * 176
+        )
+        let letter_sprite_chunk = new Uint8Array(
+            chunk,
+            18789 - 0x2d,
+            8 * 21
+        )
+        /** @type {string} */
+        let s = String.fromCharCode.apply(null, strings_hunk)
         let sd = s.split(/[|]/)
         sd.shift()
         let indices = sd.slice(0, 162)
         let strings = sd.slice(162, sd.length+1)
-        let tiles = 160
-        let sprite_indices = new Uint8Array(
-            chunk,
-            12396 + (this.altMap ? tiles * 2 : 0) - 0x2d,
-            tiles * 2
-        )
+        let sprite_indices = this.altMap ?
+            sprite_indices_alt :
+            sprite_indices_main
         let sprite_for = {}
         for(let i = 0; i < tiles; i++) {
             sprite_for[i] = {
@@ -130,13 +155,12 @@ class MapReader {
         let tile_sprite_data = []
         for(let i = 0; i < 176; i++) {
             tile_sprite_data.push(
-                new Uint8Array(chunk, 12396 + tiles * 4 + i * 32 - 0x2d, 32)
+                sprite_contents.slice(i * 32, (i + 1) * 32)
             )
         }
 
-        let sprite8 = (o) => {
+        let sprite8 = (x) => {
             let d = ctx.createImageData(8, 8)
-            let x = new Uint8Array(chunk, o - 0x2d, 8)
             for(let r = 0; r < 8; r++) {
                 for(let j = 0; j < 8; j++) {
                     d.data[r * 8 * 4 + j * 4 + 0] = 255 * bit(x[r], j)
@@ -149,23 +173,10 @@ class MapReader {
         }
         let letter_sprites = []
         for(let i = 0; i < 21; i++) {
-            letter_sprites.push(sprite8(18789 + i * 8))
+            let x = letter_sprite_chunk.slice(i * 8, (i + 1) * 8)
+            letter_sprites.push(sprite8(x))
         }
-        if(!this.dump) {
-            for(let i = 0; i < 50; i++) {
-                let row = new Uint8Array(chunk, 8396 + 80 * i - 0x2d, 80)
-                row.forEach((n, x) => {
-                    ctx.putImageData(
-                        sprite16(
-                            tile_sprite_data[sprite_for[n].sprite],
-                            sprite_for[n].colour
-                        ),
-                        x * 16,
-                        i * 16
-                    )
-                })
-            }
-        } else {
+        if(this.dump) {
             ctx.font = "12px sans-serif"
             tile_sprite_data.forEach((sprite, i) => {
                 ctx.putImageData(
@@ -184,6 +195,20 @@ class MapReader {
                     16
                 )
             })
+        } else {
+            for(let i = 0; i < 50; i++) {
+                let row = map.slice(80 * i, 80 * (i + 1))
+                row.forEach((n, x) => {
+                    ctx.putImageData(
+                        sprite16(
+                            tile_sprite_data[sprite_for[n].sprite],
+                            sprite_for[n].colour
+                        ),
+                        x * 16,
+                        i * 16
+                    )
+                })
+            }
         }
         for(let i = 0; i < indices.length; i++) {
             let ind = indices[i]
