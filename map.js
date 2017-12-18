@@ -236,9 +236,9 @@ class MapReader {
             let name = ind.replace(/([^])/g, s => (strings[s.charCodeAt(0)] || " "))
             let sprite = sprite_for[i]
             if(sprite) {
-                content += `${i} (${sprite.sprite} ${sprite.colour}) ${name}\n`
+                content += `${i} 0x${i.toString(16)} (${sprite.sprite} ${sprite.colour}) ${name}\n`
             } else {
-                content += `${i} (no sprite) ${name}\n`
+                content += `${i} 0x${i.toString(16)} (no sprite) ${name}\n`
             }
         }
         this.out.textContent = content
