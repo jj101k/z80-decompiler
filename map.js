@@ -76,12 +76,28 @@ class MapReader {
     analyseChunk(chunk) {
         let content = ""
         let tiles = 0xa0 // 160
+        let rotation_frames = new Uint8Array(
+            chunk,
+            0xe51,
+            11 * 8
+        )
+        let death_frames = new Uint8Array(
+            chunk,
+            0xe99,
+            4 * 3
+        )
         let strings_hunk = new Uint8Array(
             chunk,
             0xea5,
-            0x3aa
+            0x3aa // 0x182 + 0x226
         )
-        let o = 0x209f
+        let o = 0x1d7f
+        let units = new Uint8Array(
+            chunk,
+            0x1d7f,
+            20 * 40
+        )
+        o += units.length
         let map = new Uint8Array(
             chunk,
             o,
