@@ -1,4 +1,110 @@
 "use strict"
+class MapInstance {
+    constructor() {
+        /** @type {?ArrayBuffer} */
+        this._chunk = null
+        /** @type {?number} */
+        this.deathFrameCount = null
+        /** @type {?number} */
+        this.rotationFrameCount = null
+        /** @type {?number} */
+        this.spriteCount = null
+        /** @type {?number} */
+        this.stringsHunkLength = null
+        /** @type {?number} */
+        this.stringsHunkStart = null
+        /** @type {?number} */
+        this.tiles = null
+    }
+    set chunk(v) {
+        this._chunk = v
+        let o = this.stringsHunkStart
+        let rotation_frames = new Uint8Array(
+            v,
+            o,
+            this.rotationFrameCount * 8
+        )
+        o += rotation_frames.byteLength
+        let death_frames = new Uint8Array(
+            v,
+            o,
+            this.deathFrameCount * 4
+        )
+        o += death_frames.byteLength
+        let strings_hunk = new Uint8Array(
+            v,
+            o,
+            this.stringsHunkLength
+        )
+        o = 0x1d7f
+        let units = new Uint8Array(
+            v,
+            o,
+            20 * 40
+        )
+        o += units.length
+        this.map = new Uint8Array(
+            v,
+            o,
+            80 * 50
+        )
+        o += this.map.byteLength
+        let sprite_indices_main = new Uint8Array(
+            v,
+            o,
+            this.tiles * 2
+        )
+        o += sprite_indices_main.byteLength
+        let sprite_indices_alt = new Uint8Array(
+            v,
+            o,
+            this.tiles * 2
+        )
+        o += sprite_indices_alt.byteLength
+        let sprite_contents = new Uint8Array(
+            v,
+            o,
+            32 * this.spriteCount
+        )
+        o += sprite_contents.byteLength
+        this.letterSpriteChunk = null
+        /*let letter_sprite_chunk = new Uint8Array(
+            chunk,
+            o + 0x5b, // 91
+            8 * 0x15 // 21
+        )*/
+        /** @type {string} */
+        let s = String.fromCharCode.apply(null, strings_hunk)
+        let sd = s.split(/[|]/)
+        sd.shift()
+        this.indices = sd.slice(0, 162)
+        this.strings = sd.slice(162, sd.length+1)
+        let sprite_for = {}
+        let alt_sprite_for = {}
+        for(let i = 0; i < this.tiles; i++) {
+            sprite_for[i] = {
+                colour: sprite_indices_main[i * 2 + 0],
+                sprite: sprite_indices_main[i * 2 + 1],
+            }
+            alt_sprite_for[i] = {
+                colour: sprite_indices_alt[i * 2 + 0],
+                sprite: sprite_indices_alt[i * 2 + 1],
+            }
+        }
+        this.spriteFor = sprite_for
+        this.altSpriteFor = alt_sprite_for
+        let tile_sprite_data = []
+        for(let i = 0; i < this.spriteCount; i++) {
+            tile_sprite_data.push(
+                sprite_contents.slice(i * 32, (i + 1) * 32)
+            )
+        }
+        this.tileSpriteData = tile_sprite_data
+    }
+    get chunk() {
+        return this._chunk
+    }
+}
 class MapReader {
     /**
      * Builds the object
@@ -74,83 +180,16 @@ class MapReader {
      * @param {ArrayBuffer} chunk
      */
     analyseChunk(chunk) {
+        let map_instance = new MapInstance()
         let content = ""
-        let tiles = 0xa0 // 160
-        let o = 0xd00 //0xe51
-        let rotation_frame_count = 4 // 11
-        let death_frame_count = 3
-        let strings_hunk_length = 0x3f3 // 0x3aa // 0x182 + 0x226
-        let rotation_frames = new Uint8Array(
-            chunk,
-            o,
-            rotation_frame_count * 8
-        )
-        o += rotation_frames.byteLength
-        let death_frames = new Uint8Array(
-            chunk,
-            o,
-            death_frame_count * 4
-        )
-        o += death_frames.byteLength
-        let strings_hunk = new Uint8Array(
-            chunk,
-            o,
-            strings_hunk_length
-        )
-        o = 0x1d7f
-        let units = new Uint8Array(
-            chunk,
-            o,
-            20 * 40
-        )
-        o += units.length
-        let map = new Uint8Array(
-            chunk,
-            o,
-            80 * 50
-        )
-        o += map.byteLength
-        let sprite_indices_main = new Uint8Array(
-            chunk,
-            o,
-            tiles * 2
-        )
-        o += sprite_indices_main.byteLength
-        let sprite_indices_alt = new Uint8Array(
-            chunk,
-            o,
-            tiles * 2
-        )
-        o += sprite_indices_alt.byteLength
-        let sprite_count = 185 // 0xb0 // 176
-        let sprite_contents = new Uint8Array(
-            chunk,
-            o,
-            32 * sprite_count
-        )
-        o += sprite_contents.byteLength
-        let letter_sprite_chunk = null
-        /*let letter_sprite_chunk = new Uint8Array(
-            chunk,
-            o + 0x5b, // 91
-            8 * 0x15 // 21
-        )*/
-        /** @type {string} */
-        let s = String.fromCharCode.apply(null, strings_hunk)
-        let sd = s.split(/[|]/)
-        sd.shift()
-        let indices = sd.slice(0, 162)
-        let strings = sd.slice(162, sd.length+1)
-        let sprite_indices = this.altMap ?
-            sprite_indices_alt :
-            sprite_indices_main
-        let sprite_for = {}
-        for(let i = 0; i < tiles; i++) {
-            sprite_for[i] = {
-                colour: sprite_indices[i * 2 + 0],
-                sprite: sprite_indices[i * 2 + 1],
-            }
-        }
+        map_instance.tiles = 0xa0 // 160
+        map_instance.stringsHunkStart = 0xd00 //0xe51
+        map_instance.rotationFrameCount = 4 // 11
+        map_instance.deathFrameCount = 3
+        map_instance.stringsHunkLength = 0x3f3 // 0x3aa // 0x182 + 0x226
+        map_instance.spriteCount = 185 // 0xb0 // 176
+
+        map_instance.chunk = chunk
         let ctx = this.mapOut.getContext("2d")
         let bit = (n, j) => {
             return (n >> (7-j)) & 1
@@ -181,12 +220,6 @@ class MapReader {
             }
             return d
         }
-        let tile_sprite_data = []
-        for(let i = 0; i < sprite_count; i++) {
-            tile_sprite_data.push(
-                sprite_contents.slice(i * 32, (i + 1) * 32)
-            )
-        }
 
         let sprite8 = (x) => {
             let d = ctx.createImageData(8, 8)
@@ -200,16 +233,19 @@ class MapReader {
             }
             return d
         }
-        if(letter_sprite_chunk) {
+        if(map_instance.letterSpriteChunk) {
             let letter_sprites = []
             for(let i = 0; i < 21; i++) {
-                let x = letter_sprite_chunk.slice(i * 8, (i + 1) * 8)
+                let x = map_instance.letterSpriteChunk.slice(i * 8, (i + 1) * 8)
                 letter_sprites.push(sprite8(x))
             }
         }
+        let sprite_for = this.altMap ?
+            map_instance.altSpriteFor :
+            map_instance.spriteFor
         if(this.dump) {
             ctx.font = "12px sans-serif"
-            tile_sprite_data.forEach((sprite, i) => {
+            map_instance.tileSpriteData.forEach((sprite, i) => {
                 ctx.putImageData(
                     sprite16(
                         sprite,
@@ -228,11 +264,11 @@ class MapReader {
             })
         } else {
             for(let i = 0; i < 50; i++) {
-                let row = map.slice(80 * i, 80 * (i + 1))
+                let row = map_instance.map.slice(80 * i, 80 * (i + 1))
                 row.forEach((n, x) => {
                     ctx.putImageData(
                         sprite16(
-                            tile_sprite_data[sprite_for[n].sprite],
+                            map_instance.tileSpriteData[sprite_for[n].sprite],
                             sprite_for[n].colour
                         ),
                         x * 16,
@@ -241,16 +277,15 @@ class MapReader {
                 })
             }
         }
-        for(let i = 0; i < indices.length; i++) {
-            let ind = indices[i]
-            let name = ind.replace(/([^])/g, s => (strings[s.charCodeAt(0)] || " "))
+        map_instance.indices.forEach((ind, i) => {
+            let name = ind.replace(/([^])/g, s => (map_instance.strings[s.charCodeAt(0)] || " "))
             let sprite = sprite_for[i]
             if(sprite) {
                 content += `${i} 0x${i.toString(16)} (${sprite.sprite} ${sprite.colour}) ${name}\n`
             } else {
                 content += `${i} 0x${i.toString(16)} (no sprite) ${name}\n`
             }
-        }
+        })
         this.out.textContent = content
     }
     /**
