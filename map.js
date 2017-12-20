@@ -73,7 +73,9 @@ class MapInstance {
         sd.shift()
         this.indices = sd.slice(0, 162)
         this.strings = sd.slice(162, sd.length+1)
+        /** @type {{[x: number]: MapSprite}} */
         let sprite_for = {}
+        /** @type {{[x: number]: MapSprite}} */
         let alt_sprite_for = {}
         for(let i = 0; i < this.tileCount; i++) {
             sprite_for[i] = new MapSprite(
