@@ -76,25 +76,31 @@ class MapReader {
     analyseChunk(chunk) {
         let content = ""
         let tiles = 0xa0 // 160
+        let o = 0xd00 //0xe51
+        let rotation_frame_count = 4 // 11
+        let death_frame_count = 3
+        let strings_hunk_length = 0x3f3 // 0x3aa // 0x182 + 0x226
         let rotation_frames = new Uint8Array(
             chunk,
-            0xe51,
-            11 * 8
+            o,
+            rotation_frame_count * 8
         )
+        o += rotation_frames.byteLength
         let death_frames = new Uint8Array(
             chunk,
-            0xe99,
-            4 * 3
+            o,
+            death_frame_count * 4
         )
+        o += death_frames.byteLength
         let strings_hunk = new Uint8Array(
             chunk,
-            0xea5,
-            0x3aa // 0x182 + 0x226
+            o,
+            strings_hunk_length
         )
-        let o = 0x1d7f
+        o = 0x1d7f
         let units = new Uint8Array(
             chunk,
-            0x1d7f,
+            o,
             20 * 40
         )
         o += units.length
@@ -116,17 +122,19 @@ class MapReader {
             tiles * 2
         )
         o += sprite_indices_alt.byteLength
+        let sprite_count = 185 // 0xb0 // 176
         let sprite_contents = new Uint8Array(
             chunk,
             o,
-            32 * 0xb0 // 176
+            32 * sprite_count
         )
         o += sprite_contents.byteLength
-        let letter_sprite_chunk = new Uint8Array(
+        let letter_sprite_chunk = null
+        /*let letter_sprite_chunk = new Uint8Array(
             chunk,
             o + 0x5b, // 91
             8 * 0x15 // 21
-        )
+        )*/
         /** @type {string} */
         let s = String.fromCharCode.apply(null, strings_hunk)
         let sd = s.split(/[|]/)
@@ -174,7 +182,7 @@ class MapReader {
             return d
         }
         let tile_sprite_data = []
-        for(let i = 0; i < 176; i++) {
+        for(let i = 0; i < sprite_count; i++) {
             tile_sprite_data.push(
                 sprite_contents.slice(i * 32, (i + 1) * 32)
             )
@@ -192,10 +200,12 @@ class MapReader {
             }
             return d
         }
-        let letter_sprites = []
-        for(let i = 0; i < 21; i++) {
-            let x = letter_sprite_chunk.slice(i * 8, (i + 1) * 8)
-            letter_sprites.push(sprite8(x))
+        if(letter_sprite_chunk) {
+            let letter_sprites = []
+            for(let i = 0; i < 21; i++) {
+                let x = letter_sprite_chunk.slice(i * 8, (i + 1) * 8)
+                letter_sprites.push(sprite8(x))
+            }
         }
         if(this.dump) {
             ctx.font = "12px sans-serif"
