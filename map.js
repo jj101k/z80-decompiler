@@ -38,7 +38,7 @@ class MapReader {
                         let label = document.createElement("label")
                         label.appendChild(input)
                         label.appendChild(
-                            document.createTextNode(` chunk ${i}`)
+                            document.createTextNode(` chunk ${i} (${chunk.byteLength})`)
                         )
                         selections_element.appendChild(label)
                     })
