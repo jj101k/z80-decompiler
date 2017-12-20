@@ -61,12 +61,12 @@ class MapInstance {
             this.tileCount * 2
         )
         o += sprite_indices_alt.byteLength
-        let sprite_contents = new Uint8Array(
+        this.spriteContents = new Uint8Array(
             v,
             o,
             32 * this.spriteCount
         )
-        o += sprite_contents.byteLength
+        o += this.spriteContents.byteLength
         this.letterSpriteChunk = null
         /*let letter_sprite_chunk = new Uint8Array(
             chunk,
@@ -95,13 +95,6 @@ class MapInstance {
         }
         this.spriteFor = sprite_for
         this.altSpriteFor = alt_sprite_for
-        let tile_sprite_data = []
-        for(let i = 0; i < this.spriteCount; i++) {
-            tile_sprite_data.push(
-                sprite_contents.slice(i * 32, (i + 1) * 32)
-            )
-        }
-        this.tileSpriteData = tile_sprite_data
     }
     get chunk() {
         return this._chunk
@@ -112,6 +105,15 @@ class MapInstance {
             tiles.push(new MapTile(this, i))
         }
         return tiles
+    }
+    get tileSpriteData() {
+        let tile_sprite_data = []
+        for(let i = 0; i < this.spriteCount; i++) {
+            tile_sprite_data.push(
+                this.spriteContents.slice(i * 32, (i + 1) * 32)
+            )
+        }
+        return tile_sprite_data
     }
 }
 class MapReader {
@@ -341,7 +343,7 @@ class MapSprite {
         return `${this.sprite} ${this.colour}`
     }
     get imageData() {
-        return this.map.tileSpriteData[this.sprite]
+        return this.map.spriteContents.slice(this.sprite * 32, (this.sprite + 1) * 32)
     }
 }
 class MapTile {
