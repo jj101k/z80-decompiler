@@ -82,14 +82,16 @@ class MapInstance {
         let sprite_for = {}
         let alt_sprite_for = {}
         for(let i = 0; i < this.tileCount; i++) {
-            sprite_for[i] = {
-                colour: sprite_indices_main[i * 2 + 0],
-                sprite: sprite_indices_main[i * 2 + 1],
-            }
-            alt_sprite_for[i] = {
-                colour: sprite_indices_alt[i * 2 + 0],
-                sprite: sprite_indices_alt[i * 2 + 1],
-            }
+            sprite_for[i] = new MapSprite(
+                this,
+                sprite_indices_main[i * 2 + 0],
+                sprite_indices_main[i * 2 + 1],
+            )
+            alt_sprite_for[i] = new MapSprite(
+                this,
+                sprite_indices_alt[i * 2 + 0],
+                sprite_indices_alt[i * 2 + 1],
+            )
         }
         this.spriteFor = sprite_for
         this.altSpriteFor = alt_sprite_for
@@ -275,7 +277,7 @@ class MapReader {
                 row.forEach((n, x) => {
                     ctx.putImageData(
                         sprite16(
-                            map_instance.tileSpriteData[sprite_for[n].sprite],
+                            sprite_for[n].imageData,
                             sprite_for[n].colour
                         ),
                         x * 16,
@@ -323,6 +325,25 @@ class MapReader {
         }
     }
 }
+class MapSprite {
+    /**
+     *
+     * @param {MapInstance} map
+     * @param {number} colour
+     * @param {number} n
+     */
+    constructor(map, colour, n) {
+        this.map = map
+        this.sprite = n
+        this.colour = colour
+    }
+    get dump() {
+        return `${this.sprite} ${this.colour}`
+    }
+    get imageData() {
+        return this.map.tileSpriteData[this.sprite]
+    }
+}
 class MapTile {
     /**
      *
@@ -333,15 +354,20 @@ class MapTile {
         this.map = map
         this.n = n
     }
+    get altSprite() {
+        return this.map.altSpriteFor[this.n]
+    }
     get dump() {
-        let ind = this.map.indices[this.n]
-        let name = ind.replace(/([^])/g, s => (this.map.strings[s.charCodeAt(0)] || " "))
-        let sprite = this.map.spriteFor[this.n]
-        if(sprite) {
-            let alt_sprite = this.map.altSpriteFor[this.n]
-            return `${this.n} 0x${this.n.toString(16)} (${sprite.sprite} ${sprite.colour} / ${alt_sprite.sprite} ${alt_sprite.colour}) ${name}\n`
+        if(this.sprite) {
+            return `${this.n} 0x${this.n.toString(16)} (${this.sprite.sprite} ${this.sprite.colour} / ${this.altSprite.sprite} ${this.altSprite.colour}) ${this.name}\n`
         } else {
-            return `${this.n} 0x${this.n.toString(16)} (no sprite) ${name}\n`
+            return `${this.n} 0x${this.n.toString(16)} (no sprite) ${this.name}\n`
         }
+    }
+    get name() {
+        return this.map.indices[this.n].replace(/([^])/g, s => (this.map.strings[s.charCodeAt(0)] || " "))
+    }
+    get sprite() {
+        return this.map.spriteFor[this.n]
     }
 }
