@@ -14,7 +14,7 @@ class MapInstance {
         /** @type {?number} */
         this.stringsHunkStart = null
         /** @type {?number} */
-        this.tiles = null
+        this.tileCount = null
     }
     set chunk(v) {
         this._chunk = v
@@ -52,13 +52,13 @@ class MapInstance {
         let sprite_indices_main = new Uint8Array(
             v,
             o,
-            this.tiles * 2
+            this.tileCount * 2
         )
         o += sprite_indices_main.byteLength
         let sprite_indices_alt = new Uint8Array(
             v,
             o,
-            this.tiles * 2
+            this.tileCount * 2
         )
         o += sprite_indices_alt.byteLength
         let sprite_contents = new Uint8Array(
@@ -81,7 +81,7 @@ class MapInstance {
         this.strings = sd.slice(162, sd.length+1)
         let sprite_for = {}
         let alt_sprite_for = {}
-        for(let i = 0; i < this.tiles; i++) {
+        for(let i = 0; i < this.tileCount; i++) {
             sprite_for[i] = {
                 colour: sprite_indices_main[i * 2 + 0],
                 sprite: sprite_indices_main[i * 2 + 1],
@@ -103,6 +103,13 @@ class MapInstance {
     }
     get chunk() {
         return this._chunk
+    }
+    get tiles() {
+        let tiles = []
+        for(let i = 0; i < this.indices.length; i++) {
+            tiles.push(new MapTile(this, i))
+        }
+        return tiles
     }
 }
 class MapReader {
@@ -182,7 +189,7 @@ class MapReader {
     analyseChunk(chunk) {
         let map_instance = new MapInstance()
         let content = ""
-        map_instance.tiles = 0xa0 // 160
+        map_instance.tileCount = 0xa0 // 160
         map_instance.stringsHunkStart = 0xd00 //0xe51
         map_instance.rotationFrameCount = 4 // 11
         map_instance.deathFrameCount = 3
@@ -277,14 +284,8 @@ class MapReader {
                 })
             }
         }
-        map_instance.indices.forEach((ind, i) => {
-            let name = ind.replace(/([^])/g, s => (map_instance.strings[s.charCodeAt(0)] || " "))
-            let sprite = sprite_for[i]
-            if(sprite) {
-                content += `${i} 0x${i.toString(16)} (${sprite.sprite} ${sprite.colour}) ${name}\n`
-            } else {
-                content += `${i} 0x${i.toString(16)} (no sprite) ${name}\n`
-            }
+        map_instance.tiles.forEach(tile => {
+            content += tile.dump
         })
         this.out.textContent = content
     }
@@ -319,6 +320,28 @@ class MapReader {
                 default:
                     throw new Error(`Cannot parse hunk ${type}`)
             }
+        }
+    }
+}
+class MapTile {
+    /**
+     *
+     * @param {MapInstance} map
+     * @param {number} n
+     */
+    constructor(map, n) {
+        this.map = map
+        this.n = n
+    }
+    get dump() {
+        let ind = this.map.indices[this.n]
+        let name = ind.replace(/([^])/g, s => (this.map.strings[s.charCodeAt(0)] || " "))
+        let sprite = this.map.spriteFor[this.n]
+        if(sprite) {
+            let alt_sprite = this.map.altSpriteFor[this.n]
+            return `${this.n} 0x${this.n.toString(16)} (${sprite.sprite} ${sprite.colour} / ${alt_sprite.sprite} ${alt_sprite.colour}) ${name}\n`
+        } else {
+            return `${this.n} 0x${this.n.toString(16)} (no sprite) ${name}\n`
         }
     }
 }
