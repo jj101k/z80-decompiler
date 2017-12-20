@@ -43,6 +43,11 @@ class MapInstance {
             20 * 40
         )
         o += units.length
+        this.unitData = units
+        this.units = []
+        for(let i = 0; i < 20; i++) {
+            this.units.push(new MapUnit(this, i))
+        }
         this.map = new Uint8Array(
             v,
             o,
@@ -238,8 +243,13 @@ class MapReader {
                 })
             }
         }
+        content += "Tiles\n\n"
         map_instance.tiles.forEach(tile => {
             content += tile.dump
+        })
+        content += "\nUnits\n\n"
+        map_instance.units.forEach(unit => {
+            content += unit.dump + "\n"
         })
         this.out.textContent = content
     }
@@ -358,5 +368,26 @@ class MapTile {
     }
     get sprite() {
         return this.map.spriteFor[this.n]
+    }
+}
+
+class MapUnit {
+    /**
+     *
+     * @param {MapInstance} map
+     * @param {number} n
+     */
+    constructor(map, n) {
+        this.map = map
+        this.n = n
+    }
+    get data() {
+        return this.map.unitData.slice(
+            this.n * 40,
+            (this.n + 1) * 40
+        )
+    }
+    get dump() {
+        return this.data
     }
 }
