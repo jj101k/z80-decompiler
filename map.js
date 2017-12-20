@@ -67,12 +67,6 @@ class MapInstance {
             32 * this.spriteCount
         )
         o += this.spriteContents.byteLength
-        this.letterSpriteChunk = null
-        /*let letter_sprite_chunk = new Uint8Array(
-            chunk,
-            o + 0x5b, // 91
-            8 * 0x15 // 21
-        )*/
         /** @type {string} */
         let s = String.fromCharCode.apply(null, strings_hunk)
         let sd = s.split(/[|]/)
@@ -205,63 +199,18 @@ class MapReader {
         let bit = (n, j) => {
             return (n >> (7-j)) & 1
         }
-        let sprite16 = (x, colour) => {
-            let d = ctx.createImageData(16, 16)
-            // 64 = Deployment?
-            // 128 = ?
-            let colours = {
-                fg: [colour & 2, colour & 4, colour & 1].map(v => v ? 255 : 0),
-                bg: [colour & 16, colour & 32, colour & 8].map(v => v ? 255 : 0)
-            }
-            for(let i = 0; i < 2; i++) {
-                for(let r = 0; r < 8; r++) {
-                    for(let j = 0; j < 8; j++) {
-                        let a = bit(x[r + i * 16], j)
-                        let b = bit(x[r + i * 16 + 8], j)
-                        d.data[i * 512 + r * 64 + j * 4 + 0] = colours.fg[0] * a + colours.bg[0] * (1 - a)
-                        d.data[i * 512 + r * 64 + j * 4 + 1] = colours.fg[1] * a + colours.bg[1] * (1 - a)
-                        d.data[i * 512 + r * 64 + j * 4 + 2] = colours.fg[2] * a + colours.bg[2] * (1 - a)
-                        d.data[i * 512 + r * 64 + j * 4 + 3] = 255
-                        d.data[i * 512 + r * 64 + 32 + j * 4 + 0] = colours.fg[0] * b + colours.bg[0] * (1 - b)
-                        d.data[i * 512 + r * 64 + 32 + j * 4 + 1] = colours.fg[1] * b + colours.bg[1] * (1 - b)
-                        d.data[i * 512 + r * 64 + 32 + j * 4 + 2] = colours.fg[2] * b + colours.bg[2] * (1 - b)
-                        d.data[i * 512 + r * 64 + 32 + j * 4 + 3] = 255
-                    }
-                }
-            }
-            return d
-        }
-
-        let sprite8 = (x) => {
-            let d = ctx.createImageData(8, 8)
-            for(let r = 0; r < 8; r++) {
-                for(let j = 0; j < 8; j++) {
-                    d.data[r * 8 * 4 + j * 4 + 0] = 255 * bit(x[r], j)
-                    d.data[r * 8 * 4 + j * 4 + 1] = 255 * bit(x[r], j)
-                    d.data[r * 8 * 4 + j * 4 + 2] = 255 * bit(x[r], j)
-                    d.data[r * 8 * 4 + j * 4 + 3] = 255
-                }
-            }
-            return d
-        }
-        if(map_instance.letterSpriteChunk) {
-            let letter_sprites = []
-            for(let i = 0; i < 21; i++) {
-                let x = map_instance.letterSpriteChunk.slice(i * 8, (i + 1) * 8)
-                letter_sprites.push(sprite8(x))
-            }
-        }
         let sprite_for = this.altMap ?
             map_instance.altSpriteFor :
             map_instance.spriteFor
         if(this.dump) {
             ctx.font = "12px sans-serif"
-            map_instance.tileSpriteData.forEach((sprite, i) => {
+            for(let i = 0; i < map_instance.tileCount; i++) {
                 ctx.putImageData(
-                    sprite16(
-                        sprite,
-                        7
-                    ),
+                    new MapSprite(
+                        map_instance,
+                        7,
+                        i
+                    ).colouredImageData(ctx),
                     (i % 80) * 16,
                     Math.floor(i / 80) * 32
                 )
@@ -272,16 +221,13 @@ class MapReader {
                     Math.floor(i / 80) * 32 + 30,
                     16
                 )
-            })
+            }
         } else {
             for(let i = 0; i < 50; i++) {
                 let row = map_instance.map.slice(80 * i, 80 * (i + 1))
                 row.forEach((n, x) => {
                     ctx.putImageData(
-                        sprite16(
-                            sprite_for[n].imageData,
-                            sprite_for[n].colour
-                        ),
+                        sprite_for[n].colouredImageData(ctx),
                         x * 16,
                         i * 16
                     )
@@ -339,11 +285,48 @@ class MapSprite {
         this.sprite = n
         this.colour = colour
     }
+    get colours() {
+        return {
+            fg: [this.colour & 2, this.colour & 4, this.colour & 1].map(v => v ? 255 : 0),
+            bg: [this.colour & 16, this.colour & 32, this.colour & 8].map(v => v ? 255 : 0)
+        }
+    }
     get dump() {
         return `${this.sprite} ${this.colour}`
     }
     get imageData() {
         return this.map.spriteContents.slice(this.sprite * 32, (this.sprite + 1) * 32)
+    }
+    /**
+     *
+     * @param {CanvasRenderingContext2D} ctx
+     */
+    colouredImageData(ctx) {
+        let d = ctx.createImageData(16, 16)
+        // 64 = Deployment?
+        // 128 = ?
+        let colours = this.colours
+        let x = this.imageData
+        let bit = (n, j) => {
+            return (n >> (7-j)) & 1
+        }
+        for(let i = 0; i < 2; i++) {
+            for(let r = 0; r < 8; r++) {
+                for(let j = 0; j < 8; j++) {
+                    let a = bit(x[r + i * 16], j)
+                    let b = bit(x[r + i * 16 + 8], j)
+                    d.data[i * 512 + r * 64 + j * 4 + 0] = colours.fg[0] * a + colours.bg[0] * (1 - a)
+                    d.data[i * 512 + r * 64 + j * 4 + 1] = colours.fg[1] * a + colours.bg[1] * (1 - a)
+                    d.data[i * 512 + r * 64 + j * 4 + 2] = colours.fg[2] * a + colours.bg[2] * (1 - a)
+                    d.data[i * 512 + r * 64 + j * 4 + 3] = 255
+                    d.data[i * 512 + r * 64 + 32 + j * 4 + 0] = colours.fg[0] * b + colours.bg[0] * (1 - b)
+                    d.data[i * 512 + r * 64 + 32 + j * 4 + 1] = colours.fg[1] * b + colours.bg[1] * (1 - b)
+                    d.data[i * 512 + r * 64 + 32 + j * 4 + 2] = colours.fg[2] * b + colours.bg[2] * (1 - b)
+                    d.data[i * 512 + r * 64 + 32 + j * 4 + 3] = 255
+                }
+            }
+        }
+        return d
     }
 }
 class MapTile {
