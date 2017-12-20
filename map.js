@@ -266,7 +266,7 @@ class MapReader {
                     let dv = new DataView(this.data, i + 1, 4)
                     let delay = dv.getUint16(0, true)
                     let length = dv.getUint16(2, true)
-                    console.log(`Normal hunk with delay ${delay}`)
+                    console.log(`Normal hunk with delay ${delay} and length ${length} at offset ${i + 1 + 4}`)
                     this.tapeChunks.push(
                         this.data.slice(i + 1 + 4, i + 1 + 4 + length)
                     )
