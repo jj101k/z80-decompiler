@@ -387,7 +387,13 @@ class MapUnit {
             (this.n + 1) * 40
         )
     }
+    get deathSprite() {
+        return this.data[3]
+    }
     get dump() {
-        return this.data
+        return `deathSprite = ${this.deathSprite}; weaponEntity = ${this.weaponEntity}; ${this.data}`
+    }
+    get weaponEntity() {
+        return this.data[35]
     }
 }
