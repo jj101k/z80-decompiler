@@ -193,7 +193,6 @@ class MapReader {
      */
     analyseChunk(chunk) {
         let map_instance = new MapInstance()
-        let content = ""
         map_instance.tileCount = 0xa0 // 160
         map_instance.stringsHunkStart = 0xd00 //0xe51
         map_instance.rotationFrameCount = 4 // 11
@@ -243,15 +242,25 @@ class MapReader {
                 })
             }
         }
-        content += "Tiles\n\n"
+        let df = document.createDocumentFragment()
+        let header = document.createElement("h2")
+        header.appendChild(document.createTextNode("Tiles"))
+        df.appendChild(header)
         map_instance.tiles.forEach(tile => {
-            content += tile.dump
+            let line = document.createElement("div")
+            line.appendChild(document.createTextNode(tile.dump))
+            df.appendChild(line)
         })
-        content += "\nUnits\n\n"
+        header = document.createElement("h2")
+        header.appendChild(document.createTextNode("Units"))
+        df.appendChild(header)
         map_instance.units.forEach(unit => {
-            content += unit.dump + "\n"
+            let line = document.createElement("div")
+            line.appendChild(document.createTextNode(unit.dump))
+            df.appendChild(line)
         })
-        this.out.textContent = content
+        while(this.out.firstChild) this.out.removeChild(this.out.firstChild)
+        this.out.appendChild(df)
     }
     /**
      * Parses the file into tape chunks.
