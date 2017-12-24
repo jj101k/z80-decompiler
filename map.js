@@ -246,9 +246,21 @@ class MapReader {
         let header = document.createElement("h2")
         header.appendChild(document.createTextNode("Tiles"))
         df.appendChild(header)
-        map_instance.tiles.forEach(tile => {
+        map_instance.tiles.forEach((tile, n) => {
             let line = document.createElement("div")
             line.appendChild(document.createTextNode(tile.dump))
+            if(sprite_for[n]) {
+                let canvas = document.createElement("canvas")
+                canvas.width = 16
+                canvas.height = 16
+                line.appendChild(canvas)
+                let ctx = canvas.getContext("2d")
+                ctx.putImageData(
+                    sprite_for[n].colouredImageData(ctx),
+                    0,
+                    0
+                )
+            }
             df.appendChild(line)
         })
         header = document.createElement("h2")
@@ -367,9 +379,9 @@ class MapTile {
     }
     get dump() {
         if(this.sprite) {
-            return `${this.n} 0x${this.n.toString(16)} (${this.sprite.sprite} ${this.sprite.colour} / ${this.altSprite.sprite} ${this.altSprite.colour}) ${this.name}\n`
+            return `${this.n} 0x${this.n.toString(16)} (${this.sprite.sprite} ${this.sprite.colour} / ${this.altSprite.sprite} ${this.altSprite.colour}) ${this.name}`
         } else {
-            return `${this.n} 0x${this.n.toString(16)} (no sprite) ${this.name}\n`
+            return `${this.n} 0x${this.n.toString(16)} (no sprite) ${this.name}`
         }
     }
     get name() {

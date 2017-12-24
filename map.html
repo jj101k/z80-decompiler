@@ -2,6 +2,16 @@
 <html>
     <head>
         <title>Map parsing test</title>
+        <style type="text/css">
+            canvas#map {
+                border: 1px solid black;
+            }
+            #output canvas {
+                border: 1px solid black;
+                display: inline-block;
+                margin-left: 1em;
+            }
+        </style>
     </head>
     <body>
         <script src="map.js"></script>
@@ -19,7 +29,7 @@
         <p>
             <fieldset id="selections"></fieldset>
         </p>
-        <canvas id="map" width="1280" height="800" style="border: 1px solid black"></canvas>
+        <canvas id="map" width="1280" height="800"></canvas>
         <pre id="output"></pre>
         <script>
             let m = new MapReader("#file", "#output", "#map", "#selections")
