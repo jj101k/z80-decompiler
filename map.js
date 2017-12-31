@@ -212,7 +212,7 @@ class MapReader {
         ctx.fillRect(0, 0, 80 * 16, 50 * 16)
         if(this.dump) {
             ctx.font = "12px sans-serif"
-            for(let i = 0; i < map_instance.tileCount; i++) {
+            for(let i = 0; i < map_instance.spriteCount; i++) {
                 ctx.putImageData(
                     new MapSprite(
                         map_instance,
