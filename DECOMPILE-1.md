@@ -297,32 +297,37 @@ b84f(022f)         c9 RET
 
 
 
-
 b852(0232)     218cc8 LD HL,&c88c
 b855(0235)     110500 LD DE,&0005
-b858(0238)         e5 PUSH HL
+b858(0238) a:      e5 PUSH HL
 b859(0239)     3a3a5d LD A,(&5d3a)
 b85c(023c)         be CP (HL)
-b85d(023d)       3813 JR C,21
+b85d(023d)       3813 JR C,b:21
 b85f(023f)         23 INC HL
 b860(0240)         be CP (HL)
-b861(0241)       300f JR NC,17
+b861(0241)       300f JR NC,b:17
 b863(0243)         23 INC HL
 b864(0244)     3a3b5d LD A,(&5d3b)
 b867(0247)         be CP (HL)
-b868(0248)       3808 JR C,10
+b868(0248)       3808 JR C,b:10
 b86a(024a)         23 INC HL
 b86b(024b)         be CP (HL)
-b86c(024c)       3004 JR NC,6
-
+b86c(024c)       3004 JR NC,b:6
 b86e(024e)         23 INC HL
 b86f(024f)         7e LD A,(HL)
 b870(0250)         e1 POP HL
 b871(0251)         c9 RET
+b872(0252) b:      e1 POP HL
+b873(0253)         19 ADD HL,DE
+b874(0254)         7e LD A,(HL)
+b875(0255)       feff CP &ff
+b877(0257)       20df JR NZ,a:-31
+b879(0259)         af XOR A
+b87a(025a)         c9 RET
 
-The push/pop is quite unusual here, essentially just resetting HL on return.
+This finds the first x [c88c + 5n] where (x) > (5d3a) >= (x+1) and (x+2) > (5d3b) >= (x+3), returning {a=(x+4), HL=x}; or the first x after c88c where (x) == ff, returning {a=ff, hl=x}
 
-So, if 5d3a is greater than c88c, skips to the end (a=(HL+1); HL=c88c). Or if 5d3a <= c88d, skips this whole hunk (further content missing); or if 5d3b < c88e, likewise; or if 5d3b >= c88f, likewise; or a=c89e, and return.
+Sets: A, HL, flags
 
 b87b(025b)            ; DATA
 b87c(025c)            ; DATA
@@ -1215,10 +1220,7 @@ c88c(126c)            ; DATA
 11 17 3c 47 19
 ff
 
-Value+3 often shifts left one, typically in earlier parts of the set. Value+1 is
-common in a couple of places, as is value+0. Value+3 caps at 0x47 (73). End
-numbers *may* be self-referential because they're in the same general bound as
-the number of items (1c, noting that 0a and 0e are repeated and 1a is missing).
+ff is the end marker; these are pairs of upper and lower bounds, such that if value1 is between the first two and value2 is between the second two, it's successful (returning the fifth datum and setting to the start). With those ranges going from 8-39 (left) and 19-71 (right) they could be map boxes.
 
 c914(12f4)            ; DATA
 
