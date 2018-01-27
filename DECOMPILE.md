@@ -59,51 +59,78 @@ M. Space and enter were common action keys.
 Pre-scenario
 ------------
 
-0101; DATA
-5aff; DATA
-5b00; DATA
-5b01; DATA
-5b02; DATA
-5b7a; DATA
-5b97; DATA
-5b99; DATA
-5c0a; DATA
-5c50; DATA
-5cfe; DATA
-5cff; DATA
-5d00; DATA
-5d24; DATA
-5d25; DATA
-5d26; DATA
-5d2f; DATA
-5d33; DATA
-5d36; DATA
-5d37; DATA
-5d3a; DATA
-5d3b; DATA
-5d3e; DATA
-5d47; DATA
-5d49; DATA
-5d59; DATA
-5d62; DATA
-5d8f; DATA
-5d9b; DATA
-5dc2; DATA
-5dd6; DATA
-5dd8; DATA
-5df8; DATA
-5dfb; DATA
-5dfd; DATA
-7091; DATA
-7093; DATA
-a54b; DATA
-a54d; DATA
-a578; DATA
-a5ca; DATA
-a5da; DATA
-a5dc; DATA
-a5de; DATA
-
+0101                  ; DATA
+5aff                  ; DATA
+5b00                  ; DATA
+5b01                  ; DATA
+5b02                  ; DATA
+5b7a                  ; DATA
+5b97                  ; DATA
+5b99                  ; DATA
+5c0a                  ; DATA
+5c50                  ; DATA
+5cfe                  ; DATA
+5cff                  ; DATA
+5d00                  ; DATA
+5d24                  ; DATA
+5d25                  ; DATA
+5d26                  ; DATA
+5d2f                  ; DATA
+5d33                  ; DATA
+5d36                  ; DATA
+5d37                  ; DATA
+5d3a                  ; DATA
+5d3b                  ; DATA
+5d3e                  ; DATA
+5d47                  ; DATA
+5d49                  ; DATA
+5d59                  ; DATA
+5d62                  ; DATA
+5d8f                  ; DATA
+5d9b                  ; DATA
+5dc2                  ; DATA
+5dd6                  ; DATA
+5dd8                  ; DATA
+5df8                  ; DATA
+5dfb                  ; DATA
+5dfd                  ; DATA
+60af                  ; FUNCTION
+6112                  ; FUNCTION
+62e9                  ; FUNCTION
+675e                  ; FUNCTION
+6785                  ; FUNCTION
+67c2                  ; FUNCTION
+67df                  ; FUNCTION
+67f7                  ; FUNCTION
+6a8b                  ; FUNCTION
+6b4a                  ; FUNCTION
+6c2a                  ; FUNCTION
+6daf                  ; FUNCTION
+6dde                  ; FUNCTION
+6e74                  ; FUNCTION
+7091                  ; DATA
+7093                  ; DATA
+71d7                  ; FUNCTION
+7201                  ; FUNCTION
+7209                  ; FUNCTION
+726a                  ; FUNCTION
+74c1                  ; FUNCTION
+785d                  ; FUNCTION
+78ab                  ; FUNCTION
+80b1                  ; FUNCTION
+830b                  ; FUNCTION
+99cf                  ; FUNCTION
+9d01                  ; FUNCTION
+a54b                  ; DATA
+a54d                  ; DATA
+a550                  ; FUNCTION
+a578                  ; DATA
+a57a                  ; FUNCTION
+a5ca                  ; DATA
+a5da                  ; DATA
+a5dc                  ; DATA
+a5de                  ; DATA
+a5e0                  ; FUNCTION
 
 General
 -------
