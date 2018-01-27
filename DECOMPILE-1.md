@@ -136,7 +136,8 @@ b751(0131)     cd78b7 CALL &b778
 b754(0134)         e1 POP HL
 b755(0135)       200c JR NZ,14
 
-Skip the following hunk if nonzero is set from the call.
+Skip the following hunk if nonzero is set from the call, ie if no entry was found.
+Since HL is immediately thrown away, this is solely used to detect "is found".
 
 b757(0137)     212eb7 LD HL,&b72e
 b75a(013a)         34 INC (HL)
@@ -190,7 +191,7 @@ Finds the first triple-byte from 0x5b01 where the first byte equals a; if it's n
 
 Modifies: hl, de, b
 
-Effective return: hl, flags.
+Effective return: hl, flags(Z if found).
 
 Content at 0x5b01 isn't known.
 
@@ -293,6 +294,10 @@ b849(0229)         23 INC HL
 b84a(022a)         56 LD D,(HL)
 b84b(022b)   ed533a5d LD   (&5d3a),DE
 b84f(022f)         c9 RET
+
+
+
+
 b852(0232)     218cc8 LD HL,&c88c
 b855(0235)     110500 LD DE,&0005
 b858(0238)         e5 PUSH HL
@@ -309,10 +314,16 @@ b868(0248)       3808 JR C,10
 b86a(024a)         23 INC HL
 b86b(024b)         be CP (HL)
 b86c(024c)       3004 JR NC,6
+
 b86e(024e)         23 INC HL
 b86f(024f)         7e LD A,(HL)
 b870(0250)         e1 POP HL
 b871(0251)         c9 RET
+
+The push/pop is quite unusual here, essentially just resetting HL on return.
+
+So, if 5d3a is greater than c88c, skips to the end (a=(HL+1); HL=c88c). Or if 5d3a <= c88d, skips this whole hunk (further content missing); or if 5d3b < c88e, likewise; or if 5d3b >= c88f, likewise; or a=c89e, and return.
+
 b87b(025b)            ; DATA
 b87c(025c)            ; DATA
 b87d(025d)     3a7bb8 LD A,(&b87b)
@@ -323,6 +334,9 @@ b885(0265)         b8 CP B
 b886(0266)       2002 JR NZ,4
 b888(0268)         af XOR A
 b889(0269)         c9 RET
+
+
+
 b89d(027d)            ; DATA
 b89e(027e)            ; DATA
 b89f(027f)     cd8567 CALL &6785
@@ -508,6 +522,9 @@ ba54(0434)     c2aab8 JP NZ,&b8aa
 ba57(0437)         af XOR A
 ba58(0438)     32365d LD (&5d36),A
 ba5b(043b)         c9 RET
+
+
+
 ba5c(043c)     21995b LD HL,&5b99
 ba5f(043f)         7e LD A,(HL)
 ba60(0440)       feff CP &ff
@@ -537,6 +554,9 @@ ba7f(045f)     3213b7 LD (&b713),A
 ba82(0462)       3e01 LD A,&01
 ba84(0464)         b7 OR A
 ba85(0465)         c9 RET
+
+
+
 ba86(0466)            ; DATA
 ba88(0468)         af XOR A
 ba89(0469)     32d4bf LD (&bfd4),A
@@ -573,6 +593,9 @@ bac6(04a6)     3ad4bf LD A,(&bfd4)
 bac9(04a9)         b7 OR A
 baca(04aa)       205e JR NZ,96
 bacc(04ac)         c9 RET
+
+
+
 bca3(0683)            ; DATA
 bca4(0684)            ; DATA
 bca5(0685)            ; DATA
@@ -646,6 +669,9 @@ bd39(0719)       10f5 DJNZ -9
 bd3b(071b)       3e01 LD A,&01
 bd3d(071d)         b7 OR A
 bd3e(071e)         c9 RET
+
+
+
 bd3f(071f)            ; DATA
 bd40(0720)            ; DATA
 bd41(0721)     223fbd LD (&bd3f),HL
@@ -662,7 +688,10 @@ bd56(0736)       2007 JR NZ,9
 bd58(0738)     3a1dc2 LD A,(&c21d)
 bd5b(073b)         3c INC A
 bd5c(073c)         90 SUB A,B
-bd5d(073d)         c9 RET
+bd5d(073d)         c9 
+
+
+
 bd64(0744)            ; DATA
 bd65(0745)            ; DATA
 bd66(0746)     2a245d LD HL,(&5d24)
@@ -702,6 +731,9 @@ bdac(078c)         23 INC HL
 bdad(078d)       10d4 DJNZ -42
 bdaf(078f)     3a64bd LD A,(&bd64)
 bdb2(0792)         c9 RET
+
+
+
 bdb3(0793)     dd7e06 LD A,(IX+6)
 bdb6(0796)         b7 OR A
 bdb7(0797)       2814 JR Z,22
@@ -716,6 +748,9 @@ bdc8(07a8)         b7 OR A
 bdc9(07a9)       2009 JR NZ,11
 bdcb(07ab)         3c INC A
 bdcc(07ac)         c9 RET
+
+
+
 bddb(07bb)            ; DATA
 bddd(07bd)            ; DATA
 bdde(07be)     cdd771 CALL &71d7
@@ -815,6 +850,9 @@ bec1(08a1)       3e01 LD A,&01
 bec3(08a3)     32375d LD (&5d37),A
 bec6(08a6)     cd2ab6 CALL &b62a
 bec9(08a9)         c9 RET
+
+
+
 beca(08aa)     cdcf99 CALL &99cf
 becd(08ad)     cdd771 CALL &71d7
 bed0(08b0)   dd2a335d LD IX,(&5d33)
@@ -824,6 +862,9 @@ bed8(08b8)       2006 JR NZ,8
 beda(08ba)       3e01 LD A,&01
 bedc(08bc)     32375d LD (&5d37),A
 bedf(08bf)         c9 RET
+
+
+
 bfd4(09b4)            ; DATA
 bfd5(09b5)            ; DATA
 bfd6(09b6)     3a265d LD A,(&5d26)
@@ -928,6 +969,9 @@ c0db(0abb)       fd19 ADD IY,DE
 c0dd(0abd)       10ea DJNZ -20
 c0df(0abf)   dd2a335d LD IX,(&5d33)
 c0e3(0ac3)         c9 RET
+
+
+
 c0e4(0ac4)       d68c SUB A,&8c
 c0e6(0ac6)         6f LD L,A
 c0e7(0ac7)       2600 LD H,&00
@@ -939,6 +983,9 @@ c0ef(0acf)         5e LD E,(HL)
 c0f0(0ad0)         23 INC HL
 c0f1(0ad1)         56 LD D,(HL)
 c0f2(0ad2)         c9 RET
+
+
+
 c0f3(0ad3)     2a3a5d LD HL,(&5d3a)
 c0f6(0ad6)     22475d LD (&5d47),HL
 c0f9(0ad9)         af XOR A
@@ -983,6 +1030,9 @@ c147(0b27)         23 INC HL
 c148(0b28)         c1 POP BC
 c149(0b29)       10d9 DJNZ -37
 c14b(0b2b)         c9 RET
+
+
+
 c14c(0b2c)   ed5b245d LD   DE,(&5d24)
 c150(0b30)         d5 PUSH DE
 c151(0b31)     22245d LD (&5d24),HL
@@ -1007,6 +1057,9 @@ c17c(0b5c)     229370 LD (&7093),HL
 c17f(0b5f)         d1 POP DE
 c180(0b60)   ed53245d LD   (&5d24),DE
 c184(0b64)         c9 RET
+
+
+
 c1e4(0bc4)     3a15b7 LD A,(&b715)
 c1e7(0bc7)         b7 OR A
 c1e8(0bc8)         c0 RET NZ
