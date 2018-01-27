@@ -90,6 +90,7 @@ b72c(010c)            ; DATA
 b72e(010e)            ; DATA
 b72f(010f)            ; DATA
 b731(0111)            ; DATA
+
 b732(0112)     322eb7 LD (&b72e),A
 b735(0115)         4f LD C,A
 b736(0116)     2140c7 LD HL,&c740
@@ -101,34 +102,80 @@ b740(0120)         5f LD E,A
 b741(0121)       1600 LD D,&00
 b743(0123)         19 ADD HL,DE
 b744(0124)       10f7 DJNZ -7
+
+So this advances hl by [hl] & 0x7f, [0xb731] times. In other words, jumping
+forward through length-tagged values starting at 0xc740.
+
+In other words, this sets hl to the start of the [0xb731]th entry.
+
 b746(0126)         23 INC HL
+
+That's the first meaningful byte in the entry.
+
 b747(0127)     222fb7 LD (&b72f),HL
+
+Saves the pointer.
+
 b74a(012a)         09 ADD HL,BC
 b74b(012b)         09 ADD HL,BC
+
+At this point b == 0, and c == a[original] so hl += 2*a[original].
+
 b74c(012c)         7e LD A,(HL)
 b74d(012d)       cb7f BIT 7,A
 b74f(012f)         c0 RET NZ
+
+Returns if [hl] bit 7 is nonzero. At this point you have the 2a'th byte of the
+[0xb731]th entry in a.
+
 b750(0130)         e5 PUSH HL
+
+Puts hl on the stack.
+
 b751(0131)     cd78b7 CALL &b778
 b754(0134)         e1 POP HL
 b755(0135)       200c JR NZ,14
+
+Skip the following hunk if nonzero is set from the call.
+
 b757(0137)     212eb7 LD HL,&b72e
 b75a(013a)         34 INC (HL)
 b75b(013b)         4e LD C,(HL)
 b75c(013c)       0600 LD B,&00
 b75e(013e)     2a2fb7 LD HL,(&b72f)
 b761(0141)       18e7 JR -23
+
+Winds back. This modifies the original "hl += 2*a[original]" to "hl +=
+2*(a[original]+1)". IOW, this is "try the next 16-bit value".
+
 b763(0143)     3231b7 LD (&b731),A
 b766(0146)         23 INC HL
 b767(0147)   fd2a2cb7 LD IY,(&b72c)
 b76b(014b)     fd7eff LD A,(IY+-1)
 b76e(014e)         86 ADD A,(HL)
 b76f(014f)     2187b7 LD HL,&b787
+
+Put a back in [0xb731]. Its value isn't clear after the call; neither is hl.
+
+Shove [0xb72c+0xff]+[hl] in a.
+
 b772(0152)         be CP (HL)
 b773(0153)       30e2 JR NC,-28
+
+if [0xb787] > [0xb72c+0xff]+[hl], wind back 30. c is true if a "borrow"
+happened, which is the negative counterpart of a "carry". cp operates like
+subtraction, which is addition of a 2s-complement negation of a value, which
+will be over 0xff if x + y >= 0. IOW, borrow is set if a >= [hl] here, so
+not-borrow means a < [hl]. In principle this doesn't trigger if [hl] is 0.
+
+This has the same effect as the zero flag from the call.
+
 b775(0155)         47 LD B,A
 b776(0156)         af XOR A
 b777(0157)         c9 RET
+
+Just return with a=0 and b=(? >= [0xb787]) *[0x167]
+
 b778(0158)     21015b LD HL,&5b01
 b77b(015b)     110300 LD DE,&0003
 b77e(015e)       0632 LD B,&32
@@ -138,6 +185,15 @@ b782(0162)         19 ADD HL,DE
 b783(0163)       10fb DJNZ -3
 b785(0165)         a7 AND A
 b786(0166)         c9 RET
+
+Finds the first triple-byte from 0x5b01 where the first byte equals a; if it's not in the first 50, returns anyway.
+
+Modifies: hl, de, b
+
+Effective return: hl, flags.
+
+Content at 0x5b01 isn't known.
+
 b787(0167)            ; DATA
 b788(0168)            ; DATA
 b789(0169)            ; DATA
