@@ -325,7 +325,7 @@ b877(0257)       20df JR NZ,a:-31
 b879(0259)         af XOR A
 b87a(025a)         c9 RET
 
-This finds the first x [c88c + 5n] where (x) > (5d3a) >= (x+1) and (x+2) > (5d3b) >= (x+3), returning {a=(x+4), HL=x}; or the first x after c88c where (x) == ff, returning {a=ff, hl=x}
+This finds the first x [c88c + 5n] where (x) > (5d3a) >= (x+1) and (x+2) > (5d3b) >= (x+3), returning {a=(x+4), HL=x}; or the first x after c88c where (x) == ff, returning {a=00, hl=x}; IOW, if there's a match, its code is returned and HL is set to its beginning.
 
 Sets: A, HL, flags
 
@@ -336,73 +336,178 @@ b880(0260)         4f LD C,A
 b881(0261)     217cb8 LD HL,&b87c
 b884(0264)         46 LD B,(HL)
 b885(0265)         b8 CP B
-b886(0266)       2002 JR NZ,4
+b886(0266)       2002 JR NZ,a:4
 b888(0268)         af XOR A
 b889(0269)         c9 RET
+b88a(026a) a:    3802 JR C,b:4
+b88c(026c)         47 LD B,A
+b88d(026d)         4e LD C,(HL)
+b88e(026e) b:  2178c9 LD HL,&c978
+b891(0271)     110000 LD DE,&0000
+b894(0274)         05 DEC B
+b895(0275)         0d DEC C
+b896(0276) c:      19 ADD HL,DE
+b897(0277)         13 INC DE
+b898(0278)       10fc DJNZ c:-2
+b89a(027a)         09 ADD HL,BC
+b89b(027b)         7e LD A,(HL)
+b89c(027c)         c9 RET
 
+c=a=(b87b); hl=b87c; b=(hl); return if a=b {a=0}
 
+Odd void at b88c-b88d.
+
+So here, HL=c978, de=0000; b--; c--; {hl+=de; de++} [a-1] times; hl+=c; a=(hl)
+
+This looks like a simple PRNG, there's really no explanation otherwise for the increasing jumps.
 
 b89d(027d)            ; DATA
 b89e(027e)            ; DATA
 b89f(027f)     cd8567 CALL &6785
+
+No idea what this is.
+
 b8a2(0282)     cd2ab6 CALL &b62a
+
+Rejumps to c1e4
+
 b8a5(0285)     21505c LD HL,&5c50
+
+No idea
+
 b8a8(0288)       0614 LD B,&14
 b8aa(028a)         c5 PUSH BC
 b8ab(028b)         e5 PUSH HL
 b8ac(028c)         7e LD A,(HL)
+
+This could as easily be before the push.
+
 b8ad(028d)       fe01 CP &01
-b8af(028f)     c24dba JP NZ,&ba4d
+b8af(028f)     c24dba JP NZ,x1:&ba4d
+
+Ok, so if (5c50) != 1, jump (absolute). This jump is too far for relative.
+
 b8b2(0292)       3ea0 LD A,&a0
 b8b4(0294)         90 SUB A,B
 b8b5(0295)     32265d LD (&5d26),A
+
+(5d26)=a-b(20)
+
 b8b8(0298)         23 INC HL
 b8b9(0299)         5e LD E,(HL)
+
+e=(5c51)
+
 b8ba(029a)         23 INC HL
 b8bb(029b)         56 LD D,(HL)
+
+d=(5c52)
+
 b8bc(029c)   ed53245d LD   (&5d24),DE
+
+Store. IOW, 5d24 (16b) = 5c51 (16b)
+
 b8c0(02a0)     cd1261 CALL &6112
+
+No idea
+
 b8c3(02a3)     222f5d LD (&5d2f),HL
+
+
+(5d2f)=5x52
+
 b8c6(02a6)     3a265d LD A,(&5d26)
+
+a=a-b(20)
+
 b8c9(02a9)     cdc267 CALL &67c2
+
+??
+
 b8cc(02ac)   dd22335d LD (&5d33),IX
 b8d0(02b0)     dd6e1a LD L,(IX+26)
 b8d3(02b3)       2600 LD H,&00
 b8d5(02b5)         29 ADD HL,HL
 b8d6(02b6)         29 ADD HL,HL
 b8d7(02b7)         29 ADD HL,HL
+
+So H=0, L = (5d33+26); then HL*=3. Since this can at most be 255, 0<=HL<=765
+
 b8d8(02b8)     dd5e1a LD E,(IX+26)
 b8db(02bb)       1600 LD D,&00
 b8dd(02bd)         19 ADD HL,DE
 b8de(02be)         19 ADD HL,DE
+
++2*(5d33+26); so 0 <= HL <= 1595
+
 b8df(02bf)     1166c2 LD DE,&c266
 b8e2(02c2)         19 ADD HL,DE
+
++c266
+
 b8e3(02c3)     2286ba LD (&ba86),HL
+
+ba86=HL
+
 b8e6(02c6)       3e01 LD A,&01
 b8e8(02c8)     32365d LD (&5d36),A
+
+5d36=A=1
+
 b8eb(02cb)     cd2ab6 CALL &b62a
+
+This does the ol' 11x11 grid, whatever that is.
+
 b8ee(02ce)     cdd771 CALL &71d7
+
+?
+
 b8f1(02d1)     cd2a6c CALL &6c2a
+
+?
+
 b8f4(02d4)         af XOR A
 b8f5(02d5)     32375d LD (&5d37),A
 b8f8(02d8)     32625d LD (&5d62),A
+
+5d37=5d62=0
+
 b8fb(02db)     dd7e24 LD A,(IX+36)
 b8fe(02de)         b7 OR A
-b8ff(02df)       2022 JR NZ,36
+b8ff(02df)       2022 JR NZ,36:a
+
+So, if (5d33+36) !=0, skip next block
+
 b901(02e1)     cd5d78 CALL &785d
+
+?
+
 b904(02e4)     dd7e23 LD A,(IX+35)
 b907(02e7)     cddf67 CALL &67df
+
+?
+
 b90a(02ea)   dd22c25d LD (&5dc2),IX
 b90e(02ee)     dd7e10 LD A,(IX+16)
 b911(02f1)     cdab78 CALL &78ab
 b914(02f4)   dd2a335d LD IX,(&5d33)
-b918(02f8)       2009 JR NZ,11
+
+?
+
+b918(02f8)       2009 JR NZ,11:a
+
 b91a(02fa)     cde962 CALL &62e9
 b91d(02fd)     cd019d CALL &9d01
 b920(0300)     cd8b6a CALL &6a8b
-b923(0303)     3a595d LD A,(&5d59)
+
+These three appear to be unlilaterally skipped.
+
+b923(0303) a:  3a595d LD A,(&5d59)
 b926(0306)         b7 OR A
 b927(0307)     c4debd CALL NZ,&bdde
+
+
+
 b92a(030a)     3a375d LD A,(&5d37)
 b92d(030d)         b7 OR A
 b92e(030e)     c24dba JP NZ,&ba4d
@@ -518,7 +623,7 @@ ba33(0413)     3a375d LD A,(&5d37)
 ba36(0416)         b7 OR A
 ba37(0417)       2014 JR NZ,22
 ba39(0419)     c342b9 JP &b942
-ba4d(042d)         e1 POP HL
+ba4d(042d) x1:     e1 POP HL
 ba4e(042e)     110400 LD DE,&0004
 ba51(0431)         19 ADD HL,DE
 ba52(0432)         c1 POP BC
@@ -759,103 +864,245 @@ bdcc(07ac)         c9 RET
 bddb(07bb)            ; DATA
 bddd(07bd)            ; DATA
 bdde(07be)     cdd771 CALL &71d7
+
+?
+
 bde1(07c1)       3e01 LD A,&01
 bde3(07c3)     3214b7 LD (&b714),A
+
+b714=1
+
 bde6(07c6)       0608 LD B,&08
 bde8(07c8)     2a245d LD HL,(&5d24)
 bdeb(07cb)     22dca5 LD (&a5dc),HL
+
+a5dc=5d24
+
 bdee(07ce)     21caa5 LD HL,&a5ca
 bdf1(07d1)     22dea5 LD (&a5de),HL
+
+a5de=a5ca
+
 bdf4(07d4)     21005b LD HL,&5b00
 bdf7(07d7)     22fb5d LD (&5dfb),HL
-bdfa(07da)         c5 PUSH BC
+
+5dfb = literal 5b00
+
+bdfa(07da)  c:     c5 PUSH BC
 bdfb(07db)     2adca5 LD HL,(&a5dc)
 bdfe(07de)     22245d LD (&5d24),HL
+
+5d24=a5dc
+
 be01(07e1)     2adea5 LD HL,(&a5de)
 be04(07e4)     3a245d LD A,(&5d24)
 be07(07e7)         86 ADD A,(HL)
 be08(07e8)     323a5d LD (&5d3a),A
+
+5d3a=5d24+a5de
+
 be0b(07eb)         23 INC HL
+
+hl=a5de+1
+
 be0c(07ec)     3a255d LD A,(&5d25)
 be0f(07ef)         86 ADD A,(HL)
 be10(07f0)     323b5d LD (&5d3b),A
+
+5d3b = 5d25+a5de+1
+
 be13(07f3)         23 INC HL
 be14(07f4)     22dea5 LD (&a5de),HL
+
+a5de = a5de + 2
+
 be17(07f7)   ed5b3a5d LD   DE,(&5d3a)
 be1b(07fb)   ed53245d LD   (&5d24),DE
+
+5d24 = 5d3a
+
 be1f(07ff)     2afb5d LD HL,(&5dfb)
 be22(0802)         73 LD (HL),E
+
+5dfb = e (originally bottom half of 5d3a)
+
 be23(0803)         23 INC HL
 be24(0804)         72 LD (HL),D
+
+5dfc = d (top half)
+
 be25(0805)         23 INC HL
 be26(0806)     22fb5d LD (&5dfb),HL
+
+
+
 be29(0809)     cd1261 CALL &6112
+
+? Got to assume this one modifies HL.
+
 be2c(080c)     223e5d LD (&5d3e),HL
 be2f(080f)     cd6a72 CALL &726a
+
+?
+
 be32(0812)     3a975b LD A,(&5b97)
 be35(0815)       feff CP &ff
-be37(0817)       2022 JR NZ,36
+be37(0817)       2022 JR NZ,a:36
+
+if(5b97==ff)
+
 be39(0819)     2a3e5d LD HL,(&5d3e)
 be3c(081c)         7e LD A,(HL)
 be3d(081d)       fe8c CP &8c
-be3f(081f)       301a JR NC,28
+be3f(081f)       301a JR NC,a:28
+
+if ((5d3e)) >= 8c
+
 be41(0821)     cd4a6b CALL &6b4a
 be44(0824)     cdf767 CALL &67f7
+
+? Presumably one of these sets up IY. Oh yeah and IX.
+
 be47(0827)     dd5e04 LD E,(IX+4)
 be4a(082a)       1600 LD D,&00
 be4c(082c)       fd19 ADD IY,DE
+
+IY += (IX+4)
+
 be4e(082e)     fd7e00 LD A,(IY+0)
 be51(0831)       feff CP &ff
-be53(0833)       2806 JR Z,8
+be53(0833)       2806 JR Z,a:8
+
+if(IY != ff)
+
 be55(0835)     2afb5d LD HL,(&5dfb)
 be58(0838)         77 LD (HL),A
-be59(0839)       1805 JR 7
-be5b(083b)     2afb5d LD HL,(&5dfb)
+
+((5dfb)) = (IY)
+
+be59(0839)       1805 JR b:7
+
+be5b(083b) a:  2afb5d LD HL,(&5dfb)
 be5e(083e)       36ff LD (HL),&ff
-be60(0840)         23 INC HL
+
+((5dfb)) = ff
+
+be60(0840) b:      23 INC HL
 be61(0841)     22fb5d LD (&5dfb),HL
+
+5dfb++
+
 be64(0844)         c1 POP BC
-be65(0845)       1093 DJNZ -107
+be65(0845)       1093 DJNZ c:-107
+
+Ohai.
+
+So this whole bit runs 8 times.
+
 be67(0847)       3e07 LD A,&07
 be69(0849)     32fd5d LD (&5dfd),A
+
+5dfd=7
+
 be6c(084c)     21005b LD HL,&5b00
 be6f(084f)     2278a5 LD (&a578),HL
+
+a578 = literal 5b00
+
 be72(0852)     cd7aa5 CALL &a57a
+
+?
+
 be75(0855)     2a005b LD HL,(&5b00)
 be78(0858)     22dbbd LD (&bddb),HL
+
+bddb=5b00
+
 be7b(085b)     3a025b LD A,(&5b02)
 be7e(085e)         3c INC A
 be7f(085f)     32ddbd LD (&bddd),A
+
+bddd = 5b02+1
+
 be82(0862)     2adca5 LD HL,(&a5dc)
 be85(0865)     22245d LD (&5d24),HL
+
+5d24 = a5dc
+
 be88(0868)     cd24b6 CALL &b624
+
+?
+
 be8b(086b)   dd2a335d LD IX,(&5d33)
 be8f(086f)     3a595d LD A,(&5d59)
 be92(0872)         b7 OR A
 be93(0873)         c8 RET Z
+
+Return if (5d59)=0
+
 be94(0874)     3addbd LD A,(&bddd)
 be97(0877)         b7 OR A
 be98(0878)         c8 RET Z
+
+Or if (bddd)=0
+
 be99(0879)   ed5b245d LD   DE,(&5d24)
 be9d(087d)     cd1261 CALL &6112
+
+?
+
 bea0(0880)     dd7e16 LD A,(IX+22)
 bea3(0883)         77 LD (HL),A
+
+Simple copy, although who knows what HL and IX are.
+
 bea4(0884)   ed5bdbbd LD   DE,(&bddb)
 bea8(0888)   ed53245d LD   (&5d24),DE
+
+5d24 = bddb
+
 beac(088c)     cd1261 CALL &6112
+
+? Looks quite like HL is set here.
+
 beaf(088f)     222f5d LD (&5d2f),HL
+
+Store HL.
+
 beb2(0892)         46 LD B,(HL)
+
+Pretty unusual to be loading B here.
+
 beb3(0893)     3a265d LD A,(&5d26)
 beb6(0896)         77 LD (HL),A
+
+But then (hl)=5d26
+
 beb7(0897)     dd7016 LD (IX+22),B
+
+Then save it back to IX+22
+
 beba(089a)     dd3606 LD (IX+0),&06
 bebd(089d)         00 NOP
+
+This may mean that something was dummied out.
+
 bebe(089e)     cdc174 CALL &74c1
+
+?
+
 bec1(08a1)       3e01 LD A,&01
 bec3(08a3)     32375d LD (&5d37),A
+
+5d37 = 1
+
 bec6(08a6)     cd2ab6 CALL &b62a
+
+The amazing 11x11 grid
+
 bec9(08a9)         c9 RET
 
+And done!
 
 
 beca(08aa)     cdcf99 CALL &99cf
@@ -863,12 +1110,12 @@ becd(08ad)     cdd771 CALL &71d7
 bed0(08b0)   dd2a335d LD IX,(&5d33)
 bed4(08b4)     dd7e24 LD A,(IX+36)
 bed7(08b7)         b7 OR A
-bed8(08b8)       2006 JR NZ,8
+bed8(08b8)       2006 JR NZ,a:8
 beda(08ba)       3e01 LD A,&01
 bedc(08bc)     32375d LD (&5d37),A
-bedf(08bf)         c9 RET
+bedf(08bf)  a:     c9 RET
 
-
+99cf and 71d7 aside, this sets 5d37=1 if (5d33)+36 != 0. IX and A are touched.
 
 bfd4(09b4)            ; DATA
 bfd5(09b5)            ; DATA
@@ -1063,7 +1310,8 @@ c17f(0b5f)         d1 POP DE
 c180(0b60)   ed53245d LD   (&5d24),DE
 c184(0b64)         c9 RET
 
-
+Init 11x11 grid
+---------------
 
 c1e4(0bc4)     3a15b7 LD A,(&b715)
 c1e7(0bc7)         b7 OR A
@@ -1071,9 +1319,9 @@ c1e8(0bc8)         c0 RET NZ
 c1e9(0bc9)     210101 LD HL,&0101
 c1ec(0bcc)     22fe5c LD (&5cfe),HL
 c1ef(0bcf)       060b LD B,&0b
-c1f1(0bd1)         c5 PUSH BC
+c1f1(0bd1) b:      c5 PUSH BC
 c1f2(0bd2)       060b LD B,&0b
-c1f4(0bd4)         c5 PUSH BC
+c1f4(0bd4) a:      c5 PUSH BC
 c1f5(0bd5)         af XOR A
 c1f6(0bd6)     32005d LD (&5d00),A
 c1f9(0bd9)     cdaf60 CALL &60af
@@ -1081,18 +1329,24 @@ c1fc(0bdc)     21ff5c LD HL,&5cff
 c1ff(0bdf)         34 INC (HL)
 c200(0be0)         34 INC (HL)
 c201(0be1)         c1 POP BC
-c202(0be2)       10f0 DJNZ -14
+c202(0be2)       10f0 DJNZ -14:a
 c204(0be4)     3afe5c LD A,(&5cfe)
 c207(0be7)       c602 ADD A,&02
 c209(0be9)     32fe5c LD (&5cfe),A
 c20c(0bec)       3e01 LD A,&01
 c20e(0bee)     32ff5c LD (&5cff),A
 c211(0bf1)         c1 POP BC
-c212(0bf2)       10dd DJNZ -33
+c212(0bf2)       10dd DJNZ -33:b
 c214(0bf4)     3215b7 LD (&b715),A
 c217(0bf7)       3e65 LD A,&65
 c219(0bf9)     cd5e67 CALL &675e
 c21c(0bfc)         c9 RET
+
+b715 appears to be a recursion-protect flag. Outer loop (11x) apparently just adds 2 to 5cfe and sets 5cff to 1; inner loop calls 60af and adds 2 to 5cff. Under the circumstances, this is probably a loop over an 11x11 grid; given the complete absence of visible decisions, it's probably a build routine.
+
+675e, called at the end with x65 (101), is probably some kind of finaliser.
+
+It's possible that the underlying rendering is supposed to be 10x10. Adding 2 suggests memory addresses for 16-bit data. Smallest value for either (and the initial value for both) is 01.
 
 c21d(0bfd)            ; DATA
 c23e(0c1e)            ; DATA
@@ -1187,9 +1441,7 @@ continguous, as 0x0a, 0x0c, 0x0f and 0x10 do not appear. Highest is 0x11,
 meaning there are 17 values in the range 1-17 (possibly 18x if there is a hidden
 0 value).
 
-c88c(126c)            ; DATA
-
-0x126c-0x12f3: 28x 5-byte values ending in a typically-incrementing number
+0x126c [0xc88c] -0x12f3: 28x 5-byte values ending in a typically-incrementing number
 
 20 23 1f 23 01
 1c 20 21 22 02
