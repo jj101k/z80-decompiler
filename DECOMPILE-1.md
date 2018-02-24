@@ -86,9 +86,9 @@ b715(00f5)            ; DATA
 
 0x00fd-0x010c: 8x number pairs: c2 20, c3 40, c3 4c, c3 30, c5 a4, ca a8, cf 4c, d1 00
 
-b72c(010c)            ; DATA
+b72c(010c)            ; DATA - memory offset
 b72e(010e)            ; DATA
-b72f(010f)            ; DATA
+b72f(010f)            ; DATA - memory offset?
 b731(0111)            ; DATA
 
 b732(0112)     322eb7 LD (&b72e),A
@@ -96,12 +96,12 @@ b735(0115)         4f LD C,A
 b736(0116)     2140c7 LD HL,&c740
 b739(0119)     3a31b7 LD A,(&b731)
 b73c(011c)         47 LD B,A
-b73d(011d)         7e LD A,(HL)
+b73d(011d) a:      7e LD A,(HL)
 b73e(011e)       e67f AND &7f
 b740(0120)         5f LD E,A
 b741(0121)       1600 LD D,&00
 b743(0123)         19 ADD HL,DE
-b744(0124)       10f7 DJNZ -7
+b744(0124)       10f7 DJNZ a:-7
 
 So this advances hl by [hl] & 0x7f, [0xb731] times. In other words, jumping
 forward through length-tagged values starting at 0xc740.
@@ -116,7 +116,7 @@ b747(0127)     222fb7 LD (&b72f),HL
 
 Saves the pointer.
 
-b74a(012a)         09 ADD HL,BC
+b74a(012a) c:      09 ADD HL,BC
 b74b(012b)         09 ADD HL,BC
 
 At this point b == 0, and c == a[original] so hl += 2*a[original].
@@ -129,39 +129,38 @@ Returns if [hl] bit 7 is nonzero. At this point you have the 2a'th byte of the
 [0xb731]th entry in a.
 
 b750(0130)         e5 PUSH HL
-
-Puts hl on the stack.
-
 b751(0131)     cd78b7 CALL &b778
 b754(0134)         e1 POP HL
-b755(0135)       200c JR NZ,14
+b755(0135)       200c JR NZ,b:14
 
 Skip the following hunk if nonzero is set from the call, ie if no entry was found.
 Since HL is immediately thrown away, this is solely used to detect "is found".
 
-b757(0137)     212eb7 LD HL,&b72e
+b757(0137) d:  212eb7 LD HL,&b72e
 b75a(013a)         34 INC (HL)
 b75b(013b)         4e LD C,(HL)
 b75c(013c)       0600 LD B,&00
 b75e(013e)     2a2fb7 LD HL,(&b72f)
-b761(0141)       18e7 JR -23
+b761(0141)       18e7 JR c:-23
 
 Winds back. This modifies the original "hl += 2*a[original]" to "hl +=
 2*(a[original]+1)". IOW, this is "try the next 16-bit value".
 
-b763(0143)     3231b7 LD (&b731),A
+Overall, this means that the first location where the value is not found is retained, or nothing is.
+
+b763(0143) b:  3231b7 LD (&b731),A
 b766(0146)         23 INC HL
 b767(0147)   fd2a2cb7 LD IY,(&b72c)
 b76b(014b)     fd7eff LD A,(IY+-1)
 b76e(014e)         86 ADD A,(HL)
 b76f(014f)     2187b7 LD HL,&b787
 
-Put a back in [0xb731]. Its value isn't clear after the call; neither is hl.
+Put a back in [0xb731]. HL still points to the target value, and A is unchanged.
 
-Shove [0xb72c+0xff]+[hl] in a.
+a=((b72c)-1)+(hl+1)
 
 b772(0152)         be CP (HL)
-b773(0153)       30e2 JR NC,-28
+b773(0153)       30e2 JR NC,d:-28
 
 if [0xb787] > [0xb72c+0xff]+[hl], wind back 30. c is true if a "borrow"
 happened, which is the negative counterpart of a "carry". cp operates like
@@ -195,6 +194,10 @@ Effective return: hl, flags(Z if found).
 
 Content at 0x5b01 isn't known.
 
+
+Unknown
+-------
+
 b787(0167)            ; DATA
 b788(0168)            ; DATA
 b789(0169)            ; DATA
@@ -202,99 +205,237 @@ b78a(016a)            ; DATA
 b78b(016b)            ; DATA
 b78c(016c)       3e00 LD A,&00
 b78e(016e)     328bb7 LD (&b78b),A
+
+b78b=0
+
 b791(0171)     21015b LD HL,&5b01
 b794(0174)     222cb7 LD (&b72c),HL
+
+b72c=5b01
+
 b797(0177)     21015b LD HL,&5b01
 b79a(017a)       36ff LD (HL),&ff
+
+(5b01)=ff
+
 b79c(017c)     11025b LD DE,&5b02
 b79f(017f)     019500 LD BC,&0095
 b7a2(0182)       edb0 LDIR
+
+Copies 149 bytes from 5b01 to 5b02 (ultimately, 149x ff)
+
 b7a4(0184)     3a88b7 LD A,(&b788)
+
+a=b788
+
 b7a7(0187)     cd3fb8 CALL &b83f
+
+Stuffs 5d3a, among other things
+
 b7aa(018a)     cd52b8 CALL &b852
+
+Sets HL...
+
 b7ad(018d)     327bb8 LD (&b87b),A
+
+Save A to b87b
+
 b7b0(0190)     3a89b7 LD A,(&b789)
+
+Load A from b789
+
 b7b3(0193)     cd3fb8 CALL &b83f
 b7b6(0196)     cd52b8 CALL &b852
+
+Deja vu?
+
 b7b9(0199)     327cb8 LD (&b87c),A
+
+Store in a different place.
+
 b7bc(019c)     217bb8 LD HL,&b87b
 b7bf(019f)         be CP (HL)
-b7c0(01a0)       2004 JR NZ,6
+b7c0(01a0)       2004 JR NZ,a:6
 b7c2(01a2)       3e19 LD A,&19
-b7c4(01a4)       1803 JR 5
-b7c6(01a6)     cd7db8 CALL &b87d
-b7c9(01a9)     3287b7 LD (&b787),A
+b7c4(01a4)       1803 JR b:5
+b7c6(01a6) a:  cd7db8 CALL &b87d
+
+Classic two-branch if().
+
+So, if b87b==b87c(a), a=0x19 (25); otherwise call b87d (which pseudo-randomises a)
+
+b7c9(01a9) b:  3287b7 LD (&b787),A
+
+Store A
+
 b7cc(01ac)         af XOR A
+
+Wipe
+
 b7cd(01ad)     32005b LD (&5b00),A
 b7d0(01b0)     328ab7 LD (&b78a),A
+
+Wipe 5b00 and b78a
+
 b7d3(01b3)     3a88b7 LD A,(&b788)
+
+a=b788 again
+
 b7d6(01b6)     3231b7 LD (&b731),A
-b7d9(01b9)     3a31b7 LD A,(&b731)
+
+Store A
+
+b7d9(01b9)  d: 3a31b7 LD A,(&b731)
+
+?
+
 b7dc(01bc)     2a2cb7 LD HL,(&b72c)
+
+Load HL from b72c
+
 b7df(01bf)         77 LD (HL),A
+
+Put A there
+
 b7e0(01c0)     3a89b7 LD A,(&b789)
+
+Fetch b789
+
 b7e3(01c3)         be CP (HL)
-b7e4(01c4)       2838 JR Z,58
+b7e4(01c4)       2838 JR Z,a:58
 b7e6(01c6)         23 INC HL
 b7e7(01c7)         34 INC (HL)
+
+HL++; *HL++
+
+No clue why
+
 b7e8(01c8)         7e LD A,(HL)
 b7e9(01c9)         e5 PUSH HL
 b7ea(01ca)     cd32b7 CALL &b732
 b7ed(01cd)         e1 POP HL
-b7ee(01ce)       2010 JR NZ,18
+
+This doesn't seem to set A, HL is dropped, maybe sets B?
+
+b7ee(01ce)       2010 JR NZ,b:18
+
+So flags are retained.
+
 b7f0(01d0)     3a2eb7 LD A,(&b72e)
 b7f3(01d3)         77 LD (HL),A
+
+That's a copy b72e -> hl
+
 b7f4(01d4)         23 INC HL
 b7f5(01d5)         70 LD (HL),B
+
+B is stored in the next byte
+
 b7f6(01d6)         23 INC HL
 b7f7(01d7)     222cb7 LD (&b72c),HL
+
+Store HL
+
 b7fa(01da)     218ab7 LD HL,&b78a
 b7fd(01dd)         34 INC (HL)
-b7fe(01de)       18d9 JR -37
-b800(01e0)     3a8ab7 LD A,(&b78a)
+
+b78a++
+
+b7fe(01de)       18d9 JR d:-37
+b800(01e0) b:  3a8ab7 LD A,(&b78a)
 b803(01e3)         b7 OR A
 b804(01e4)         c8 RET Z
+
+So, if b78a==0, return
+
 b805(01e5)     2a2cb7 LD HL,(&b72c)
 b808(01e8)         23 INC HL
 b809(01e9)       36ff LD (HL),&ff
 b80b(01eb)         2b DEC HL
 b80c(01ec)       36ff LD (HL),&ff
+
+A bit odd, but store ffff at (b72c)
+
 b80e(01ee)         2b DEC HL
 b80f(01ef)         2b DEC HL
 b810(01f0)         2b DEC HL
 b811(01f1)     222cb7 LD (&b72c),HL
+
+-3 and store.
+
 b814(01f4)         7e LD A,(HL)
 b815(01f5)     3231b7 LD (&b731),A
+
+And copy to b731
+
 b818(01f8)     218ab7 LD HL,&b78a
 b81b(01fb)         35 DEC (HL)
-b81c(01fc)       18bb JR -67
+
+b78a--
+
+b81c(01fc)       18bb JR d:-67
+
 b81e(01fe)         2b DEC HL
 b81f(01ff)         7e LD A,(HL)
-b820(0200)     3287b7 LD (&b787),A
+
+Void?
+
+b820(0200) a:  3287b7 LD (&b787),A
+
+Store A (b787)
+
 b823(0203)       3e01 LD A,&01
 b825(0205)     328bb7 LD (&b78b),A
+
+b78b=1
+
 b828(0208)       060a LD B,&0a
 b82a(020a)     21015b LD HL,&5b01
 b82d(020d)   fd21f05c LD IY,&5cf0
 b831(0211)     110300 LD DE,&0003
-b834(0214)         7e LD A,(HL)
+
+So b=10, hl=5b01, iy=5cf0, de=3
+
+b834(0214)  e:     7e LD A,(HL)
 b835(0215)     fd7700 LD (IY+0),A
 b838(0218)       fd23 INC IY
 b83a(021a)         19 ADD HL,DE
-b83b(021b)       10f7 DJNZ -7
-b83d(021d)       18c1 JR -61
+b83b(021b)       10f7 DJNZ e:-7
+
+(IY)=(HL); IY++; HL+=3
+
+So this copies 5b01, 5b04, 5b07, ... 5b1c to 5cf0, 5cf1, ... 5cf9
+
+b83d(021d)       18c1 JR b:-61
+
+...and goes back
+
+(call!):
+
 b83f(021f)         3d DEC A
 b840(0220)         6f LD L,A
 b841(0221)       2600 LD H,&00
 b843(0223)         29 ADD HL,HL
 b844(0224)     1114c9 LD DE,&c914
 b847(0227)         19 ADD HL,DE
+
+hl=c914 + 2A - 2
+
 b848(0228)         5e LD E,(HL)
 b849(0229)         23 INC HL
 b84a(022a)         56 LD D,(HL)
+
+de=(hl)
+
 b84b(022b)   ed533a5d LD   (&5d3a),DE
+
+5d3a=(hl)
+
 b84f(022f)         c9 RET
 
+hl=c914 + 2*A - 2
+de=(hl)
+5d3a=(hl)
 
 
 b852(0232)     218cc8 LD HL,&c88c
@@ -361,6 +502,8 @@ So here, HL=c978, de=0000; b--; c--; {hl+=de; de++} [a-1] times; hl+=c; a=(hl)
 
 This looks like a simple PRNG, there's really no explanation otherwise for the increasing jumps.
 
+BC, DE, HL are modified but the intent seems to be to modify A.
+
 b89d(027d)            ; DATA
 b89e(027e)            ; DATA
 b89f(027f)     cd8567 CALL &6785
@@ -369,14 +512,14 @@ No idea what this is.
 
 b8a2(0282)     cd2ab6 CALL &b62a
 
-Rejumps to c1e4
+Rejumps to c1e4 (init 11x11 grid)
 
 b8a5(0285)     21505c LD HL,&5c50
-
-No idea
-
 b8a8(0288)       0614 LD B,&14
-b8aa(028a)         c5 PUSH BC
+
+hl=5c50, b=14 (20)
+
+b8aa(028a)   x5:   c5 PUSH BC
 b8ab(028b)         e5 PUSH HL
 b8ac(028c)         7e LD A,(HL)
 
@@ -413,8 +556,7 @@ No idea
 
 b8c3(02a3)     222f5d LD (&5d2f),HL
 
-
-(5d2f)=5x52
+(5d2f)=5c52
 
 b8c6(02a6)     3a265d LD A,(&5d26)
 
@@ -443,7 +585,7 @@ b8de(02be)         19 ADD HL,DE
 b8df(02bf)     1166c2 LD DE,&c266
 b8e2(02c2)         19 ADD HL,DE
 
-+c266
++c266, which must be the base. Not clear what's stored there.
 
 b8e3(02c3)     2286ba LD (&ba86),HL
 
@@ -500,366 +642,792 @@ b91a(02fa)     cde962 CALL &62e9
 b91d(02fd)     cd019d CALL &9d01
 b920(0300)     cd8b6a CALL &6a8b
 
-These three appear to be unlilaterally skipped.
+All unknown.
 
 b923(0303) a:  3a595d LD A,(&5d59)
 b926(0306)         b7 OR A
 b927(0307)     c4debd CALL NZ,&bdde
 
-
+Call bdde if 5d59==0. What does it do? Who knows?
 
 b92a(030a)     3a375d LD A,(&5d37)
 b92d(030d)         b7 OR A
-b92e(030e)     c24dba JP NZ,&ba4d
+b92e(030e)     c24dba JP NZ,x1:&ba4d
+
+Long jump! Only if 5d37==0
+
 b931(0311)     cd5cba CALL &ba5c
-b934(0314)     c2ffb9 JP NZ,&b9ff
+
+Not clear, but it may set a and flags
+
+b934(0314)     c2ffb9 JP NZ,x2:&b9ff
+
+Long-ish jump
+
 b937(0317)   fd2a86ba LD IY,(&ba86)
 b93b(031b)   fdcb085e rrc (iy+94)->b
-b93f(031f)     c2cfb9 JP NZ,&b9cf
-b942(0322)     cdd6bf CALL &bfd6
+
+I have no idea what rrc does, but clearly it sets the Z flag, and in this case is operating on ba86+94.
+
+b93f(031f)     c2cfb9 JP NZ,x3:&b9cf
+
+Another kind-of-long jump
+
+b942(0322) x4: cdd6bf CALL &bfd6
+
+Not completely clear, but it apparently writes back to bfd4/bfd5 a max-val from 5b00. bfd5 is the actual max so probably the least interesting value.
+
 b945(0325)     3ad4bf LD A,(&bfd4)
 b948(0328)         b7 OR A
-b949(0329)     cacfb9 JP Z,&b9cf
+b949(0329)     cacfb9 JP Z,x3:&b9cf
+
+Jump if bfd4==0, and it's a long one.
+
 b94c(032c)       d68c SUB A,&8c
 b94e(032e)         5f LD E,A
 b94f(032f)       1600 LD D,&00
 b951(0331)     213ab6 LD HL,&b63a
 b954(0334)         19 ADD HL,DE
+
+hl=b63a+(bdf4)-8c
+
 b955(0335)         7e LD A,(HL)
 b956(0336)         b7 OR A
-b957(0337)     cacfb9 JP Z,&b9cf
+b957(0337)     cacfb9 JP Z,x3:&b9cf
+
+if (b63a+(bdf4)-8c) == 0, jump
+
 b95a(033a)     3ad4bf LD A,(&bfd4)
 b95d(033d)     cde4c0 CALL &c0e4
 b960(0340)   ed533a5d LD   (&5d3a),DE
+
+Stores the 8c memory base for (bfd4) in 5d3a
+
 b964(0344)     cdf3c0 CALL &c0f3
+
+Unknown, seems like a write-back routine
+
 b967(0347)     3a8f5d LD A,(&5d8f)
 b96a(034a)         b7 OR A
-b96b(034b)       2862 JR Z,100
+b96b(034b)       2862 JR Z,x3:100
+
+If 5d8f==0, jump (short this time)
+
 b96d(034d)     cd66bd CALL &bd66
+
+Unknown, but sets a
+
 b970(0350)     3288b7 LD (&b788),A
+
+Back up to b788
+
 b973(0353)     3a8f5d LD A,(&5d8f)
 b976(0356)         47 LD B,A
+
+b=5d8f
+
 b977(0357)     210a5c LD HL,&5c0a
 b97a(035a)       3eff LD A,&ff
 b97c(035c)     329db8 LD (&b89d),A
-b97f(035f)         c5 PUSH BC
+
+HL=5c0a; b89d=a=ff
+
+b97f(035f)  b:     c5 PUSH BC
 b980(0360)         e5 PUSH HL
 b981(0361)         7e LD A,(HL)
 b982(0362)     3289b7 LD (&b789),A
+
+b789=5c0a
+
 b985(0365)     cd8cb7 CALL &b78c
+
+Unknown
+
 b988(0368)     3a8bb7 LD A,(&b78b)
 b98b(036b)         b7 OR A
-b98c(036c)       2812 JR Z,20
+b98c(036c)       2812 JR Z,a:20
+
+if b78b==0, jump
+
 b98e(036e)     3a87b7 LD A,(&b787)
 b991(0371)     219db8 LD HL,&b89d
 b994(0374)         be CP (HL)
-b995(0375)       3009 JR NC,11
+b995(0375)       3009 JR NC,a:11
+
+If b89d <= b787, jump
+
 b997(0377)     329db8 LD (&b89d),A
+
+b89d=b787
+
 b99a(037a)     3a89b7 LD A,(&b789)
 b99d(037d)     32afba LD (&baaf),A
-b9a0(0380)         e1 POP HL
+
+baaf=b789
+
+b9a0(0380)  a:     e1 POP HL
 b9a1(0381)         23 INC HL
 b9a2(0382)         c1 POP BC
-b9a3(0383)       10da DJNZ -36
+b9a3(0383)       10da DJNZ b:-36
+
+Advance HL by 1, loop
+
 b9a5(0385)         af XOR A
+
+a=0
+
 b9a6(0386)     329eb8 LD (&b89e),A
+
+b89e=0
+
 b9a9(0389)     cdb1ba CALL &bab1
+
+Unknown
+
 b9ac(038c)     3a625d LD A,(&5d62)
 b9af(038f)         b7 OR A
-b9b0(0390)       204d JR NZ,79
+b9b0(0390)       204d JR NZ,x2:79
+
+If 5d62!=0, jump
+
 b9b2(0392)     3a375d LD A,(&5d37)
 b9b5(0395)         b7 OR A
-b9b6(0396)     c24dba JP NZ,&ba4d
+b9b6(0396)     c24dba JP NZ,x1:&ba4d
+
+if 5d37!=0, jump
+
 b9b9(0399)     3a595d LD A,(&5d59)
 b9bc(039c)         b7 OR A
 b9bd(039d)     c4debd CALL NZ,&bdde
+
+If 5d59!=0, call bdde (unknown)
+
 b9c0(03a0)     3a375d LD A,(&5d37)
 b9c3(03a3)         b7 OR A
-b9c4(03a4)     c24dba JP NZ,&ba4d
+b9c4(03a4)     c24dba JP NZ,x1:&ba4d
+
+If 5d37!=0, jump
+
 b9c7(03a7)     cd5cba CALL &ba5c
-b9ca(03aa)       2033 JR NZ,53
-b9cc(03ac)     c342b9 JP &b942
-b9cf(03af)   fd2a86ba LD IY,(&ba86)
+
+Unknown
+
+b9ca(03aa)       2033 JR NZ,x2:53
+
+If nonzero, jump
+
+b9cc(03ac)     c342b9 JP x4:&b942
+
+Jump back
+
+b9cf(03af)x3:fd2a86ba LD IY,(&ba86)
 b9d3(03b3)         af XOR A
+
+iy=(ba86)
+a=0
+
 b9d4(03b4)     329eb8 LD (&b89e),A
+
+b89e=0
+
 b9d7(03b7)   fdcb0846 rrc (iy+70)->b
-b9db(03bb)       2014 JR NZ,22
+
+rotate right circular into B?
+
+b9db(03bb)       2014 JR NZ,a:22
+
+Conditional jump, presumably on the rrc itself
+
 b9dd(03bd)   fdcb084e rrc (iy+78)->b
-b9e1(03c1)       2006 JR NZ,8
+b9e1(03c1)       2006 JR NZ,b:8
+
+Another rotate and conditional jump
+
 b9e3(03c3)     3a14b7 LD A,(&b714)
 b9e6(03c6)         b7 OR A
-b9e7(03c7)       2808 JR Z,10
-b9e9(03c9)     dd7e05 LD A,(IX+5)
+b9e7(03c7)       2808 JR Z,a:10
+
+Jump if b714==0
+
+b9e9(03c9) b:  dd7e05 LD A,(IX+5)
 b9ec(03cc)       cb3f SRL A
+
+Shift A right 1 (divide by 2)
+
 b9ee(03ce)     329eb8 LD (&b89e),A
-b9f1(03d1)     cd88ba CALL &ba88
+
+Store in b89e
+
+b9f1(03d1) a:  cd88ba CALL &ba88
+
+Unknown
+
 b9f4(03d4)     cd5cba CALL &ba5c
-b9f7(03d7)       2006 JR NZ,8
+
+Unknown
+
+b9f7(03d7)       2006 JR NZ,x2:8
+
+Jump if nonzero
+
 b9f9(03d9)     3a625d LD A,(&5d62)
 b9fc(03dc)         b7 OR A
-b9fd(03dd)       283d JR Z,63
-b9ff(03df)     dd7e08 LD A,(IX+8)
+b9fd(03dd)       283d JR Z,e:63
+
+jump if 5d62==0
+
+b9ff(03df) x2: dd7e08 LD A,(IX+8)
 ba02(03e2)         b7 OR A
-ba03(03e3)       2848 JR Z,74
+ba03(03e3)       2848 JR Z,x1:74
+
+Jump if (ix+8)==0
+
 ba05(03e5)     3a13b7 LD A,(&b713)
+
+a=b713!
+
 ba08(03e8)     cde4c0 CALL &c0e4
+
+Set DE=8c memory base
+
 ba0b(03eb)   ed53daa5 LD   (&a5da),DE
+
+a5da=de
+
 ba0f(03ef)     2a245d LD HL,(&5d24)
 ba12(03f2)     22dca5 LD (&a5dc),HL
+
+a5dc=5d24
+
 ba15(03f5)     cde0a5 CALL &a5e0
+
+Unknown
+
 ba18(03f8)     21005b LD HL,&5b00
 ba1b(03fb)         5e LD E,(HL)
 ba1c(03fc)         23 INC HL
 ba1d(03fd)         56 LD D,(HL)
 ba1e(03fe)   ed533a5d LD   (&5d3a),DE
+
+(5d3a)=(5b00)
+
 ba22(0402)     cda6bc CALL &bca6
+
+Unknown
+
 ba25(0405)         af XOR A
 ba26(0406)     32625d LD (&5d62),A
+
+5d62=0
+
 ba29(0409)     3a595d LD A,(&5d59)
 ba2c(040c)         b7 OR A
-ba2d(040d)     ca42b9 JP Z,&b942
+ba2d(040d)     ca42b9 JP Z,x4:&b942
+
+Long jump! If 5d59 == 0
+
 ba30(0410)     cddebd CALL &bdde
 ba33(0413)     3a375d LD A,(&5d37)
 ba36(0416)         b7 OR A
 ba37(0417)       2014 JR NZ,22
 ba39(0419)     c342b9 JP &b942
+
+ba3c(041c) e: ;; FIXME
+
 ba4d(042d) x1:     e1 POP HL
 ba4e(042e)     110400 LD DE,&0004
 ba51(0431)         19 ADD HL,DE
+
+HL+=4
+
 ba52(0432)         c1 POP BC
 ba53(0433)         05 DEC B
-ba54(0434)     c2aab8 JP NZ,&b8aa
+ba54(0434)     c2aab8 JP NZ,x5:&b8aa
+
+This is DJNZ with a long jump!
+
 ba57(0437)         af XOR A
 ba58(0438)     32365d LD (&5d36),A
+
+5d36=0
+
 ba5b(043b)         c9 RET
 
-
+Unknown
+-------
 
 ba5c(043c)     21995b LD HL,&5b99
-ba5f(043f)         7e LD A,(HL)
+ba5f(043f)  b:     7e LD A,(HL)
+
+a=(5b99)
+
 ba60(0440)       feff CP &ff
 ba62(0442)         c8 RET Z
+
+Return if a==ff
+
 ba63(0443)         e5 PUSH HL
 ba64(0444)         f5 PUSH AF
 ba65(0445)       d68c SUB A,&8c
 ba67(0447)         5f LD E,A
 ba68(0448)       1600 LD D,&00
+
+de=a-8c
+
 ba6a(044a)     213ab6 LD HL,&b63a
 ba6d(044d)         19 ADD HL,DE
 ba6e(044e)         7e LD A,(HL)
+
+a=b63a+de
+
 ba6f(044f)         b7 OR A
-ba70(0450)       200b JR NZ,13
+ba70(0450)       200b JR NZ,a:13
+
+if(a!=0), jump
+
 ba72(0452)         f1 POP AF
 ba73(0453)         e1 POP HL
 ba74(0454)         23 INC HL
+
+HL++
+
 ba75(0455)         7e LD A,(HL)
 ba76(0456)       feff CP &ff
 ba78(0458)         c8 RET Z
+
+Return if (hl) is ff
+
 ba79(0459)         23 INC HL
 ba7a(045a)         23 INC HL
-ba7b(045b)       18e2 JR -28
-ba7d(045d)         f1 POP AF
+
+This advances HL by 3 in total
+
+ba7b(045b)       18e2 JR b:-28
+ba7d(045d) a:      f1 POP AF
 ba7e(045e)         e1 POP HL
 ba7f(045f)     3213b7 LD (&b713),A
+
+Store in b713
+
 ba82(0462)       3e01 LD A,&01
 ba84(0464)         b7 OR A
 ba85(0465)         c9 RET
 
+a=1; flags=nz...
 
+Unknown
+-------
 
 ba86(0466)            ; DATA
-ba88(0468)         af XOR A
+ba88(0468)  b:     af XOR A
 ba89(0469)     32d4bf LD (&bfd4),A
+
+bfd4=0
+
 ba8c(046c)     2a86ba LD HL,(&ba86)
 ba8f(046f)         5e LD E,(HL)
 ba90(0470)       1600 LD D,&00
 ba92(0472)         19 ADD HL,DE
+
+hl=(ba86)+((ba86)) - ie, ba86 contains a pointer p, and the memory at p says how much further forward to go.
+
 ba93(0473)         7e LD A,(HL)
 ba94(0474)     32afba LD (&baaf),A
+
+baaf=(hl)
+
 ba97(0477)         b7 OR A
-ba98(0478)       2007 JR NZ,9
+ba98(0478)       2007 JR NZ,a:9
+
+if a!=0, jump
+
 ba9a(047a)     2a86ba LD HL,(&ba86)
 ba9d(047d)       3601 LD (HL),&01
-ba9f(047f)       18e7 JR -23
-baa1(0481)     cdb1ba CALL &bab1
+
+Reset ((ba86)) to 1
+
+ba9f(047f)       18e7 JR b:-23
+
+...and wind back. ie, if target+x is 0, set x=1 and try again.
+
+baa1(0481) a:  cdb1ba CALL &bab1
+
+Unknown.
+
 baa4(0484)     3ab0ba LD A,(&bab0)
 baa7(0487)         b7 OR A
 baa8(0488)         c8 RET Z
+
+Return if bab0==0 (with a set to bab0)
+
 baa9(0489)     2a86ba LD HL,(&ba86)
 baac(048c)         34 INC (HL)
-baad(048d)       18d9 JR -37
+baad(048d)       18d9 JR b:-37
+
+Add 1 to that number and try again.
+
+Unknown
+-------
+
 baaf(048f)            ; DATA
 bab0(0490)            ; DATA
 bab1(0491)         af XOR A
 bab2(0492)     32b0ba LD (&bab0),A
+
+bab0=0
+
 bab5(0495)     2a245d LD HL,(&5d24)
 bab8(0498)     cd41bd CALL &bd41
+
+Unknown
+
 babb(049b)     21afba LD HL,&baaf
 babe(049e)         be CP (HL)
-babf(049f)       200c JR NZ,14
+babf(049f)       200c JR NZ,a:14
+
+Jump if a!=baaf
+
 bac1(04a1)       3e01 LD A,&01
 bac3(04a3)     32b0ba LD (&bab0),A
+
+bab0=1
+
 bac6(04a6)     3ad4bf LD A,(&bfd4)
 bac9(04a9)         b7 OR A
-baca(04aa)       205e JR NZ,96
+baca(04aa)       205e JR NZ,b:96
+
+Jump if bfd4!=0
+
 bacc(04ac)         c9 RET
 
+bacd(04ad) a:    ;; FIXME
 
+bb2a(050a) b:    ;; FIXME
+
+Unknown
+-------
+
+In: ix, 5d3a, ix+33
 
 bca3(0683)            ; DATA
 bca4(0684)            ; DATA
 bca5(0685)            ; DATA
 bca6(0686)     2a3a5d LD HL,(&5d3a)
 bca9(0689)     22dca5 LD (&a5dc),HL
+
+(a5dc)=(5d3a)
+
 bcac(068c)     dd7e21 LD A,(IX+33)
 bcaf(068f)     32a3bc LD (&bca3),A
+
+bca3=ix+33
+
 bcb2(0692)         af XOR A
 bcb3(0693)     32a5bc LD (&bca5),A
-bcb6(0696)     3aa3bc LD A,(&bca3)
+
+bca5=0
+
+bcb6(0696) b:  3aa3bc LD A,(&bca3)
+
+a=bca3 (~ ix+33)
+
 bcb9(0699)     cd746e CALL &6e74
+
+Unknown
+
 bcbc(069c)     2adca5 LD HL,(&a5dc)
 bcbf(069f)   ed5b3a5d LD   DE,(&5d3a)
 bcc3(06a3)         a7 AND A
 bcc4(06a4)       ed52 SBC  HL,DE
-bcc6(06a6)       2815 JR Z,23
+bcc6(06a6)       2815 JR Z,a:23
+
+Jump if HL == DE (a5dc == 5d3a)
+
 bcc8(06a8)     21a5bc LD HL,&bca5
 bccb(06ab)         34 INC (HL)
+
+bca5++
+
 bccc(06ac)     3aa3bc LD A,(&bca3)
 bccf(06af)         3c INC A
 bcd0(06b0)     32a3bc LD (&bca3),A
+
+bca3++
+
 bcd3(06b3)       fe08 CP &08
-bcd5(06b5)       38df JR C,-31
+bcd5(06b5)       38df JR C,a:-31
+
+if bca3 < 8, jump back
+
 bcd7(06b7)         af XOR A
 bcd8(06b8)     32a3bc LD (&bca3),A
-bcdb(06bb)       18d9 JR -37
-bcdd(06bd)         af XOR A
+
+bca3 = 0
+
+bcdb(06bb)       18d9 JR b:-37
+bcdd(06bd)  a:     af XOR A
 bcde(06be)     32a4bc LD (&bca4),A
+
+bca4 = 0
+
 bce1(06c1)     dd7e21 LD A,(IX+33)
 bce4(06c4)     32a3bc LD (&bca3),A
-bce7(06c7)     3aa3bc LD A,(&bca3)
+
+bca3 = ix+33
+
+bce7(06c7) d:  3aa3bc LD A,(&bca3)
 bcea(06ca)     cd746e CALL &6e74
+
+Unknown
+
 bced(06cd)     2adca5 LD HL,(&a5dc)
 bcf0(06d0)   ed5b3a5d LD   DE,(&5d3a)
 bcf4(06d4)         a7 AND A
 bcf5(06d5)       ed52 SBC  HL,DE
-bcf7(06d7)       2816 JR Z,24
+
+HL-=DE
+
+bcf7(06d7)       2816 JR Z,c:24
+
+If HL==DE, jump
+
 bcf9(06d9)     21a4bc LD HL,&bca4
 bcfc(06dc)         34 INC (HL)
+
+bca4++
+
 bcfd(06dd)     3aa3bc LD A,(&bca3)
 bd00(06e0)         3d DEC A
 bd01(06e1)     32a3bc LD (&bca3),A
+
+bca3--
+
 bd04(06e4)       feff CP &ff
-bd06(06e6)       20df JR NZ,-31
+bd06(06e6)       20df JR NZ,d:-31
+
+if bca3 != ff, jump back
+
 bd08(06e8)       3e07 LD A,&07
 bd0a(06ea)     32a3bc LD (&bca3),A
-bd0d(06ed)       18d8 JR -38
-bd0f(06ef)     3aa5bc LD A,(&bca5)
+
+bca3=7
+
+bd0d(06ed)       18d8 JR d:-38
+bd0f(06ef) c:  3aa5bc LD A,(&bca5)
 bd12(06f2)         b7 OR A
-bd13(06f3)       2826 JR Z,40
+bd13(06f3)       2826 JR Z,e:40
+
+Jump if bca5==0
+
 bd15(06f5)     21a4bc LD HL,&bca4
 bd18(06f8)         be CP (HL)
-bd19(06f9)       3811 JR C,19
+bd19(06f9)       3811 JR C,f:19
+
+if bca4 > bca5, jump
+
 bd1b(06fb)     3aa4bc LD A,(&bca4)
 bd1e(06fe)         47 LD B,A
-bd1f(06ff)         c5 PUSH BC
+
+b=a=bca4
+
+bd1f(06ff)  g:     c5 PUSH BC
 bd20(0700)     cdde6d CALL &6dde
 bd23(0703)         c1 POP BC
 bd24(0704)     cdb3bd CALL &bdb3
 bd27(0707)         c8 RET Z
-bd28(0708)       10f5 DJNZ -9
-bd2a(070a)       180f JR 17
-bd2c(070c)     3aa5bc LD A,(&bca5)
+bd28(0708)       10f5 DJNZ g:-9
+
+Although it's unclear what 6dde and bdb3 do, this returns the first one (up to bca4) where those two set Z
+
+bd2a(070a)       180f JR h:17
+bd2c(070c) f:  3aa5bc LD A,(&bca5)
 bd2f(070f)         47 LD B,A
-bd30(0710)         c5 PUSH BC
+
+b=a=bca5
+
+bd30(0710)   i:    c5 PUSH BC
 bd31(0711)     cdaf6d CALL &6daf
 bd34(0714)         c1 POP BC
 bd35(0715)     cdb3bd CALL &bdb3
 bd38(0718)         c8 RET Z
-bd39(0719)       10f5 DJNZ -9
-bd3b(071b)       3e01 LD A,&01
-bd3d(071d)         b7 OR A
+bd39(0719)       10f5 DJNZ i:-9
+
+Returns the first case (up to bca5) where 6daf bdb3 sets Z
+
+bd3b(071b)  h:   3e01 LD A,&01
+bd3d(071d)  e:     b7 OR A
 bd3e(071e)         c9 RET
 
+Returns with Z set or unset
 
+Unknown
+-------
 
 bd3f(071f)            ; DATA
 bd40(0720)            ; DATA
 bd41(0721)     223fbd LD (&bd3f),HL
+
+Back up HL
+
 bd44(0724)     2114c9 LD HL,&c914
 bd47(0727)     3a1dc2 LD A,(&c21d)
 bd4a(072a)         47 LD B,A
+
+b=(c21d)
+hl=c914
+
 bd4b(072b)     3a3fbd LD A,(&bd3f)
 bd4e(072e)         be CP (HL)
-bd4f(072f)       200d JR NZ,15
+bd4f(072f)       200d JR NZ,a:15
+
+Jump if bd3f!=c914
+
 bd51(0731)         23 INC HL
 bd52(0732)     3a40bd LD A,(&bd40)
 bd55(0735)         be CP (HL)
-bd56(0736)       2007 JR NZ,9
+bd56(0736)       2007 JR NZ,b:9
+
+Jump if bd40!=c915
+
 bd58(0738)     3a1dc2 LD A,(&c21d)
 bd5b(073b)         3c INC A
 bd5c(073c)         90 SUB A,B
-bd5d(073d)         c9 
+bd5d(073d)         c9 RET
+
+Return with a=(c21d)-1-b
+
+bd5e(073e) a:    ;; FIXME
+bd5f(073f) b:    ;; FIXME
 
 
+Unknown
+-------
 
 bd64(0744)            ; DATA
 bd65(0745)            ; DATA
 bd66(0746)     2a245d LD HL,(&5d24)
 bd69(0749)     cd41bd CALL &bd41
+
+Unknown...
+
 bd6c(074c)         b7 OR A
 bd6d(074d)         c0 RET NZ
+
+Return if A!=0
+
 bd6e(074e)     2a245d LD HL,(&5d24)
 bd71(0751)     224ba5 LD (&a54b),HL
 bd74(0754)     22475d LD (&5d47),HL
+
+Stick the value of 5d24 in a54b and 5d47
+
 bd77(0757)       3eff LD A,&ff
 bd79(0759)     3265bd LD (&bd65),A
+
+bd65=ff
+
 bd7c(075c)     3a1dc2 LD A,(&c21d)
 bd7f(075f)         47 LD B,A
+
+a=b=(c21d)
+
 bd80(0760)     2114c9 LD HL,&c914
-bd83(0763)         e5 PUSH HL
+bd83(0763)   b:    e5 PUSH HL
 bd84(0764)         c5 PUSH BC
 bd85(0765)         5e LD E,(HL)
 bd86(0766)         23 INC HL
 bd87(0767)         56 LD D,(HL)
+
+de=(c914)
+
 bd88(0768)   ed534da5 LD   (&a54d),DE
 bd8c(076c)   ed53495d LD   (&5d49),DE
+
+a54d=5d49=(c914)
+
 bd90(0770)     cd0172 CALL &7201
+
+??
+
 bd93(0773)         c1 POP BC
-bd94(0774)       2014 JR NZ,22
+bd94(0774)       2014 JR NZ,a:22
+
+If nonzero, jump
+
 bd96(0776)     cd50a5 CALL &a550
+
+???
+
 bd99(0779)     2165bd LD HL,&bd65
 bd9c(077c)         be CP (HL)
-bd9d(077d)       300b JR NC,13
+bd9d(077d)       300b JR NC,a:13
+
+If (bd65)<=a, jump
+
 bd9f(077f)     3265bd LD (&bd65),A
+
+Back up a
+
 bda2(0782)     3a1dc2 LD A,(&c21d)
 bda5(0785)         3c INC A
 bda6(0786)         90 SUB A,B
 bda7(0787)     3264bd LD (&bd64),A
-bdaa(078a)         e1 POP HL
+
+(bd64)=(c21d)+1-b
+
+bdaa(078a) a:      e1 POP HL
 bdab(078b)         23 INC HL
 bdac(078c)         23 INC HL
-bdad(078d)       10d4 DJNZ -42
+
++2 from c914
+
+bdad(078d)       10d4 DJNZ b:-42
+
+...and loop.
+
 bdaf(078f)     3a64bd LD A,(&bd64)
 bdb2(0792)         c9 RET
 
+Return with a=last bd64
 
+Unknown
+-------
 
 bdb3(0793)     dd7e06 LD A,(IX+6)
 bdb6(0796)         b7 OR A
-bdb7(0797)       2814 JR Z,22
+bdb7(0797)       2814 JR Z,a:22
+
+if ix+6==0, jump
+
 bdb9(0799)     219eb8 LD HL,&b89e
 bdbc(079c)         96 SUB A,(HL)
-bdbd(079d)       280e JR Z,16
+
+a-=b89e
+
+bdbd(079d)       280e JR Z,a:16
+
+if a==0 (ix+6 == b89e), jump
+
 bdbf(079f)     dd7e08 LD A,(IX+8)
 bdc2(07a2)         b7 OR A
-bdc3(07a3)       2808 JR Z,10
+bdc3(07a3)       2808 JR Z,a:10
+
+if ix+8 == 0, jump
+
 bdc5(07a5)     3a595d LD A,(&5d59)
 bdc8(07a8)         b7 OR A
 bdc9(07a9)       2009 JR NZ,11
+
+if 5d59 !=0, jump
+
 bdcb(07ab)         3c INC A
 bdcc(07ac)         c9 RET
 
+bdcd(07ad) a: ;; FIXME
+bdd4(07b4) b: ;; FIXME
 
+Unknown
+-------
 
 bddb(07bb)            ; DATA
 bddd(07bd)            ; DATA
@@ -1123,106 +1691,239 @@ bfd6(09b6)     3a265d LD A,(&5d26)
 bfd9(09b9)         f5 PUSH AF
 bfda(09ba)     2a245d LD HL,(&5d24)
 bfdd(09bd)     223a5d LD (&5d3a),HL
+
+a=5d26
+5d3a(w)=5d24(w)
+
 bfe0(09c0)     cd52b8 CALL &b852
+
+Not very clear.
+
 bfe3(09c3)     327bb8 LD (&b87b),A
+
+Store A (b87b)
+
 bfe6(09c6)     21ff5a LD HL,&5aff
 bfe9(09c9)     22fb5d LD (&5dfb),HL
+
+(5dfb)=5aff
+
 bfec(09cc)       3e8b LD A,&8b
 bfee(09ce)     32265d LD (&5d26),A
-bff1(09d1)     3a265d LD A,(&5d26)
+
+5d26=a=8b (139)
+
+bff1(09d1) a:  3a265d LD A,(&5d26)
 bff4(09d4)         3c INC A
 bff5(09d5)       fea0 CP &a0
-bff7(09d7)     cab5c0 JP Z,&c0b5
+bff7(09d7)     cab5c0 JP Z,x4:&c0b5
+
+Jump if 5d26+1 == a0
+
 bffa(09da)     2afb5d LD HL,(&5dfb)
 bffd(09dd)         23 INC HL
 bffe(09de)         77 LD (HL),A
+
+Store A at next HL
+
 bfff(09df)         23 INC HL
 c000(09e0)       3600 LD (HL),&00
+
+Store 0 at next
+
 c002(09e2)     22fb5d LD (&5dfb),HL
 c005(09e5)     32265d LD (&5d26),A
+
+Save back
+
 c008(09e8)     cdc267 CALL &67c2
+
+No idea
+
 c00b(09eb)   ddcb2546 sla (IX+70)->l
-c00f(09ef)       20e0 JR NZ,-30
+
+SLA indeed.
+
+c00f(09ef)       20e0 JR NZ,a:-30
+
+Possible jump-back
+
 c011(09f1)     dd7e08 LD A,(IX+8)
 c014(09f4)         b7 OR A
-c015(09f5)       28da JR Z,-36
+c015(09f5)       28da JR Z,a:-36
+
+And another, where (IX+8)==0
+
 c017(09f7)     3a265d LD A,(&5d26)
+
+Reload A
+
 c01a(09fa)     cde4c0 CALL &c0e4
+
+// DE=(3 * (a-8c) + 5c51)
+
 c01d(09fd)   ed533a5d LD   (&5d3a),DE
+
+Store that DE at 5d3a
+
 c021(0a01)     cd52b8 CALL &b852
+
+Unclear
+
 c024(0a04)         b7 OR A
-c025(0a05)       28ca JR Z,-52
+c025(0a05)       28ca JR Z,a:-52
+
+Possibly jump back
+
 c027(0a07)     327cb8 LD (&b87c),A
+
+Store a at b87c
+
 c02a(0a0a)     dd7e27 LD A,(IX+39)
 c02d(0a0d)     2afb5d LD HL,(&5dfb)
 c030(0a10)         77 LD (HL),A
+
+((5dfb))=(ix+39)
+
 c031(0a11)     cd5d78 CALL &785d
+
+Below the line.
+
 c034(0a14)     3a8f5d LD A,(&5d8f)
 c037(0a17)         b7 OR A
-c038(0a18)       281f JR Z,33
+c038(0a18)       281f JR Z,b:33
+
+Jump if 5d8f==0
+
 c03a(0a1a)         47 LD B,A
 c03b(0a1b)     217a5b LD HL,&5b7a
-c03e(0a1e)         e5 PUSH HL
+c03e(0a1e)  d:     e5 PUSH HL
 c03f(0a1f)         7e LD A,(HL)
 c040(0a20)       d66e SUB A,&6e
 c042(0a22)         5f LD E,A
 c043(0a23)       1600 LD D,&00
 c045(0a25)     213ec2 LD HL,&c23e
 c048(0a28)         19 ADD HL,DE
+
+b=a; hl=c23e+(5b7a)-6e
+
 c049(0a29)         7e LD A,(HL)
 c04a(0a2a)     2afb5d LD HL,(&5dfb)
 c04d(0a2d)         86 ADD A,(HL)
+
+a=(c23e+(5b7a)-6e)+((5dfb))
+
 c04e(0a2e)       3002 JR NC,4
 c050(0a30)       3eff LD A,&ff
 c052(0a32)         77 LD (HL),A
-c053(0a33)         e1 POP HL
+
+if(a > 255) a = 255 and store at ((5dfb))
+
+c053(0a33) c:      e1 POP HL
+
+hl=5b7a
+
 c054(0a34)         23 INC HL
 c055(0a35)         23 INC HL
 c056(0a36)         23 INC HL
-c057(0a37)       10e5 DJNZ -25
-c059(0a39)   fd2a86ba LD IY,(&ba86)
+
+hl=5b7d
+
+c057(0a37)       10e5 DJNZ d:-25
+
+Loop
+
+c059(0a39)b: fd2a86ba LD IY,(&ba86)
 c05d(0a3d)     fd7e09 LD A,(IY+9)
 c060(0a40)         6f LD L,A
 c061(0a41)       2600 LD H,&00
+
+HL=((ba86)+9)
+
 c063(0a43)         29 ADD HL,HL
 c064(0a44)         29 ADD HL,HL
 c065(0a45)         29 ADD HL,HL
 c066(0a46)         29 ADD HL,HL
 c067(0a47)         29 ADD HL,HL
+
+HL*=32
+
 c068(0a48)     3a7cb8 LD A,(&b87c)
 c06b(0a4b)         3d DEC A
 c06c(0a4c)         5f LD E,A
 c06d(0a4d)       1600 LD D,&00
 c06f(0a4f)         19 ADD HL,DE
+
++(b87c)-1
+
 c070(0a50)     111ec2 LD DE,&c21e
 c073(0a53)         19 ADD HL,DE
+
++c21e
+
 c074(0a54)         7e LD A,(HL)
 c075(0a55)         b7 OR A
 c076(0a56)       2008 JR NZ,10
+
+Jump if (hl) is nonzero
+
 c078(0a58)     2afb5d LD HL,(&5dfb)
 c07b(0a5b)       3600 LD (HL),&00
-c07d(0a5d)     c3f1bf JP &bff1
-c0b5(0a95)         f1 POP AF
+
+5dfb=0
+
+c07d(0a5d)     c3f1bf JP a:&bff1
+
+Long jump
+
+c080(0a60) ;; FIXME missing!
+...
+...
+...
+
+c0b5(0a95) x4:     f1 POP AF
 c0b6(0a96)     32265d LD (&5d26),A
+
+5d26=a
+
 c0b9(0a99)   fd21005b LD IY,&5b00
 c0bd(0a9d)       0614 LD B,&14
+
+b=20
+
 c0bf(0a9f)         af XOR A
+
+a=0
+
 c0c0(0aa0)     32d4bf LD (&bfd4),A
 c0c3(0aa3)     32d5bf LD (&bfd5),A
+
+bfd4=bfd5=0
+
 c0c6(0aa6)     110200 LD DE,&0002
-c0c9(0aa9)     fd7e01 LD A,(IY+1)
+
+de=2
+
+c0c9(0aa9) g:  fd7e01 LD A,(IY+1)
 c0cc(0aac)     21d5bf LD HL,&bfd5
 c0cf(0aaf)         be CP (HL)
-c0d0(0ab0)       3809 JR C,11
+c0d0(0ab0)       3809 JR C,f:11
 c0d2(0ab2)     32d5bf LD (&bfd5),A
 c0d5(0ab5)     fd7e00 LD A,(IY+0)
 c0d8(0ab8)     32d4bf LD (&bfd4),A
-c0db(0abb)       fd19 ADD IY,DE
-c0dd(0abd)       10ea DJNZ -20
+c0db(0abb) f:    fd19 ADD IY,DE
+c0dd(0abd)       10ea DJNZ g:-20
+
+So this little loop sets bfd5 to the max second number from 5b00 (up to 20), and bfd4 to the corresponding first number.
+
 c0df(0abf)   dd2a335d LD IX,(&5d33)
+
+ix=5d33!
+
 c0e3(0ac3)         c9 RET
 
-
+Set DE=8c memory base
+---------------------
 
 c0e4(0ac4)       d68c SUB A,&8c
 c0e6(0ac6)         6f LD L,A
@@ -1236,51 +1937,112 @@ c0f0(0ad0)         23 INC HL
 c0f1(0ad1)         56 LD D,(HL)
 c0f2(0ad2)         c9 RET
 
+So this sets DE=(4 * (a-8c) + 5c51); it does modify a and hl but that seems incidental.
 
+
+Unknown
+-------
 
 c0f3(0ad3)     2a3a5d LD HL,(&5d3a)
 c0f6(0ad6)     22475d LD (&5d47),HL
+
+5d47=5d3a
+
 c0f9(0ad9)         af XOR A
+
+a=0
+
 c0fa(0ada)     328f5d LD (&5d8f),A
+
+5d8f=0
+
 c0fd(0add)     210a5c LD HL,&5c0a
 c100(0ae0)     22fb5d LD (&5dfb),HL
+
+(5dfb)=5c0a
+
 c103(0ae3)         3c INC A
+
+a=1...
+
 c104(0ae4)     328ab7 LD (&b78a),A
+
+b78a=1...
+
 c107(0ae7)     2a3a5d LD HL,(&5d3a)
+
+Reload that base address
+
 c10a(0aea)     cd41bd CALL &bd41
+
+Unknown, but affects A
+
 c10d(0aed)         b7 OR A
-c10e(0aee)       280d JR Z,15
+c10e(0aee)       280d JR Z,a:15
+
+Jump if a == 0
+
 c110(0af0)     2afb5d LD HL,(&5dfb)
 c113(0af3)         77 LD (HL),A
 c114(0af4)         23 INC HL
 c115(0af5)     22fb5d LD (&5dfb),HL
 c118(0af8)       3e01 LD A,&01
 c11a(0afa)     328f5d LD (&5d8f),A
-c11d(0afd)     2114c9 LD HL,&c914
+
+Reload that memory address, store a in there, increment 5dfb, 5d8f=a=1
+
+c11d(0afd) a:  2114c9 LD HL,&c914
 c120(0b00)     3a1dc2 LD A,(&c21d)
 c123(0b03)         47 LD B,A
-c124(0b04)         c5 PUSH BC
+c124(0b04) c:      c5 PUSH BC
 c125(0b05)         e5 PUSH HL
 c126(0b06)         5e LD E,(HL)
 c127(0b07)         23 INC HL
 c128(0b08)         56 LD D,(HL)
 c129(0b09)   ed53495d LD   (&5d49),DE
+
+a=b=(c21d); hl=c914; 5d49=de=(c914)
+
 c12d(0b0d)     cd0972 CALL &7209
-c130(0b10)       200f JR NZ,17
+
+???
+
+c130(0b10)       200f JR NZ,b:17
+
+Jump if nonzero
+
 c132(0b12)     2afb5d LD HL,(&5dfb)
+
+Load that HL again
+
 c135(0b15)     3a8ab7 LD A,(&b78a)
 c138(0b18)         77 LD (HL),A
+
+((5dfb))=(b78a)
+
 c139(0b19)         23 INC HL
 c13a(0b1a)     22fb5d LD (&5dfb),HL
+
+Increment 5dfb
+
 c13d(0b1d)     218f5d LD HL,&5d8f
 c140(0b20)         34 INC (HL)
-c141(0b21)     218ab7 LD HL,&b78a
+
+Increment 5d8f
+
+c141(0b21) b:  218ab7 LD HL,&b78a
 c144(0b24)         34 INC (HL)
+
+Increment b78a
+
 c145(0b25)         e1 POP HL
 c146(0b26)         23 INC HL
 c147(0b27)         23 INC HL
+
+Advance 2 from c914
+
 c148(0b28)         c1 POP BC
-c149(0b29)       10d9 DJNZ -37
+c149(0b29)       10d9 DJNZ c:-37
 c14b(0b2b)         c9 RET
 
 
@@ -1348,10 +2110,13 @@ b715 appears to be a recursion-protect flag. Outer loop (11x) apparently just ad
 
 It's possible that the underlying rendering is supposed to be 10x10. Adding 2 suggests memory addresses for 16-bit data. Smallest value for either (and the initial value for both) is 01.
 
-c21d(0bfd)            ; DATA
+c21d(0bfd)            ; DATA - single byte?
+c21e(0bfe)            ; DATA
 c23e(0c1e)            ; DATA
 
 0x0bfd-0xc9f: ??
+
+c266(0c46)            ; DATA
 
 0x0ca0: Three 32-byte sequences. Purpose isn't clear. There's 01 mapped as 01110111000000000000000000000000, and otherwise 02 x 32 and 03 x 32.
 
@@ -1474,7 +2239,7 @@ ff
 
 ff is the end marker; these are pairs of upper and lower bounds, such that if value1 is between the first two and value2 is between the second two, it's successful (returning the fifth datum and setting to the start). With those ranges going from 8-39 (left) and 19-71 (right) they could be map boxes.
 
-c914(12f4)            ; DATA
+c914(12f4)-?: Apparent memory addresses, more than 1 but not clear how many.
 
 0d 1b 14 1b ...
 
