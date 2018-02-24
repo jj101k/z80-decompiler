@@ -22,7 +22,7 @@ Information about the core program
 
 5d24-5d25: Apparent memory address
 
-5d26                  ; DATA
+5d26 - byte, may be ff or 8c+n
 5d2f                  ; DATA
 5d33                  ; DATA
 5d36                  ; DATA
@@ -45,9 +45,9 @@ Information about the core program
 
 5d9b                  ; DATA
 5dc2                  ; DATA
-5dd6                  ; DATA
-5dd8                  ; DATA
-5df8                  ; DATA
+5dd6: possible memory address
+5dd8: possible memory address
+5df8: single byte
 
 5dfb-5dfc: Memory address (possibly 5c0a)
 
@@ -70,15 +70,16 @@ Information about the core program
 
 6e74: Function, may use A, may touch a5dc or 5d3a
 
-7091                  ; DATA
-7093                  ; DATA
+7091: possible memory address
+7093: possible memory address
 71d7                  ; FUNCTION
 
 7201: Function that may use de; may touch bc and hl; sets flags
 
 7209: Function that set flags; may use b/c and hl
 
-726a                  ; FUNCTION
+726a: Function that may use HL; may store 5b97, may read 5d24. Looks like this is a memory setter of some kind.
+
 74c1                  ; FUNCTION
 785d                  ; FUNCTION
 78ab                  ; FUNCTION

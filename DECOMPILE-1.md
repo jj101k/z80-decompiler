@@ -25,10 +25,10 @@ cd 6a 72 appears multiple times
 
 64
 
-b621(0001)     c39fb8 JP &b89f
-b624(0004)     c3cabe JP &beca
-b627(0007)     c34cc1 JP &c14c
-b62a(000a)     c3e4c1 JP &c1e4
+b621(0001)     c39fb8 JP x6:&b89f
+b624(0004)     c3cabe JP x7:&beca
+b627(0007)     c34cc1 JP x8:&c14c
+b62a(000a)     c3e4c1 JP x9:&c1e4
 b62d(000d)         c9 RET
 b630(0010)         c9 RET
 b633(0013)         c9 RET
@@ -506,7 +506,7 @@ BC, DE, HL are modified but the intent seems to be to modify A.
 
 b89d(027d)            ; DATA
 b89e(027e)            ; DATA
-b89f(027f)     cd8567 CALL &6785
+b89f(027f) x6: cd8567 CALL &6785
 
 No idea what this is.
 
@@ -1673,7 +1673,7 @@ bec9(08a9)         c9 RET
 And done!
 
 
-beca(08aa)     cdcf99 CALL &99cf
+beca(08aa) x7: cdcf99 CALL &99cf
 becd(08ad)     cdd771 CALL &71d7
 bed0(08b0)   dd2a335d LD IX,(&5d33)
 bed4(08b4)     dd7e24 LD A,(IX+36)
@@ -2047,35 +2047,67 @@ c14b(0b2b)         c9 RET
 
 
 
-c14c(0b2c)   ed5b245d LD   DE,(&5d24)
+c14c(0b2c)x8:ed5b245d LD   DE,(&5d24)
 c150(0b30)         d5 PUSH DE
+
+de=5d24
+
 c151(0b31)     22245d LD (&5d24),HL
+
+5d24=hl
+
 c154(0b34)     cd6a72 CALL &726a
+
+Unknown
+
 c157(0b37)     3a975b LD A,(&5b97)
 c15a(0b3a)       feff CP &ff
-c15c(0b3c)       2815 JR Z,23
+c15c(0b3c)       2815 JR Z,a:23
+
+if 5b97==ff, jump
+
 c15e(0b3e)     3a265d LD A,(&5d26)
 c161(0b41)       d68c SUB A,&8c
 c163(0b43)         5f LD E,A
 c164(0b44)       1600 LD D,&00
 c166(0b46)     213ab6 LD HL,&b63a
 c169(0b49)         19 ADD HL,DE
+
+hl=b63a+(5d26)-8c
+
 c16a(0b4a)     3af85d LD A,(&5df8)
 c16d(0b4d)         77 LD (HL),A
+
+(hl)=(5df8)
+
 c16e(0b4e)       3e01 LD A,&01
 c170(0b50)     3214b7 LD (&b714),A
-c173(0b53)     2ad85d LD HL,(&5dd8)
+
+b714=1!
+
+c173(0b53) a:  2ad85d LD HL,(&5dd8)
 c176(0b56)     229170 LD (&7091),HL
+
+7091=5dd8
+
 c179(0b59)     2ad65d LD HL,(&5dd6)
 c17c(0b5c)     229370 LD (&7093),HL
+
+7093=5dd6
+
 c17f(0b5f)         d1 POP DE
 c180(0b60)   ed53245d LD   (&5d24),DE
+
+5d24=de
+
 c184(0b64)         c9 RET
+
+This calls 726a, copies from 5dd6/5dd8 to 7091/7093. If 5b97!=ff, also copies from 5df8 to b63a+(5d26)-8c and sets b714=1.
 
 Init 11x11 grid
 ---------------
 
-c1e4(0bc4)     3a15b7 LD A,(&b715)
+c1e4(0bc4) x9: 3a15b7 LD A,(&b715)
 c1e7(0bc7)         b7 OR A
 c1e8(0bc8)         c0 RET NZ
 c1e9(0bc9)     210101 LD HL,&0101
