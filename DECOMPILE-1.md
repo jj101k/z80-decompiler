@@ -34,7 +34,7 @@ b630(0010)         c9 RET
 b633(0013)         c9 RET
 b636(0016)         c9 RET
 
-b63a(001a)            ; DATA
+b63a(001a): Up to 115 bytes of data - thus ending b6ae(008e). In practice this may end significantly sooner, since the only known criteria are that offsets are n-8c and ff is not considered valid.
 
 0x002e-0x0038: Short sequence a5 a6 a7 a8 ff 98 97 01 02 03 04. Possibly an entity order hint.
 
