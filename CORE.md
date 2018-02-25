@@ -2,6 +2,9 @@ Information about the core program
 ----------------------------------
 
 0101                  ; DATA
+
+1b0d-3d14: Possible data of various possible sizes, min 0.
+
 5aff                  ; DATA
 
 5b00-5b95: Up to 20 words where the max second byte may be meaningful. These *might* be 16-bit numbers which are ordered, but that's a bit unlikely. The first number is meaningful with 8c subtracted, so it *may* be masked with 8f, ie. it may be a single bit in the left four, and 2+2 bits in the right four. The alternative is that it may be masked to fc, making it 1+3+2+(..). It can definitely be used as a jump distance from b63a. These may be memory addresses.
@@ -9,6 +12,8 @@ Information about the core program
 0 is a valid value for 5b00.
 
 Also (at 5b01)... 50 3-byte values where the first byte is some kind of identifier. This is initialised with all "ff".
+
+Also 5b01-5b02 may be a memory offset.
 
 It's likely that this is convenient multipurpose memory.
 
@@ -37,7 +42,7 @@ It's likely that this is convenient multipurpose memory.
 
 5d37: single byte
 
-5d3a-5d3b: possible memory address, may be identical to 5b00-5b01
+5d3a-5d3b: possible memory address, may be identical to 5b00-5b01; 5d3a and 5d3b may also contain single bytes which may be map coordinates.
 
 5d3e                  ; DATA
 

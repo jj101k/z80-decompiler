@@ -84,7 +84,7 @@ b715(00f5)            ; DATA
 
 (nulls)
 
-0x00fd-0x010c: 8x number pairs: c2 20, c3 40, c3 4c, c3 30, c5 a4, ca a8, cf 4c, d1 00
+0x00fd-0x010b: 7-8x number pairs: c2 20, c3 40, c3 4c, c3 30, c5 a4, ca a8, cf 4c, d1
 
 Find b787 at or after offset A in entry b731 in the 8x lists
 ------------------------------------------------------------
@@ -194,10 +194,10 @@ Unknown
 -------
 
 b787(0167)            ; DATA
-b788(0168)            ; DATA
+b788(0168)            ; DATA - byte, IN
 b789(0169)            ; DATA
 b78a(016a)            ; DATA
-b78b(016b)            ; DATA
+b78b(016b)            ; DATA - byte, LOCAL
 b78c(016c)       3e00 LD A,&00
 b78e(016e)     328bb7 LD (&b78b),A
 
@@ -205,19 +205,13 @@ b78b=0
 
 b791(0171)     21015b LD HL,&5b01
 b794(0174)     222cb7 LD (&b72c),HL
-
-b72c=5b01
-
 b797(0177)     21015b LD HL,&5b01
 b79a(017a)       36ff LD (HL),&ff
-
-(5b01)=ff
-
 b79c(017c)     11025b LD DE,&5b02
 b79f(017f)     019500 LD BC,&0095
 b7a2(0182)       edb0 LDIR
 
-Copies 149 bytes from 5b01 to 5b02 (ultimately, 149x ff, making 150x ff in total)
+Back up 5b01(w) to b72c; set 5b01-5b95 (150 bytes) to ff
 
 This is clearly some kind of (re-)initialisation
 
@@ -227,11 +221,11 @@ a=b788
 
 b7a7(0187)     cd3fb8 CALL &b83f
 
-Stuffs 5d3a, among other things
+Store (c912 + 2A) (word) in 5d3a.
 
 b7aa(018a)     cd52b8 CALL &b852
 
-Sets HL...
+Find box for 5d3a-5d3b
 
 b7ad(018d)     327bb8 LD (&b87b),A
 
@@ -242,9 +236,12 @@ b7b0(0190)     3a89b7 LD A,(&b789)
 Load A from b789
 
 b7b3(0193)     cd3fb8 CALL &b83f
+
+Store (c912 + 2A) (word) in 5d3a
+
 b7b6(0196)     cd52b8 CALL &b852
 
-Deja vu?
+Find box for 5d3a-5d3b
 
 b7b9(0199)     327cb8 LD (&b87c),A
 
@@ -409,7 +406,8 @@ b83d(021d)       18c1 JR b:-61
 
 ...and goes back
 
-(call!):
+Store (c912 + 2A) (word) in 5d3a
+--------------------------------
 
 b83f(021f)         3d DEC A
 b840(0220)         6f LD L,A
@@ -417,25 +415,19 @@ b841(0221)       2600 LD H,&00
 b843(0223)         29 ADD HL,HL
 b844(0224)     1114c9 LD DE,&c914
 b847(0227)         19 ADD HL,DE
-
-hl=c914 + 2A - 2
-
 b848(0228)         5e LD E,(HL)
 b849(0229)         23 INC HL
 b84a(022a)         56 LD D,(HL)
-
-de=(hl)
-
 b84b(022b)   ed533a5d LD   (&5d3a),DE
-
-5d3a=(hl)
-
 b84f(022f)         c9 RET
 
-hl=c914 + 2*A - 2
-de=(hl)
-5d3a=(hl)
+hl=c912 + 2A
+5d3a=de=(hl=c912 + 2A)
 
+Note: the practical starting point may be c914, ie calling with a=0 may be unintended.
+
+Find box for 5d3a-5d3b
+----------------------
 
 b852(0232)     218cc8 LD HL,&c88c
 b855(0235)     110500 LD DE,&0005
@@ -468,6 +460,9 @@ b87a(025a)         c9 RET
 This finds the first x [c88c + 5n] where (x) > (5d3a) >= (x+1) and (x+2) > (5d3b) >= (x+3), returning {a=(x+4), HL=x}; or the first x after c88c where (x) == ff, returning {a=00, hl=x}; IOW, if there's a match, its code is returned and HL is set to its beginning.
 
 Sets: A, HL, flags
+
+Unknown
+-------
 
 b87b(025b)            ; DATA
 b87c(025c)            ; DATA
@@ -1696,7 +1691,7 @@ a=5d26
 
 bfe0(09c0)     cd52b8 CALL &b852
 
-Not very clear.
+Find box for 5d3a-5d3b
 
 bfe3(09c3)     327bb8 LD (&b87b),A
 
@@ -1767,7 +1762,7 @@ Store that DE at 5d3a
 
 c021(0a01)     cd52b8 CALL &b852
 
-Unclear
+Find box for 5d3a-5d3b
 
 c024(0a04)         b7 OR A
 c025(0a05)       28ca JR Z,a:-52
@@ -2272,13 +2267,54 @@ ff
 
 ff is the end marker; these are pairs of upper and lower bounds, such that if value1 is between the first two and value2 is between the second two, it's successful (returning the fifth datum and setting to the start). With those ranges going from 8-39 (left) and 19-71 (right) they could be map boxes.
 
-c914(12f4)-?: Apparent memory addresses, more than 1 but not clear how many.
+c912(12f2)-c971(134f)?: Probable memory addresses, more than 1 but not clear how many. First entry (19 ff) is garbage so it may be that offset 0 is never used (making it really c914/12f4). It looks like there are 47+ running from 1b0d to 3d14. Minimum distance between entries is 1.
 
-0d 1b 14 1b ...
-
-0x12f8-0x1351?: Number pairs, 45 or more of them, 0c-24 (12-36) with 1c-3d
-(28-53). Strongly ordered by the second value followed by the first (ie, same as
-ordered 16-bit little endian).
+1b0d
+1b14
+1c19
+1d10
+1d11
+1d24
+1f16
+200c
+210f
+2113
+2119
+211a
+2120
+2121
+2418
+2519
+251f
+2611
+2710
+2712
+2814
+2820
+2917
+2a1a
+2a1e
+2b13
+2c1f
+2c21
+2d14
+2e23
+2f15
+2f17
+3113
+3315
+331a
+3511
+3610
+3518
+3811
+3816
+381a
+3a0d
+3b1d
+3c13
+3d12
+3d14
 
 0x1484-0x1987: Fixed tile attributes (107x)
 
