@@ -194,10 +194,10 @@ Unknown
 -------
 
 b787(0167)            ; DATA
-b788(0168)            ; DATA - byte, IN
-b789(0169)            ; DATA
+b788(0168)            ; DATA - byte, IN - map coordinate offset?
+b789(0169)            ; DATA - byte, IN - map coordinate offset?
 b78a(016a)            ; DATA
-b78b(016b)            ; DATA - byte, LOCAL
+b78b(016b)            ; DATA - byte, OUT
 b78c(016c)       3e00 LD A,&00
 b78e(016e)     328bb7 LD (&b78b),A
 
@@ -216,36 +216,18 @@ Back up 5b01(w) to b72c; set 5b01-5b95 (150 bytes) to ff
 This is clearly some kind of (re-)initialisation
 
 b7a4(0184)     3a88b7 LD A,(&b788)
-
-a=b788
-
 b7a7(0187)     cd3fb8 CALL &b83f
-
-Store (c912 + 2A) (word) in 5d3a.
-
 b7aa(018a)     cd52b8 CALL &b852
-
-Find box for 5d3a-5d3b
-
 b7ad(018d)     327bb8 LD (&b87b),A
 
-Save A to b87b
+b87b=box for (c912 + 2*(b788))
 
 b7b0(0190)     3a89b7 LD A,(&b789)
-
-Load A from b789
-
 b7b3(0193)     cd3fb8 CALL &b83f
-
-Store (c912 + 2A) (word) in 5d3a
-
 b7b6(0196)     cd52b8 CALL &b852
-
-Find box for 5d3a-5d3b
-
 b7b9(0199)     327cb8 LD (&b87c),A
 
-Store in a different place.
+b87c=box for (c912 + 2*(b789))
 
 b7bc(019c)     217bb8 LD HL,&b87b
 b7bf(019f)         be CP (HL)
@@ -254,9 +236,7 @@ b7c2(01a2)       3e19 LD A,&19
 b7c4(01a4)       1803 JR b:5
 b7c6(01a6) a:  cd7db8 CALL &b87d
 
-Classic two-branch if().
-
-So, if b87b==b87c(a), a=0x19 (25); otherwise call b87d (which pseudo-randomises a)
+Classic two-branch if(): if box[1]==box[2], a=25; else a=box pair mapping.
 
 b7c9(01a9) b:  3287b7 LD (&b787),A
 
@@ -461,11 +441,11 @@ This finds the first x [c88c + 5n] where (x) > (5d3a) >= (x+1) and (x+2) > (5d3b
 
 Sets: A, HL, flags
 
-Unknown
--------
+Find box pair mapping
+---------------------
 
-b87b(025b)            ; DATA
-b87c(025c)            ; DATA
+b87b(025b)            ; DATA - Box ID?
+b87c(025c)            ; DATA - Box ID?
 b87d(025d)     3a7bb8 LD A,(&b87b)
 b880(0260)         4f LD C,A
 b881(0261)     217cb8 LD HL,&b87c
@@ -488,15 +468,7 @@ b89a(027a)         09 ADD HL,BC
 b89b(027b)         7e LD A,(HL)
 b89c(027c)         c9 RET
 
-c=a=(b87b); hl=b87c; b=(hl); return if a=b {a=0}
-
-Odd void at b88c-b88d.
-
-So here, HL=c978, de=0000; b--; c--; {hl+=de; de++} [a-1] times; hl+=c; a=(hl)
-
-This looks like a simple PRNG, there's really no explanation otherwise for the increasing jumps.
-
-BC, DE, HL are modified but the intent seems to be to modify A.
+Sets A to a value with B-1 mapping to {0, 1, 3, 6, 10, 15...} and C mapping to itself. This uniquely identifies each B-C pair with a single value, because C is always less than the next initial B value. 0 if they are the same.
 
 b89d(027d)            ; DATA
 b89e(027e)            ; DATA
@@ -2269,6 +2241,8 @@ ff is the end marker; these are pairs of upper and lower bounds, such that if va
 
 c912(12f2)-c971(134f)?: Probable memory addresses, more than 1 but not clear how many. First entry (19 ff) is garbage so it may be that offset 0 is never used (making it really c914/12f4). It looks like there are 47+ running from 1b0d to 3d14. Minimum distance between entries is 1.
 
+These may well be map coordinates, as they are considered for the boxes above
+
 1b0d
 1b14
 1c19
@@ -2316,7 +2290,9 @@ c912(12f2)-c971(134f)?: Probable memory addresses, more than 1 but not clear how
 3d12
 3d14
 
-0x1484-0x1987: Fixed tile attributes (107x)
+0xc978(0x1358)-?: box ID pair mappings
+
+0xcaa4(0x1484)-0xcfa7(0x1987): Fixed tile attributes (107x)
 
 04 04 04 ff 00 00 00 00 00 00 00 00
 04 04 04 64 00 00 00 00 00 00 00 00
