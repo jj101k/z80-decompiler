@@ -6,6 +6,8 @@ Information about the core program
 
 5b00-5b27: Up to 20 number pairs where the max second number may be meaningful. These *might* be 16-bit numbers which are ordered, but that's a bit unlikely. The first number is meaningful with 8c subtracted, so it *may* be masked with 8f, ie. it may be a single bit in the left four, and 2+2 bits in the right four. The alternative is that it may be masked to fc, making it 1+3+2+(..). It can definitely be used as a jump distance from b63a. These may be memory addresses.
 
+Also... up to 50 3-byte values where the first byte is some kind of identifier.
+
 5b7a                  ; DATA
 5b97                  ; DATA
 5b99                  ; DATA

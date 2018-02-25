@@ -86,11 +86,13 @@ b715(00f5)            ; DATA
 
 0x00fd-0x010c: 8x number pairs: c2 20, c3 40, c3 4c, c3 30, c5 a4, ca a8, cf 4c, d1 00
 
-b72c(010c)            ; DATA - memory offset
-b72e(010e)            ; DATA
-b72f(010f)            ; DATA - memory offset?
-b731(0111)            ; DATA
+Find b787 at or after offset A in entry b731 in the 8x lists
+------------------------------------------------------------
 
+b72c(010c)            ; DATA - memory offset IN
+b72e(010e)            ; DATA - OUT (original A - starting distance)
+b72f(010f)            ; DATA - memory offset LOCAL
+b731(0111)            ; DATA - IN entry number
 b732(0112)     322eb7 LD (&b72e),A
 b735(0115)         4f LD C,A
 b736(0116)     2140c7 LD HL,&c740
@@ -102,98 +104,91 @@ b740(0120)         5f LD E,A
 b741(0121)       1600 LD D,&00
 b743(0123)         19 ADD HL,DE
 b744(0124)       10f7 DJNZ a:-7
-
-So this advances hl by [hl] & 0x7f, [0xb731] times. In other words, jumping
-forward through length-tagged values starting at 0xc740.
-
-In other words, this sets hl to the start of the [0xb731]th entry.
-
 b746(0126)         23 INC HL
-
-That's the first meaningful byte in the entry.
-
 b747(0127)     222fb7 LD (&b72f),HL
-
-Saves the pointer.
-
 b74a(012a) c:      09 ADD HL,BC
 b74b(012b)         09 ADD HL,BC
-
-At this point b == 0, and c == a[original] so hl += 2*a[original].
-
 b74c(012c)         7e LD A,(HL)
 b74d(012d)       cb7f BIT 7,A
 b74f(012f)         c0 RET NZ
-
-Returns if [hl] bit 7 is nonzero. At this point you have the 2a'th byte of the
-[0xb731]th entry in a.
-
 b750(0130)         e5 PUSH HL
 b751(0131)     cd78b7 CALL &b778
 b754(0134)         e1 POP HL
 b755(0135)       200c JR NZ,b:14
-
-Skip the following hunk if nonzero is set from the call, ie if no entry was found.
-Since HL is immediately thrown away, this is solely used to detect "is found".
-
 b757(0137) d:  212eb7 LD HL,&b72e
 b75a(013a)         34 INC (HL)
 b75b(013b)         4e LD C,(HL)
 b75c(013c)       0600 LD B,&00
 b75e(013e)     2a2fb7 LD HL,(&b72f)
 b761(0141)       18e7 JR c:-23
-
-Winds back. This modifies the original "hl += 2*a[original]" to "hl +=
-2*(a[original]+1)". IOW, this is "try the next 16-bit value".
-
-Overall, this means that the first location where the value is not found is retained, or nothing is.
-
 b763(0143) b:  3231b7 LD (&b731),A
 b766(0146)         23 INC HL
 b767(0147)   fd2a2cb7 LD IY,(&b72c)
 b76b(014b)     fd7eff LD A,(IY+-1)
 b76e(014e)         86 ADD A,(HL)
 b76f(014f)     2187b7 LD HL,&b787
-
-Put a back in [0xb731]. HL still points to the target value, and A is unchanged.
-
-a=((b72c)-1)+(hl+1)
-
 b772(0152)         be CP (HL)
 b773(0153)       30e2 JR NC,d:-28
-
-if [0xb787] > [0xb72c+0xff]+[hl], wind back 30. c is true if a "borrow"
-happened, which is the negative counterpart of a "carry". cp operates like
-subtraction, which is addition of a 2s-complement negation of a value, which
-will be over 0xff if x + y >= 0. IOW, borrow is set if a >= [hl] here, so
-not-borrow means a < [hl]. In principle this doesn't trigger if [hl] is 0.
-
-This has the same effect as the zero flag from the call.
-
 b775(0155)         47 LD B,A
 b776(0156)         af XOR A
 b777(0157)         c9 RET
 
-Just return with a=0 and b=(? >= [0xb787]) *[0x167]
+So this finds entry (b731) in the 8x lists, starts at word A looking for words where the first byte is < (b787). If it's found, you get Z and the number in B; if it's not, you get NZ. This excludes any first bytes which are in 5b01. b72e is the distance last tested.
+
+There's an odd cross-jump in here which may suggest that the code was rushed or copied from elsewhere, broadly:
+
+```
+loop:
+    ...
+b:
+    if x goto c
+    next a
+    goto loop
+c:
+    ...
+    if y goto b
+d:
+    ...
+```
+
+This could easily have been:
+
+```
+loop:
+    ...
+b:
+    if !x goto c
+    ...
+    if !y goto d
+c:
+    next a
+    goto loop
+d:
+    ...
+```
+
+NOTE: b731 gets written to/read from willy-nilly elsewhere, but there's only one caller which definitely DOES set b731. It's likely that the semantics make it "make sense" to use b731 as scratch space for certain purposes.
+
+Is A in 5b01
+------------
 
 b778(0158)     21015b LD HL,&5b01
 b77b(015b)     110300 LD DE,&0003
 b77e(015e)       0632 LD B,&32
-b780(0160)         be CP (HL)
+b780(0160) a:      be CP (HL)
 b781(0161)         c8 RET Z
 b782(0162)         19 ADD HL,DE
-b783(0163)       10fb DJNZ -3
+b783(0163)       10fb DJNZ a:-3
 b785(0165)         a7 AND A
 b786(0166)         c9 RET
 
 Finds the first triple-byte from 0x5b01 where the first byte equals a; if it's not in the first 50, returns anyway.
 
-Modifies: hl, de, b
+Modifies: hl, de, b, a
 
-Effective return: hl, flags(Z if found).
+In: A
 
-Content at 0x5b01 isn't known.
-
+Effective return: flags(Z if found). If A==0, this will always return as if found
 
 Unknown
 -------
@@ -2237,6 +2232,8 @@ afterwards at 2x or 4x. ALL numbers appear an even number of times. Not
 continguous, as 0x0a, 0x0c, 0x0f and 0x10 do not appear. Highest is 0x11,
 meaning there are 17 values in the range 1-17 (possibly 18x if there is a hidden
 0 value).
+
+The odd (value 1) data appear to be memory offsets of some kind of identifying byte (from an indeterminate but static point).
 
 0x126c [0xc88c] -0x12f3: 28x 5-byte values ending in a typically-incrementing number
 
