@@ -217,7 +217,9 @@ b79c(017c)     11025b LD DE,&5b02
 b79f(017f)     019500 LD BC,&0095
 b7a2(0182)       edb0 LDIR
 
-Copies 149 bytes from 5b01 to 5b02 (ultimately, 149x ff)
+Copies 149 bytes from 5b01 to 5b02 (ultimately, 149x ff, making 150x ff in total)
+
+This is clearly some kind of (re-)initialisation
 
 b7a4(0184)     3a88b7 LD A,(&b788)
 
@@ -400,6 +402,8 @@ b83b(021b)       10f7 DJNZ e:-7
 (IY)=(HL); IY++; HL+=3
 
 So this copies 5b01, 5b04, 5b07, ... 5b1c to 5cf0, 5cf1, ... 5cf9
+
+IOW, this shadows the identifier bytes from the first 10 entries in 5b01 to 5cf0.
 
 b83d(021d)       18c1 JR b:-61
 
@@ -1622,7 +1626,7 @@ Simple copy, although who knows what HL and IX are.
 bea4(0884)   ed5bdbbd LD   DE,(&bddb)
 bea8(0888)   ed53245d LD   (&5d24),DE
 
-5d24 = bddb
+5d24 = bddb (inevitably, a previous version of 5b00)
 
 beac(088c)     cd1261 CALL &6112
 

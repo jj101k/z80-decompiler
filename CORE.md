@@ -4,9 +4,13 @@ Information about the core program
 0101                  ; DATA
 5aff                  ; DATA
 
-5b00-5b27: Up to 20 number pairs where the max second number may be meaningful. These *might* be 16-bit numbers which are ordered, but that's a bit unlikely. The first number is meaningful with 8c subtracted, so it *may* be masked with 8f, ie. it may be a single bit in the left four, and 2+2 bits in the right four. The alternative is that it may be masked to fc, making it 1+3+2+(..). It can definitely be used as a jump distance from b63a. These may be memory addresses.
+5b00-5b95: Up to 20 words where the max second byte may be meaningful. These *might* be 16-bit numbers which are ordered, but that's a bit unlikely. The first number is meaningful with 8c subtracted, so it *may* be masked with 8f, ie. it may be a single bit in the left four, and 2+2 bits in the right four. The alternative is that it may be masked to fc, making it 1+3+2+(..). It can definitely be used as a jump distance from b63a. These may be memory addresses.
 
-Also... up to 50 3-byte values where the first byte is some kind of identifier.
+0 is a valid value for 5b00.
+
+Also (at 5b01)... 50 3-byte values where the first byte is some kind of identifier. This is initialised with all "ff".
+
+It's likely that this is convenient multipurpose memory.
 
 5b7a                  ; DATA
 5b97                  ; DATA
@@ -17,6 +21,8 @@ Also... up to 50 3-byte values where the first byte is some kind of identifier.
 5c50                  ; DATA
 
 5c51-?: quad-byte values. The first 2 bytes are a 16-bit number which may be a memory base.
+
+5cf0-5cf9: A set of single-byte identifiers from 5b01
 
 5cfe                  ; DATA
 5cff                  ; DATA
@@ -31,7 +37,7 @@ Also... up to 50 3-byte values where the first byte is some kind of identifier.
 
 5d37: single byte
 
-5d3a-5d3b: possible memory address
+5d3a-5d3b: possible memory address, may be identical to 5b00-5b01
 
 5d3e                  ; DATA
 
@@ -51,7 +57,7 @@ Also... up to 50 3-byte values where the first byte is some kind of identifier.
 5dd8: possible memory address
 5df8: single byte
 
-5dfb-5dfc: Memory address (possibly 5c0a)
+5dfb-5dfc: Memory address (possibly 5c0a or 5b00)
 
 5dfd                  ; DATA
 60af                  ; FUNCTION
@@ -96,7 +102,7 @@ a54d-a54e: Possible memory address
 
 a550: Function that *might* set a
 
-a578                  ; DATA
+a578-a579: Memory address, may be 5b00
 a57a                  ; FUNCTION
 a5ca                  ; DATA
 
