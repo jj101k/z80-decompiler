@@ -133,7 +133,7 @@ b775(0155)         47 LD B,A
 b776(0156)         af XOR A
 b777(0157)         c9 RET
 
-So this finds entry (b731) in the 8x lists, starts at word A looking for words where the first byte is < (b787). If it's found, you get Z and the number in B; if it's not, you get NZ. This excludes any first bytes which are in 5b01. b72e is the distance last tested.
+So this finds entry (b731) in the 8x lists, starts at word A looking for words where the first byte is < (b787). If it's found, you get Z and the number in B; if it's not, you get NZ. This excludes any first bytes which are in 5b01<3>. b72e is the distance last tested.
 
 There's an odd cross-jump in here which may suggest that the code was rushed or copied from elsewhere, broadly:
 
@@ -169,8 +169,8 @@ d:
 
 NOTE: b731 gets written to/read from willy-nilly elsewhere, but there's only one caller which definitely DOES set b731. It's likely that the semantics make it "make sense" to use b731 as scratch space for certain purposes.
 
-Is A in 5b01
-------------
+Is A in 5b01<3>
+---------------
 
 b778(0158)     21015b LD HL,&5b01
 b77b(015b)     110300 LD DE,&0003
@@ -188,7 +188,7 @@ Modifies: hl, de, b, a
 
 In: A
 
-Effective return: flags(Z if found). If A==0, this will always return as if found
+Effective return: flags(Z if found).
 
 Unknown
 -------
@@ -196,13 +196,10 @@ Unknown
 b787(0167)            ; DATA
 b788(0168)            ; DATA - byte, IN - map coordinate offset?
 b789(0169)            ; DATA - byte, IN - map coordinate offset?
-b78a(016a)            ; DATA
+b78a(016a)            ; DATA - byte, LOCAL - step counter
 b78b(016b)            ; DATA - byte, OUT
 b78c(016c)       3e00 LD A,&00
 b78e(016e)     328bb7 LD (&b78b),A
-
-b78b=0
-
 b791(0171)     21015b LD HL,&5b01
 b794(0174)     222cb7 LD (&b72c),HL
 b797(0177)     21015b LD HL,&5b01
@@ -211,9 +208,13 @@ b79c(017c)     11025b LD DE,&5b02
 b79f(017f)     019500 LD BC,&0095
 b7a2(0182)       edb0 LDIR
 
-Back up 5b01(w) to b72c; set 5b01-5b95 (150 bytes) to ff
+b78b=0
 
-This is clearly some kind of (re-)initialisation
+(b72c)=5b01
+
+Set 5b01-5b95 (150 bytes) to ff
+
+This is clearly some kind of (re-)initialisation.
 
 b7a4(0184)     3a88b7 LD A,(&b788)
 b7a7(0187)     cd3fb8 CALL &b83f
@@ -235,119 +236,99 @@ b7c0(01a0)       2004 JR NZ,a:6
 b7c2(01a2)       3e19 LD A,&19
 b7c4(01a4)       1803 JR b:5
 b7c6(01a6) a:  cd7db8 CALL &b87d
-
-Classic two-branch if(): if box[1]==box[2], a=25; else a=box pair mapping.
-
 b7c9(01a9) b:  3287b7 LD (&b787),A
 
-Store A
+If box[1]==box[2], b787=25; else b787=box pair mapping.
+
+25 (0x19) is a value which is in the box pair map, so it's likely that this is a "sane default".
 
 b7cc(01ac)         af XOR A
-
-Wipe
-
 b7cd(01ad)     32005b LD (&5b00),A
 b7d0(01b0)     328ab7 LD (&b78a),A
-
-Wipe 5b00 and b78a
-
 b7d3(01b3)     3a88b7 LD A,(&b788)
-
-a=b788 again
-
 b7d6(01b6)     3231b7 LD (&b731),A
 
-Store A
+5b00=0; b78a=0; b731=b788
 
 b7d9(01b9)  d: 3a31b7 LD A,(&b731)
-
-?
-
 b7dc(01bc)     2a2cb7 LD HL,(&b72c)
-
-Load HL from b72c
-
 b7df(01bf)         77 LD (HL),A
 
-Put A there
+((b72c))=(b731)
 
 b7e0(01c0)     3a89b7 LD A,(&b789)
-
-Fetch b789
-
 b7e3(01c3)         be CP (HL)
 b7e4(01c4)       2838 JR Z,a:58
+
+Jump if (b731)==(b789)
+
 b7e6(01c6)         23 INC HL
 b7e7(01c7)         34 INC (HL)
 
-HL++; *HL++
-
-No clue why
+((b72c+1))++
 
 b7e8(01c8)         7e LD A,(HL)
 b7e9(01c9)         e5 PUSH HL
 b7ea(01ca)     cd32b7 CALL &b732
 b7ed(01cd)         e1 POP HL
 
-This doesn't seem to set A, HL is dropped, maybe sets B?
+Find b787 at or after offset ((b72c+1)) in entry b731 in the 8x lists
 
 b7ee(01ce)       2010 JR NZ,b:18
 
-So flags are retained.
+Jump if not found
 
 b7f0(01d0)     3a2eb7 LD A,(&b72e)
 b7f3(01d3)         77 LD (HL),A
-
-That's a copy b72e -> hl
-
 b7f4(01d4)         23 INC HL
 b7f5(01d5)         70 LD (HL),B
-
-B is stored in the next byte
-
 b7f6(01d6)         23 INC HL
 b7f7(01d7)     222cb7 LD (&b72c),HL
-
-Store HL
-
 b7fa(01da)     218ab7 LD HL,&b78a
 b7fd(01dd)         34 INC (HL)
-
-b78a++
-
 b7fe(01de)       18d9 JR d:-37
+
+((b72c+1))=(b72e)
+((b72c+2))=B
+(b72c)+=3
+b78a++
+Jump back (loop)
+
+So in this scenario, (5b01) is a triple-byte of {iterations-until-found, distance, result} all applicable to the 8x list.
+
 b800(01e0) b:  3a8ab7 LD A,(&b78a)
 b803(01e3)         b7 OR A
 b804(01e4)         c8 RET Z
 
-So, if b78a==0, return
+So, if b78a==0, return. Since it's +1 when stepping forward and -1 when stepping back, this is the length of the list at (5b01); it's possible that the b732(NZ) case naturally follows from a list entry, ie it may be producing a list which is then consumed.
+
+Most likely NZ *only* happens when the route is fully built, so it goes [] -> [a] -> [a, b] -> [a, b, c] -> [a, b, c, ff<?>] -> [a, b, ff<c>, ff<?>] -> [a, ff<b>, ff<c>, ff<?>] -> [ff<a>, ff<b>, ff<c>, ff<?>] -> return.
 
 b805(01e5)     2a2cb7 LD HL,(&b72c)
 b808(01e8)         23 INC HL
 b809(01e9)       36ff LD (HL),&ff
 b80b(01eb)         2b DEC HL
 b80c(01ec)       36ff LD (HL),&ff
-
-A bit odd, but store ffff at (b72c)
-
 b80e(01ee)         2b DEC HL
 b80f(01ef)         2b DEC HL
 b810(01f0)         2b DEC HL
 b811(01f1)     222cb7 LD (&b72c),HL
-
--3 and store.
-
 b814(01f4)         7e LD A,(HL)
 b815(01f5)     3231b7 LD (&b731),A
-
-And copy to b731
-
 b818(01f8)     218ab7 LD HL,&b78a
 b81b(01fb)         35 DEC (HL)
+b81c(01fc)       18bb JR d:-67
 
+((b72c+1))=ff
+((b72c+0))=ff
+
+NOTE: The last datum here is deliberately retained
+
+b72c-=3
+(b731)=(b72c)
 b78a--
 
-b81c(01fc)       18bb JR d:-67
+Jump back (loop). In essence, this rewinds a step or two, depending on your perspective. In short, the *previous* step doesn't produce a valid result, so try another. This is a lot like right-hand/left-hand-search and is clearly a depth-first search of some kind. With memory being quite restricted, breadth-first isn't particularly viable.
 
 b81e(01fe)         2b DEC HL
 b81f(01ff)         7e LD A,(HL)
@@ -355,36 +336,32 @@ b81f(01ff)         7e LD A,(HL)
 Void?
 
 b820(0200) a:  3287b7 LD (&b787),A
-
-Store A (b787)
-
 b823(0203)       3e01 LD A,&01
 b825(0205)     328bb7 LD (&b78b),A
 
-b78b=1
+(b787)=(b789/b731)
+(b78b)=1
 
 b828(0208)       060a LD B,&0a
 b82a(020a)     21015b LD HL,&5b01
 b82d(020d)   fd21f05c LD IY,&5cf0
 b831(0211)     110300 LD DE,&0003
-
-So b=10, hl=5b01, iy=5cf0, de=3
-
 b834(0214)  e:     7e LD A,(HL)
 b835(0215)     fd7700 LD (IY+0),A
 b838(0218)       fd23 INC IY
 b83a(021a)         19 ADD HL,DE
 b83b(021b)       10f7 DJNZ e:-7
 
-(IY)=(HL); IY++; HL+=3
-
-So this copies 5b01, 5b04, 5b07, ... 5b1c to 5cf0, 5cf1, ... 5cf9
+This copies 5b01, 5b04, 5b07, ... 5b1c to 5cf0, 5cf1, ... 5cf9
 
 IOW, this shadows the identifier bytes from the first 10 entries in 5b01 to 5cf0.
 
 b83d(021d)       18c1 JR b:-61
 
-...and goes back
+...and goes back to the optional return clause.
+
+So this fundamentally writes to memory starting at (b72c) with three-byte data.
+
 
 Store (c912 + 2A) (word) in 5d3a
 --------------------------------
@@ -641,7 +618,7 @@ Another kind-of-long jump
 
 b942(0322) x4: cdd6bf CALL &bfd6
 
-Not completely clear, but it apparently writes back to bfd4/bfd5 a max-val from 5b00. bfd5 is the actual max so probably the least interesting value.
+Not completely clear, but it apparently writes back to bfd4/bfd5 a max-val from 5b00<2>. bfd5 is the actual max so probably the least interesting value.
 
 b945(0325)     3ad4bf LD A,(&bfd4)
 b948(0328)         b7 OR A
@@ -863,7 +840,7 @@ a5da=de
 ba0f(03ef)     2a245d LD HL,(&5d24)
 ba12(03f2)     22dca5 LD (&a5dc),HL
 
-a5dc=5d24
+(a5dc) = (5d24) [word]
 
 ba15(03f5)     cde0a5 CALL &a5e0
 
@@ -875,7 +852,7 @@ ba1c(03fc)         23 INC HL
 ba1d(03fd)         56 LD D,(HL)
 ba1e(03fe)   ed533a5d LD   (&5d3a),DE
 
-(5d3a)=(5b00)
+(5d3a) = (5b00) [word]
 
 ba22(0402)     cda6bc CALL &bca6
 
@@ -1075,115 +1052,93 @@ Unknown
 
 In: ix, 5d3a, ix+33
 
-bca3(0683)            ; DATA
-bca4(0684)            ; DATA
-bca5(0685)            ; DATA
+bca3(0683)            ; DATA - byte, LOCAL; data from IX+33; finite field in the range 0-7.
+bca4(0684)            ; DATA - byte, LOCAL; second loop counter?
+bca5(0685)            ; DATA - byte, LOCAL; loop counter?
 bca6(0686)     2a3a5d LD HL,(&5d3a)
 bca9(0689)     22dca5 LD (&a5dc),HL
-
-(a5dc)=(5d3a)
-
 bcac(068c)     dd7e21 LD A,(IX+33)
 bcaf(068f)     32a3bc LD (&bca3),A
-
-bca3=ix+33
-
 bcb2(0692)         af XOR A
 bcb3(0693)     32a5bc LD (&bca5),A
 
-bca5=0
+(a5dc) = (5d3a) [word]
+(bca3) = (ix+33)
+(bca5) = 0
 
 bcb6(0696) b:  3aa3bc LD A,(&bca3)
-
-a=bca3 (~ ix+33)
-
 bcb9(0699)     cd746e CALL &6e74
-
-Unknown
-
 bcbc(069c)     2adca5 LD HL,(&a5dc)
 bcbf(069f)   ed5b3a5d LD   DE,(&5d3a)
 bcc3(06a3)         a7 AND A
 bcc4(06a4)       ed52 SBC  HL,DE
 bcc6(06a6)       2815 JR Z,a:23
 
-Jump if HL == DE (a5dc == 5d3a)
+a=(bca3) [aka (ix+33) + 0-7]
+Unknown call;
+
+Jump if HL == DE (a5dc == 5d3a). Since these were both set to the same value, you can take it that one of them may have been modified.
+
+The strange thing here is "AND A", which only serves to reset the arithmetic flags, which apparently get set on the next instruction.
+
+The JR here is a `break`.
 
 bcc8(06a8)     21a5bc LD HL,&bca5
 bccb(06ab)         34 INC (HL)
-
-bca5++
-
 bccc(06ac)     3aa3bc LD A,(&bca3)
 bccf(06af)         3c INC A
 bcd0(06b0)     32a3bc LD (&bca3),A
-
-bca3++
-
 bcd3(06b3)       fe08 CP &08
-bcd5(06b5)       38df JR C,a:-31
-
-if bca3 < 8, jump back
-
+bcd5(06b5)       38df JR C,b:-31
 bcd7(06b7)         af XOR A
 bcd8(06b8)     32a3bc LD (&bca3),A
-
-bca3 = 0
-
 bcdb(06bb)       18d9 JR b:-37
+
+(bca5)++
+(bca3)++
+if (bca3) >= 8: (bca3) = 0
+Jump back
+
 bcdd(06bd)  a:     af XOR A
 bcde(06be)     32a4bc LD (&bca4),A
-
-bca4 = 0
-
 bce1(06c1)     dd7e21 LD A,(IX+33)
 bce4(06c4)     32a3bc LD (&bca3),A
 
+bca4 = 0
 bca3 = ix+33
 
 bce7(06c7) d:  3aa3bc LD A,(&bca3)
 bcea(06ca)     cd746e CALL &6e74
-
-Unknown
-
 bced(06cd)     2adca5 LD HL,(&a5dc)
 bcf0(06d0)   ed5b3a5d LD   DE,(&5d3a)
 bcf4(06d4)         a7 AND A
 bcf5(06d5)       ed52 SBC  HL,DE
-
-HL-=DE
-
 bcf7(06d7)       2816 JR Z,c:24
-
-If HL==DE, jump
-
 bcf9(06d9)     21a4bc LD HL,&bca4
 bcfc(06dc)         34 INC (HL)
-
-bca4++
-
 bcfd(06dd)     3aa3bc LD A,(&bca3)
 bd00(06e0)         3d DEC A
 bd01(06e1)     32a3bc LD (&bca3),A
-
-bca3--
-
 bd04(06e4)       feff CP &ff
 bd06(06e6)       20df JR NZ,d:-31
-
-if bca3 != ff, jump back
-
 bd08(06e8)       3e07 LD A,&07
 bd0a(06ea)     32a3bc LD (&bca3),A
-
-bca3=7
-
 bd0d(06ed)       18d8 JR d:-38
+
+Unknown call;
+
+If HL==DE, jump (`break`)
+
+(bca4)++
+(bca3)--
+if (bca3) == ff[-1]: (bca3) = 7
+Jump back!
+
 bd0f(06ef) c:  3aa5bc LD A,(&bca5)
 bd12(06f2)         b7 OR A
 bd13(06f3)       2826 JR Z,e:40
 
-Jump if bca5==0
+Jump if bca5==0 (equivalent to RET Z here)
 
 bd15(06f5)     21a4bc LD HL,&bca4
 bd18(06f8)         be CP (HL)
@@ -1549,14 +1504,14 @@ be72(0852)     cd7aa5 CALL &a57a
 
 be75(0855)     2a005b LD HL,(&5b00)
 be78(0858)     22dbbd LD (&bddb),HL
-
-bddb=5b00
-
 be7b(085b)     3a025b LD A,(&5b02)
 be7e(085e)         3c INC A
 be7f(085f)     32ddbd LD (&bddd),A
 
-bddd = 5b02+1
+(bddb) = (5b00) [word]
+(bddd) = (5b02)+1 [byte]
+
+This might just be an efficient way of copying 3 bytes?
 
 be82(0862)     2adca5 LD HL,(&a5dc)
 be85(0865)     22245d LD (&5d24),HL
@@ -1593,7 +1548,7 @@ Simple copy, although who knows what HL and IX are.
 bea4(0884)   ed5bdbbd LD   DE,(&bddb)
 bea8(0888)   ed53245d LD   (&5d24),DE
 
-5d24 = bddb (inevitably, a previous version of 5b00)
+(5d24) = (bddb) [word] (inevitably, a previous version of 5b00)
 
 beac(088c)     cd1261 CALL &6112
 
@@ -1854,20 +1809,13 @@ c0b6(0a96)     32265d LD (&5d26),A
 
 c0b9(0a99)   fd21005b LD IY,&5b00
 c0bd(0a9d)       0614 LD B,&14
-
-b=20
-
 c0bf(0a9f)         af XOR A
-
-a=0
-
 c0c0(0aa0)     32d4bf LD (&bfd4),A
 c0c3(0aa3)     32d5bf LD (&bfd5),A
-
-bfd4=bfd5=0
-
 c0c6(0aa6)     110200 LD DE,&0002
 
+b=20
+bfd4=bfd5=0
 de=2
 
 c0c9(0aa9) g:  fd7e01 LD A,(IY+1)
@@ -2127,7 +2075,7 @@ c266(0c46)            ; DATA
 
 c740(1120)            ; DATA
 
-Length-tagged values. Ends with a plain 0x80.
+Length-tagged values (the "8x lists"). Ends with a plain 0x80.
 
 81
 85 02 07 08 05
@@ -2181,6 +2129,8 @@ Length-tagged values. Ends with a plain 0x80.
 85 0c 03 0d 03
 87 0d 04 11 01 17 03
 80
+
+The left side of each pair is linked to the box pair mappings (where 25/0x19 is a default). The right side is...
 
 There are 52 of these (50 excluding top and bottom). All lengths are odd, which
 means these are probably 2-byte values. Cap(2n) is 0x32 (50), cap(2n+1) is 0x11
@@ -2290,7 +2240,58 @@ These may well be map coordinates, as they are considered for the boxes above
 3d12
 3d14
 
-0xc978(0x1358)-?: box ID pair mappings
+0xc978(0x1358)-~???(0x1483): box ID pair mappings. Numbers in the 0x05-0x38 range. Definitely a single byte. 49 distinct values in total, firmly clustered around the middle (range here is 52). These numbers are supposed to correspond to the data in the 8x lists. Since they are considered as scalar values, these may in fact be *distances* or some approximation thereof.
+
+   4 05
+   1 06
+   1 07
+   5 08
+   8 09
+   2 0a
+   6 0b
+   6 0c
+   4 0d
+   6 0e
+   3 0f
+   9 10
+   9 11
+   9 12
+   7 13
+   5 14
+   7 15
+   7 16
+  12 17
+   6 18
+   8 19
+  10 1a
+   8 1b
+  11 1c
+  10 1d
+  11 1e
+  14 1f
+  15 20
+   3 21
+  10 22
+   4 23
+   7 24
+   8 25
+   6 26
+   6 27
+   7 28
+   8 29
+   5 2a
+   5 2b
+   5 2c
+   5 2d
+   5 2e
+   3 2f
+   1 30
+   3 31
+   1 32
+   1 33
+   2 35
+   1 38
+
 
 0xcaa4(0x1484)-0xcfa7(0x1987): Fixed tile attributes (107x)
 

@@ -79,9 +79,9 @@ It's likely that this is convenient multipurpose memory.
 
 6daf: function, touches B or C, related to 6dde
 
-6dde: function, touches B or C
+6dde: function, touches B or C; may set up memory or other registers.
 
-6e74: Function, may use A, may touch a5dc or 5d3a
+6e74: Function, reads A; may read 5d3a and a5dc; modifies 5d3a, a5dc and A (zero or nonzero value).
 
 7091: possible memory address
 7093: possible memory address
