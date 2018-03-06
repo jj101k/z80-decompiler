@@ -7,10 +7,10 @@ from tape
 
 Information voids:
 
-0x0000-0x002c: header with possible offsets
+0x0019
 0x0035-0x003c: low number sequence
 0x00c4-0x00d7: repeated numbers, likely coarse soldier properties
-0x00de-0x0111
+0x00de-0x010b
 0x0bfd-0x0cff
 0x1120-0x1483 ~0.5KB
 0x1988-0x1997 16B
@@ -21,9 +21,9 @@ Equipment entities start at 6e in the entity list
 32 64 bd / 3a 64 bd appears multiple times
 cd 6a 72 appears multiple times
 
-0x00~0x1b (header):
+0x00: Single byte: 64
 
-64
+0x01-0x18: Trampolines
 
 b621(0001)     c39fb8 JP x6:&b89f
 b624(0004)     c3cabe JP x7:&beca
@@ -33,6 +33,8 @@ b62d(000d)         c9 RET
 b630(0010)         c9 RET
 b633(0013)         c9 RET
 b636(0016)         c9 RET
+
+b639(0019): ?
 
 b63a(001a): Up to 115 bytes of data - thus ending b6ae(008e). In practice this may end significantly sooner, since the only known criteria are that offsets are n-8c and ff is not considered valid.
 
