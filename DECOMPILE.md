@@ -130,7 +130,7 @@ To find: Movement type (different between humans and droids...); Wounds (possibl
 7f: Dead unit sprite
 00: ? Tends to be in the 0/1 range
 31: ?
-2f: ?
+2f: ? Overwatch cost in AP?
 23: Constitution
 23: Constitution
 a7: Stamina
@@ -142,7 +142,7 @@ b2: Morale
 10: ? Usually 10 (16) - base armour left?
 0c: ? Usually 0c (12) - base armour back?
 10: ? Usually 10 (16) - base armour right?
-02: ? Usually 02 (2)
+02: ? Usually 02 (2) - AP cost?
 32: Weapon skill
 08: Close Combat
 
@@ -151,7 +151,7 @@ b2: Morale
 00: ?
 00: ?
 06: ? May be aligned to side or type
-09: ?
+09: ? - AP cost?
 02: ?
 3a: Action points
 ff: ?

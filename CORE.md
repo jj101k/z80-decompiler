@@ -1,9 +1,12 @@
-Information about the core program
-----------------------------------
+ROM
+---
 
 0101                  ; DATA
 
 1b0d-3d14: Possible data of various possible sizes, min 0.
+
+Information about the core program
+----------------------------------
 
 5aff                  ; DATA
 
@@ -21,7 +24,7 @@ It's likely that this is convenient multipurpose memory.
 5b97                  ; DATA
 5b99                  ; DATA
 
-5c0a - single bytes, unknown number but apparently more than 1.
+5c0a-5c3c - single bytes, 50x, ff is valid
 
 5c50                  ; DATA
 
@@ -72,16 +75,22 @@ It's likely that this is convenient multipurpose memory.
 6785                  ; FUNCTION
 67c2                  ; FUNCTION
 67df                  ; FUNCTION
-67f7                  ; FUNCTION
+67f7: Function, apparently uses A
 6a8b                  ; FUNCTION
 6b4a                  ; FUNCTION
 6c2a                  ; FUNCTION
+
+6c72: function, may use A
 
 6daf: function, touches B or C, related to 6dde
 
 6dde: function, touches B or C; may set up memory or other registers.
 
 6e74: Function, reads A; may read 5d3a and a5dc; modifies 5d3a, a5dc and A (zero or nonzero value).
+
+6ebf: Function
+
+7042: function? This is a direct jump target, but only where the next instruction is RET.
 
 7091: possible memory address
 7093: possible memory address
@@ -93,19 +102,25 @@ It's likely that this is convenient multipurpose memory.
 
 726a: Function that may use HL; may store 5b97, may read 5d24. Looks like this is a memory setter of some kind.
 
+7326: function, may set A
+
 74c1                  ; FUNCTION
 785d                  ; FUNCTION
 78ab                  ; FUNCTION
+
+7f0b: Function, may write to 5d37
+
 80b1                  ; FUNCTION
 830b                  ; FUNCTION
 99cf                  ; FUNCTION
+9a16: function - sets Z?
 9d01                  ; FUNCTION
 
 a54b-a54c: Possible memory address
 
 a54d-a54e: Possible memory address
 
-a550: Function that *might* set a
+a550: Function that *might* set A, almost certainly reads a54d
 
 a578-a579: Memory address, may be 5b00
 a57a                  ; FUNCTION
