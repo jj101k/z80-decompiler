@@ -1,0 +1,10 @@
+#!/usr/bin/perl -w
+while(<>) {
+    chomp(my $in = $_);
+    foreach my $i (split(/ +/, $in)) {
+        my $s = unpack("B*", pack("H*", $i));
+        $s=~s/0/  /g;
+        $s=~s/1/B8/g;
+        print "{$s}\n"
+    }
+}
