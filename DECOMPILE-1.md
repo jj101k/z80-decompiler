@@ -36,7 +36,7 @@ b636(0016)         c9 RET
 
 b639(0019): ?
 
-b63a(001a): Up to 115 bytes of data - thus ending b6ae(008e). In practice this may end significantly sooner, since the only known criteria are that offsets are n-8c and ff is not considered valid.
+b63a(001a): Up to 115 bytes of data - thus ending by b6ae(008e). In practice this may end significantly sooner, since the only known criteria are that offsets are n-8c and ff is not considered valid. This relates to 5b00, 5b99, 5d26 all of which may contain "8c offsets". Since those offsets aren't static, it's likely that they are related in common cases.
 
 0x002e-0x0038: Short sequence a5 a6 a7 a8 ff 98 97 01 02 03 04. Possibly an entity order hint.
 
@@ -78,7 +78,7 @@ ff = weapon
 
 (nulls)
 
-b713(00f3)            ; DATA
+b713(00f3)            ; DATA - byte from 8c set
 b714(00f4)            ; DATA
 b715(00f5)            ; DATA
 
@@ -602,12 +602,9 @@ b92e(030e)     c24dba JP NZ,x1:&ba4d
 Long jump! Only if 5d37==0
 
 b931(0311)     cd5cba CALL &ba5c
-
-Not clear, but it may set a and flags
-
 b934(0314)     c2ffb9 JP NZ,x2:&b9ff
 
-Long-ish jump
+If there's an entry in 5b99 for which 8x<x> is nonzero: Long-ish jump (b713 set)
 
 b937(0317)   fd2a86ba LD IY,(&ba86)
 b93b(031b)   fdcb085e rrc (iy+94)->b
@@ -754,12 +751,9 @@ b9c4(03a4)     c24dba JP NZ,x1:&ba4d
 If 5d37!=0, jump
 
 b9c7(03a7)     cd5cba CALL &ba5c
-
-Unknown
-
 b9ca(03aa)       2033 JR NZ,x2:53
 
-If nonzero, jump
+If there's an entry in 5b99 for which 8x<x> is nonzero: jump (b713 set)
 
 b9cc(03ac)     c342b9 JP x4:&b942
 
@@ -808,12 +802,9 @@ b9f1(03d1) a:  cd88ba CALL &ba88
 Unknown
 
 b9f4(03d4)     cd5cba CALL &ba5c
-
-Unknown
-
 b9f7(03d7)       2006 JR NZ,x2:8
 
-Jump if nonzero
+If there's an entry in 5b99 for which 8x<x> is nonzero: jump (b713 set)
 
 b9f9(03d9)     3a625d LD A,(&5d62)
 b9fc(03dc)         b7 OR A
@@ -913,67 +904,47 @@ ba58(0438)     32365d LD (&5d36),A
 
 ba5b(043b)         c9 RET
 
-Unknown
--------
+Find the first entry in 5b99 for which 8c<x> is nonzero -> b713
+---------------------------------------------------------------
 
 ba5c(043c)     21995b LD HL,&5b99
 ba5f(043f)  b:     7e LD A,(HL)
-
-a=(5b99)
-
 ba60(0440)       feff CP &ff
 ba62(0442)         c8 RET Z
-
-Return if a==ff
-
 ba63(0443)         e5 PUSH HL
 ba64(0444)         f5 PUSH AF
 ba65(0445)       d68c SUB A,&8c
 ba67(0447)         5f LD E,A
 ba68(0448)       1600 LD D,&00
-
-de=a-8c
-
 ba6a(044a)     213ab6 LD HL,&b63a
 ba6d(044d)         19 ADD HL,DE
 ba6e(044e)         7e LD A,(HL)
-
-a=b63a+de
-
 ba6f(044f)         b7 OR A
 ba70(0450)       200b JR NZ,a:13
-
-if(a!=0), jump
-
 ba72(0452)         f1 POP AF
 ba73(0453)         e1 POP HL
 ba74(0454)         23 INC HL
-
-HL++
-
 ba75(0455)         7e LD A,(HL)
 ba76(0456)       feff CP &ff
 ba78(0458)         c8 RET Z
-
-Return if (hl) is ff
-
 ba79(0459)         23 INC HL
 ba7a(045a)         23 INC HL
-
-This advances HL by 3 in total
-
 ba7b(045b)       18e2 JR b:-28
 ba7d(045d) a:      f1 POP AF
 ba7e(045e)         e1 POP HL
 ba7f(045f)     3213b7 LD (&b713),A
-
-Store in b713
-
 ba82(0462)       3e01 LD A,&01
 ba84(0464)         b7 OR A
 ba85(0465)         c9 RET
 
-a=1; flags=nz...
+Loop:
+
+if (5b99+3n)==ff: return(Z)
+if (b63a+(5b99+3n)-8c) != 0: b713=(b63a+(5b99+3n)-8c); return(NZ)
+else if (5b99+3n+1) == ff: return(Z)
+else `continue`
+
+So this terminates at ff---- or --ff--. Only the first two bytes are considered at all - and the first needs to be an offset mapping to a nonzero value.
 
 Unknown
 -------

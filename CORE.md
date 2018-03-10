@@ -10,7 +10,7 @@ Information about the core program
 
 5aff                  ; DATA
 
-5b00-5b95: Up to 20 words where the max second byte may be meaningful. These *might* be 16-bit numbers which are ordered, but that's a bit unlikely. The first number is meaningful with 8c subtracted, so it *may* be masked with 8f, ie. it may be a single bit in the left four, and 2+2 bits in the right four. The alternative is that it may be masked to fc, making it 1+3+2+(..). It can definitely be used as a jump distance from b63a. These may be memory addresses.
+5b00-5b95: Up to 20 words where the max second byte may be meaningful. These *might* be 16-bit numbers which are ordered, but that's a bit unlikely. The first number is meaningful with 8c subtracted, so it *may* be masked with 8f, ie. it may be a single bit in the left four, and 2+2 bits in the right four. The alternative is that it may be masked to fc, making it 1+3+2+(..). It can definitely be used as a jump distance from b63a.
 
 0 is a valid value for 5b00.
 
@@ -22,7 +22,8 @@ It's likely that this is convenient multipurpose memory.
 
 5b7a                  ; DATA
 5b97                  ; DATA
-5b99                  ; DATA
+
+5b99-?: triple-byte values where the first is an 8c offset or ff; and the second may be ff.
 
 5c0a-5c3c - single bytes, 50x, ff is valid
 
