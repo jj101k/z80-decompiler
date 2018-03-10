@@ -949,37 +949,27 @@ So this terminates at ff---- or --ff--. Only the first two bytes are considered 
 Unknown
 -------
 
-ba86(0466)            ; DATA
+ba86(0466)            ; DATA - IN, memory address
 ba88(0468)  b:     af XOR A
 ba89(0469)     32d4bf LD (&bfd4),A
-
-bfd4=0
-
 ba8c(046c)     2a86ba LD HL,(&ba86)
 ba8f(046f)         5e LD E,(HL)
 ba90(0470)       1600 LD D,&00
 ba92(0472)         19 ADD HL,DE
-
-hl=(ba86)+((ba86)) - ie, ba86 contains a pointer p, and the memory at p says how much further forward to go.
-
 ba93(0473)         7e LD A,(HL)
 ba94(0474)     32afba LD (&baaf),A
-
-baaf=(hl)
-
 ba97(0477)         b7 OR A
 ba98(0478)       2007 JR NZ,a:9
-
-if a!=0, jump
-
 ba9a(047a)     2a86ba LD HL,(&ba86)
 ba9d(047d)       3601 LD (HL),&01
-
-Reset ((ba86)) to 1
-
 ba9f(047f)       18e7 JR b:-23
 
-...and wind back. ie, if target+x is 0, set x=1 and try again.
+bfd4=0
+
+baaf=((ba86)+((ba86)))
+
+if ((ba86)+((ba86)))!=0: `break`
+else: ((ba86))=1; `continue`
 
 baa1(0481) a:  cdb1ba CALL &bab1
 
@@ -989,13 +979,13 @@ baa4(0484)     3ab0ba LD A,(&bab0)
 baa7(0487)         b7 OR A
 baa8(0488)         c8 RET Z
 
-Return if bab0==0 (with a set to bab0)
+Return if bab0==0 (with A set to bab0)
 
 baa9(0489)     2a86ba LD HL,(&ba86)
 baac(048c)         34 INC (HL)
 baad(048d)       18d9 JR b:-37
 
-Add 1 to that number and try again.
+(ba86)++; `continue`
 
 Unknown
 -------
