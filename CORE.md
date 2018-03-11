@@ -130,6 +130,6 @@ a5ca                  ; DATA
 a5da-a5db: Possible memory address
 a5dc-a5dd: Possible memory address
 
-a5de                  ; DATA
+a5de: Memory address, may be a5dc
 
 a5e0: Function, no clear semantics but it seems to use a5de and a5dc

@@ -1603,249 +1603,152 @@ ix+8 is constitution (if on the unit list), which may mean the unit is dead.
 Unknown
 -------
 
-bddb(07bb)            ; DATA
-bddd(07bd)            ; DATA
+bddb(07bb)            ; DATA - LOCAL, word
+bddd(07bd)            ; DATA - LOCAL, byte
 bdde(07be)     cdd771 CALL &71d7
-
-?
-
 bde1(07c1)       3e01 LD A,&01
 bde3(07c3)     3214b7 LD (&b714),A
-
-b714=1
-
 bde6(07c6)       0608 LD B,&08
 bde8(07c8)     2a245d LD HL,(&5d24)
 bdeb(07cb)     22dca5 LD (&a5dc),HL
-
-a5dc=5d24
-
 bdee(07ce)     21caa5 LD HL,&a5ca
 bdf1(07d1)     22dea5 LD (&a5de),HL
-
-a5de=a5ca
-
 bdf4(07d4)     21005b LD HL,&5b00
 bdf7(07d7)     22fb5d LD (&5dfb),HL
-
-5dfb = literal 5b00
-
 bdfa(07da)  c:     c5 PUSH BC
 bdfb(07db)     2adca5 LD HL,(&a5dc)
 bdfe(07de)     22245d LD (&5d24),HL
-
-5d24=a5dc
-
 be01(07e1)     2adea5 LD HL,(&a5de)
 be04(07e4)     3a245d LD A,(&5d24)
 be07(07e7)         86 ADD A,(HL)
 be08(07e8)     323a5d LD (&5d3a),A
-
-5d3a=5d24+a5de
-
 be0b(07eb)         23 INC HL
-
-hl=a5de+1
-
 be0c(07ec)     3a255d LD A,(&5d25)
 be0f(07ef)         86 ADD A,(HL)
 be10(07f0)     323b5d LD (&5d3b),A
-
-5d3b = 5d25+a5de+1
-
 be13(07f3)         23 INC HL
 be14(07f4)     22dea5 LD (&a5de),HL
-
-a5de = a5de + 2
-
 be17(07f7)   ed5b3a5d LD   DE,(&5d3a)
 be1b(07fb)   ed53245d LD   (&5d24),DE
-
-5d24 = 5d3a
-
 be1f(07ff)     2afb5d LD HL,(&5dfb)
 be22(0802)         73 LD (HL),E
-
-5dfb = e (originally bottom half of 5d3a)
-
 be23(0803)         23 INC HL
 be24(0804)         72 LD (HL),D
-
-5dfc = d (top half)
-
 be25(0805)         23 INC HL
 be26(0806)     22fb5d LD (&5dfb),HL
-
-
-
 be29(0809)     cd1261 CALL &6112
-
-? Got to assume this one modifies HL.
-
 be2c(080c)     223e5d LD (&5d3e),HL
 be2f(080f)     cd6a72 CALL &726a
-
-?
-
 be32(0812)     3a975b LD A,(&5b97)
 be35(0815)       feff CP &ff
 be37(0817)       2022 JR NZ,a:36
-
-if(5b97==ff)
-
 be39(0819)     2a3e5d LD HL,(&5d3e)
 be3c(081c)         7e LD A,(HL)
 be3d(081d)       fe8c CP &8c
 be3f(081f)       301a JR NC,a:28
-
-if ((5d3e)) >= 8c
-
 be41(0821)     cd4a6b CALL &6b4a
 be44(0824)     cdf767 CALL &67f7
-
-? Presumably one of these sets up IY. Oh yeah and IX.
-
 be47(0827)     dd5e04 LD E,(IX+4)
 be4a(082a)       1600 LD D,&00
 be4c(082c)       fd19 ADD IY,DE
-
-IY += (IX+4)
-
 be4e(082e)     fd7e00 LD A,(IY+0)
 be51(0831)       feff CP &ff
 be53(0833)       2806 JR Z,a:8
-
-if(IY != ff)
-
 be55(0835)     2afb5d LD HL,(&5dfb)
 be58(0838)         77 LD (HL),A
-
-((5dfb)) = (IY)
-
 be59(0839)       1805 JR b:7
-
 be5b(083b) a:  2afb5d LD HL,(&5dfb)
 be5e(083e)       36ff LD (HL),&ff
-
-((5dfb)) = ff
-
 be60(0840) b:      23 INC HL
 be61(0841)     22fb5d LD (&5dfb),HL
-
-5dfb++
-
 be64(0844)         c1 POP BC
 be65(0845)       1093 DJNZ c:-107
-
-Ohai.
-
-So this whole bit runs 8 times.
-
 be67(0847)       3e07 LD A,&07
 be69(0849)     32fd5d LD (&5dfd),A
-
-5dfd=7
-
 be6c(084c)     21005b LD HL,&5b00
 be6f(084f)     2278a5 LD (&a578),HL
-
-a578 = literal 5b00
-
 be72(0852)     cd7aa5 CALL &a57a
-
-?
-
 be75(0855)     2a005b LD HL,(&5b00)
 be78(0858)     22dbbd LD (&bddb),HL
 be7b(085b)     3a025b LD A,(&5b02)
 be7e(085e)         3c INC A
 be7f(085f)     32ddbd LD (&bddd),A
-
-(bddb) = (5b00) [word]
-(bddd) = (5b02)+1 [byte]
-
-This might just be an efficient way of copying 3 bytes?
-
 be82(0862)     2adca5 LD HL,(&a5dc)
 be85(0865)     22245d LD (&5d24),HL
-
-5d24 = a5dc
-
 be88(0868)     cd24b6 CALL &b624
-
-?
-
 be8b(086b)   dd2a335d LD IX,(&5d33)
 be8f(086f)     3a595d LD A,(&5d59)
 be92(0872)         b7 OR A
 be93(0873)         c8 RET Z
-
-Return if (5d59)=0
-
 be94(0874)     3addbd LD A,(&bddd)
 be97(0877)         b7 OR A
 be98(0878)         c8 RET Z
-
-Or if (bddd)=0
-
 be99(0879)   ed5b245d LD   DE,(&5d24)
 be9d(087d)     cd1261 CALL &6112
-
-?
-
 bea0(0880)     dd7e16 LD A,(IX+22)
 bea3(0883)         77 LD (HL),A
-
-Simple copy, although who knows what HL and IX are.
-
 bea4(0884)   ed5bdbbd LD   DE,(&bddb)
 bea8(0888)   ed53245d LD   (&5d24),DE
-
-(5d24) = (bddb) [word] (inevitably, a previous version of 5b00)
-
 beac(088c)     cd1261 CALL &6112
-
-? Looks quite like HL is set here.
-
 beaf(088f)     222f5d LD (&5d2f),HL
-
-Store HL.
-
 beb2(0892)         46 LD B,(HL)
-
-Pretty unusual to be loading B here.
-
 beb3(0893)     3a265d LD A,(&5d26)
 beb6(0896)         77 LD (HL),A
-
-But then (hl)=5d26
-
 beb7(0897)     dd7016 LD (IX+22),B
-
-Then save it back to IX+22
-
 beba(089a)     dd3606 LD (IX+0),&06
 bebd(089d)         00 NOP
-
-This may mean that something was dummied out.
-
 bebe(089e)     cdc174 CALL &74c1
-
-?
-
 bec1(08a1)       3e01 LD A,&01
 bec3(08a3)     32375d LD (&5d37),A
-
-5d37 = 1
-
 bec6(08a6)     cd2ab6 CALL &b62a
-
-The amazing 11x11 grid
-
 bec9(08a9)         c9 RET
 
-And done!
+???
+(b714)=1
+(a5dc)=(5d24)
+(a5de)=a5ca
+(5dfb) = 5b00
+8 times:
+    (5d24) = (a5dc)
+    (5d3a) = (5d24) + ((a5de) + 2n)
+    (5d3b) = (5d25) + ((a5de) + 2n + 1)
+    (5d24) = (5d3a) [word]
+    ((5dfb) + 3n) = (5d3a) [word]
+    ???
+    (5d3e) = HL
+    ???
+    if (5b97)!=ff && ((5d3e)) < 8c:
+        ???
+        ???
+        IY += (IX+4) [byte]
+        if (IY) != ff: ((5dfb) + 3n + 2) = (IY) [byte]
+        else: ((5dfb) + 3n + 2) = ff
+    else: ((5dfb) + 3n + 2) = ff
+(5dfd) = 7
+(a578) = 5b00
+???
+(bddb) = (5b00) [word]
+(bddd) = (5b02)+1 [byte]
+(5d24) = (a5dc)
+Set up ix/5d37?
+ix=(5d33)
+if (5d59) == 0 || (bddd) == 0: `return`
+de=(5d24)
+???
+(hl)=(ix+22)
+(5d24) = (bddb) [word]
+???
+(5d2f)=hl
+(hl)=(5d26)
+(ix+22)=((5d2f))
+(ix)=6
+???
+(5d37) = 1
+The amazing 11x11 grid
+`return`
 
+Set up ix/5d37?
+---------------
 
 beca(08aa) x7: cdcf99 CALL &99cf
 becd(08ad)     cdd771 CALL &71d7
@@ -1857,66 +1760,61 @@ beda(08ba)       3e01 LD A,&01
 bedc(08bc)     32375d LD (&5d37),A
 bedf(08bf)  a:     c9 RET
 
-99cf and 71d7 aside, this sets 5d37=1 if (5d33)+36 != 0. IX and A are touched.
+???
+???
+ix=(5d33)
+if (ix+36) == 0:
+    (5d37)=1
+return
 
-bfd4(09b4)            ; DATA
-bfd5(09b5)            ; DATA
+Unknown
+-------
+
+bfd4(09b4)            ; DATA - ? - byte
+bfd5(09b5)            ; DATA - ? - byte
 bfd6(09b6)     3a265d LD A,(&5d26)
 bfd9(09b9)         f5 PUSH AF
 bfda(09ba)     2a245d LD HL,(&5d24)
 bfdd(09bd)     223a5d LD (&5d3a),HL
-
-a=5d26
-5d3a(w)=5d24(w)
-
 bfe0(09c0)     cd52b8 CALL &b852
-
-Find box for 5d3a-5d3b
-
 bfe3(09c3)     327bb8 LD (&b87b),A
-
-Store A (b87b)
-
 bfe6(09c6)     21ff5a LD HL,&5aff
 bfe9(09c9)     22fb5d LD (&5dfb),HL
-
-(5dfb)=5aff
-
 bfec(09cc)       3e8b LD A,&8b
 bfee(09ce)     32265d LD (&5d26),A
 
-5d26=a=8b (139)
+a=(5d26)
+(5d3a)=(5d24) [word]
+Find box for 5d3a-5d3b -> (b87b)
+(5dfb)=5aff
+(5d26)=8b (139)
 
 bff1(09d1) a:  3a265d LD A,(&5d26)
 bff4(09d4)         3c INC A
 bff5(09d5)       fea0 CP &a0
 bff7(09d7)     cab5c0 JP Z,x4:&c0b5
 
-Jump if 5d26+1 == a0
+if (5d26)+1 == a0: jump x4
 
 bffa(09da)     2afb5d LD HL,(&5dfb)
 bffd(09dd)         23 INC HL
 bffe(09de)         77 LD (HL),A
-
-Store A at next HL
-
 bfff(09df)         23 INC HL
 c000(09e0)       3600 LD (HL),&00
-
-Store 0 at next
-
 c002(09e2)     22fb5d LD (&5dfb),HL
 c005(09e5)     32265d LD (&5d26),A
-
-Save back
-
 c008(09e8)     cdc267 CALL &67c2
 
-No idea
+((5dfb)+1) = (5d26)+1
+((5dfb)+2) = 0
+(5dfb) = (5dfb)+2
+(5d26) = (5d26)+1
+???
+l = (ix+70) * 2
 
 c00b(09eb)   ddcb2546 sla (IX+70)->l
 
-SLA indeed.
+Misidentified????
 
 c00f(09ef)       20e0 JR NZ,a:-30
 
