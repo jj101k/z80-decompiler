@@ -849,7 +849,7 @@ ba1e(03fe)   ed533a5d LD   (&5d3a),DE
 
 ba22(0402)     cda6bc CALL &bca6
 
-Unknown
+Rotate {IX} to face (5d3a) -> Z
 
 ba25(0405)         af XOR A
 ba26(0406)     32625d LD (&5d62),A
@@ -995,117 +995,84 @@ bab0(0490)            ; DATA - LOCAL, byte
 bab1(0491)         af XOR A
 bab2(0492)     32b0ba LD (&bab0),A
 
-bab0=0
+(bab0)=0
 
 bab5(0495)     2a245d LD HL,(&5d24)
 bab8(0498)     cd41bd CALL &bd41
 
-Find HL in c914 -> A
+Find (5d24) in c914 -> A
 
 babb(049b)     21afba LD HL,&baaf
 babe(049e)         be CP (HL)
 babf(049f)       200c JR NZ,a:14
-
-Jump if a!=baaf
-
 bac1(04a1)       3e01 LD A,&01
 bac3(04a3)     32b0ba LD (&bab0),A
-
-bab0=1
-
 bac6(04a6)     3ad4bf LD A,(&bfd4)
 bac9(04a9)         b7 OR A
 baca(04aa)       205e JR NZ,d:96
-
-Jump if bfd4!=0
-
 bacc(04ac)         c9 RET
 
-Return!
+if a == (baaf): bab0=1
+    if (bfd4)==0: `return`
+    else: jump
 
 bacd(04ad) a:  21f05c LD HL,&5cf0
 bad0(04b0)     222cb7 LD (&b72c),HL
-
-(b72c)=5cf0
-
 bad3(04b3)     3aafba LD A,(&baaf)
 bad6(04b6)     3289b7 LD (&b789),A
-
-(b789)=(baaf)
-
 bad9(04b9)     cd66bd CALL &bd66
 badc(04bc)     3288b7 LD (&b788),A
-
-Find max(?) in c914 -> b788
-
 badf(04bf)     2189b7 LD HL,&b789
 bae2(04c2)         be CP (HL)
 bae3(04c3)       2009 JR NZ,b:11
 bae5(04c5)     3a88b7 LD A,(&b788)
 bae8(04c8)     21f05c LD HL,&5cf0
 baeb(04cb)         77 LD (HL),A
-baec(04cc)       1827 JR 41
+baec(04cc)       1827 JR c:41
 
-if (b788) == (b789): (5cf0) = (b788)
+(b72c)=5cf0
+(b789)=(baaf)
+Find max(?) in c914 -> b788
+if (b788) == (b789): (5cf0) = (b788); jump
 
 baee(04ce) b:  cd8cb7 CALL &b78c
-
-Build route(?)
-
 baf1(04d1)     21f05c LD HL,&5cf0
 baf4(04d4)     222cb7 LD (&b72c),HL
 baf7(04d7)     2a245d LD HL,(&5d24)
 bafa(04da)     22475d LD (&5d47),HL
-
-(b72c)=5cf0
-(5d47)=(5d24) [word]
-
 bafd(04dd)     2a2cb7 LD HL,(&b72c)
 bb00(04e0)         23 INC HL
 bb01(04e1)         7e LD A,(HL)
-
-A=((b72c)+1)
-
 bb02(04e2)     cd3fb8 CALL &b83f
-
-Store (c912 + 2A) (word) in 5d3a
-
 bb05(04e5)   ed53495d LD   (&5d49),DE
 
+Build route(?)
+(b72c)=5cf0
+(5d47)=(5d24) [word]
+Store (c912 + 2 * ((b72c)+1)) (word) in 5d3a
 (5d49)=DE
 
 bb09(04e9)     cd0172 CALL &7201
-
-???
-
 bb0c(04ec)       2007 JR NZ,c:9
 bb0e(04ee)     2a2cb7 LD HL,(&b72c)
 bb11(04f1)         23 INC HL
 bb12(04f2)     222cb7 LD (&b72c),HL
 
-If zero: (b72c)=(b72c)+1 [word]
+if ???->Z: (b72c)=(b72c)+1 [word]
 
 bb15(04f5) c:  2a2cb7 LD HL,(&b72c)
 bb18(04f8)         7e LD A,(HL)
 bb19(04f9)     3231b7 LD (&b731),A
-
-A=(b731)=((b72c))
-
 bb1c(04fc)         23 INC HL
 bb1d(04fd)     222cb7 LD (&b72c),HL
-
-(b72c)=(b72c)+1 [word]
-
 bb20(0500)     cd3fb8 CALL &b83f
-
-Store (c912 + 2A) (word) in 5d3a
-
 bb23(0503)   ed53daa5 LD   (&a5da),DE
-
-(a5da)=DE
-
 bb27(0507)     cd92bc CALL &bc92
 
+(b731)=((b72c))
+(b72c)=(b72c)+1 [word]
+Store (c912 + 2*(b731)) (word) in 5d3a
+(a5da)=(5d3a)
 Bitfill 5c0a(50)
 
 bb2a(050a) d:  3ab0ba LD A,(&bab0)
@@ -1114,96 +1081,65 @@ bb2e(050e)       2812 JR Z,e:20
 bb30(0510)     3ad4bf LD A,(&bfd4)
 bb33(0513)         b7 OR A
 bb34(0514)       280c JR Z,e:14
-
-if (bab0)==0 || (bfd4) == 0: jump
-
 bb36(0516)     3ad4bf LD A,(&bfd4)
 bb39(0519)     cde4c0 CALL &c0e4
 bb3c(051c)   ed53daa5 LD   (&a5da),DE
 bb40(0520)       1820 JR f:34
-
-a=(bfd4)
-Set (a5da)=8c memory base
-Jump
-
 bb42(0522) e:  2a245d LD HL,(&5d24)
 bb45(0525)     cd41bd CALL &bd41
 bb48(0528)     21afba LD HL,&baaf
 bb4b(052b)         be CP (HL)
 bb4c(052c)       200e JR NZ,g:16
-
-hl=(5d24)
-Find HL in c914 -> A
-if (baaf) != A, jump
-
 bb4e(052e)       3e01 LD A,&01
 bb50(0530)     32b0ba LD (&bab0),A
 bb53(0533)     3ad4bf LD A,(&bfd4)
 bb56(0536)         b7 OR A
 bb57(0537)     ca1bbc JP Z,x9:&bc1b
 bb5a(053a)       18ce JR d:-48
-
-bab0 = 1
-if (bfd4) == 0: jump forward
-else: jump back
-
 bb5c(053c) g:  2131b7 LD HL,&b731
 bb5f(053f)         be CP (HL)
 bb60(0540)       28b3 JR Z,c:-75
 
-If (b731) == A, jump back
+if (bab0) != 0 && (bfd4) != 0:
+    a=(bfd4)
+    Set (a5da)=8c memory base
+    Jump
+else:
+    Find (5d24) in c914 -> A
+    if (baaf) == A:
+        bab0 = 1
+        if (bfd4) == 0: jump forward
+        else: jump back
+    else if (b731) == A: jump back
 
 bb62(0542) f:  2a245d LD HL,(&5d24)
 bb65(0545)     22dca5 LD (&a5dc),HL
-
-(a5dc)=(5d24) [word]
-
 bb68(0548)     cde0a5 CALL &a5e0
-
-???
-
 bb6b(054b)     21005b LD HL,&5b00
 bb6e(054e)     22fb5d LD (&5dfb),HL
 
+(a5dc)=(5d24) [word]
+???
 (5dfb)=5b00
 
 bb71(0551)       0608 LD B,&08
-
-B=8
-
 bb73(0553)  h:     c5 PUSH BC
 bb74(0554)     2afb5d LD HL,(&5dfb)
 bb77(0557)         5e LD E,(HL)
 bb78(0558)         23 INC HL
 bb79(0559)         56 LD D,(HL)
-
-DE=((5dfb))
-
 bb7a(055a)         23 INC HL
 bb7b(055b)         23 INC HL
 bb7c(055c)     22fb5d LD (&5dfb),HL
-
-(5dfb) += 3
-
 bb7f(055f)       3eff LD A,&ff
 bb81(0561)         bb CP E
-bb82(0562)       2829 JR Z,43
+bb82(0562)       2829 JR Z,i:43
 bb84(0564)   ed533a5d LD   (&5d3a),DE
 bb88(0568)     cd72bc CALL &bc72
 bb8b(056b)       2820 JR Z,j:34 [l]
-
-if E==ff, `continue` //
-If DE is in (5c0a)<25t>, jump
-
 bb8d(056d)         af XOR A
 bb8e(056e)     32385d LD (&5d38),A
-
-(5d38)=0
-
 bb91(0571)     cdbf6e CALL &6ebf
-
-???
-
 bb94(0574)     3a295d LD A,(&5d29)
 bb97(0577)       fe02 CP &02
 bb99(0579)       285f JR Z,k:97
@@ -1215,38 +1151,34 @@ bba4(0584)       3007 JR NC,i:9
 bba6(0586)     3a295d LD A,(&5d29)
 bba9(0589)       fe01 CP &01
 bbab(058b)       280a JR Z,m:12
-
-if (5d29) == 2: jump k
-if (5d29) == 5: jump l
-if (ix+22) == 8c: `continue`
-if (5d29) == 1: jump k
-
 bbad(058d)  i:     c1 POP BC
 bbae(058e)       10c3 DJNZ h:-59
-
-...and loop
-
 bbb0(0590)     cd169a CALL &9a16
 bbb3(0593)     c24270 JP NZ,&7042
 bbb6(0596)         c9 RET
 
-If the loop exits, make a couple of calls (unclear purpose) and return.
+8 times:
+
+if byte((5dfb)+3n)!=ff:
+    if word((5dfb)+3n) is in (5c0a)<25t>, jump l
+    else:
+        (5d38)=0
+        ???
+        if (5d29) == 2: jump k
+        else if (5d29) == 5: jump l
+        else if (ix+22) == 8c: `continue`
+        else if (5d29) == 1: jump k
+        else: `continue`
+
+if ???->NZ: return via 7042
+else: return
 
 bbb7(0597) m:  2a3e5d LD HL,(&5d3e)
 bbba(059a)         7e LD A,(HL)
-
-a=((5d3e))
-
 bbbb(059b)     cdf767 CALL &67f7
-
-??
-
 bbbe(059e)     fd7e08 LD A,(IY+8)
 bbc1(05a1)       fe01 CP &01
 bbc3(05a3)       2012 JR NZ,n:20
-
-if (iy+8) == 1: jump
-
 bbc5(05a5)         c1 POP BC
 bbc6(05a6)       fde5 PUSH IY
 bbc8(05a8)     cda6bc CALL &bca6
@@ -1256,8 +1188,11 @@ bbcf(05af)     cdf779 CALL &79f7
 bbd2(05b2)       3847 JR C,x9:73
 bbd4(05b4)     c32abb JP d:&bb2a
 
-If bca6 -> Z || 79f7 -> C: jump x9
-else: jump back to d
+a=((5d3e))
+???
+if (iy+8) != 1:
+    if Rotate {IX} to face (5d3a) -> Z || 79f7 -> C: jump x9
+    else: jump back to d
 
 bbd7(05b7) n:  2a3e5d LD HL,(&5d3e)
 bbda(05ba)         7e LD A,(HL)
@@ -1267,26 +1202,26 @@ bbe0(05c0)  p:     be CP (HL)
 bbe1(05c1)       2805 JR Z,o:7
 bbe3(05c3)         23 INC HL
 bbe4(05c4)       10fa DJNZ p:-4
-
-b=8
-if (c25e) != ((5d3e+n)): loop
-
 bbe6(05c6)       18c5 JR i:-57
 
-Jump back
+8 times:
+    if (c25e) == ((5d3e+n)): `break`
+
+if fall through: jump back
 
 bbe8(05c8)  o:     c1 POP BC
 bbe9(05c9)     cda6bc CALL &bca6
 bbec(05cc)       282d JR Z,x9:47
 
-If bca6 -> Z: jump
+if Rotate {IX} to face (5d3a) -> Z: jump x9
 
 bbee(05ce)     cd0b7f CALL &7f0b
 bbf1(05d1)     3a375d LD A,(&5d37)
 bbf4(05d4)         b7 OR A
 bbf5(05d5)       2024 JR NZ,x9:38
 
-Call?
+???
+
 Jump if (5d37)!=0
 
 bbf7(05d7)     c32abb JP d:&bb2a
@@ -1300,74 +1235,74 @@ Jump x9
 
 bbfd(05dd) l:      c1 POP BC
 bbfe(05de)     cd27bc CALL &bc27
+
+Overwatch turn-and-fire?
+
 bc01(05e1)     3a595d LD A,(&5d59)
 bc04(05e4)         b7 OR A
-bc05(05e5)       2019 JR NZ,27
+bc05(05e5)       2019 JR NZ,m:27
+
+if (5d59) != 0: jump
+
 bc07(05e7)     3a625d LD A,(&5d62)
 bc0a(05ea)         b7 OR A
-bc0b(05eb)       2013 JR NZ,21
+bc0b(05eb)       2013 JR NZ,m:21
+
+If (5d62) != 0: jump
+
 bc0d(05ed)     cdb3bd CALL &bdb3
-bc10(05f0)       2809 JR Z,11
+bc10(05f0)       2809 JR Z,x9:11
+
+if bdb3->Z: jump
+
 bc12(05f2)     3a375d LD A,(&5d37)
 bc15(05f5)         b7 OR A
-bc16(05f6)       2008 JR NZ,10
-bc18(05f8)     c32abb JP &bb2a
+bc16(05f6)       2008 JR NZ,m:10
+
+if (5d37) != 0: jump
+
+bc18(05f8)     c32abb JP d:&bb2a
+
+else jump back
+
 bc1b(05fb)  x9:  3e01 LD A,&01
 bc1d(05fd)     32375d LD (&5d37),A
-bc20(0600)     cd169a CALL &9a16
+
+(5d37)=1
+
+bc20(0600) m:  cd169a CALL &9a16
 bc23(0603)     c24270 JP NZ,&7042
 bc26(0606)         c9 RET
 
-Unknown
--------
+if 9a16->NZ: return via 7042
+else return
+
+Overwatch turn-and-fire?
+------------------------
 
 bc27(0607)     cda6bc CALL &bca6
 bc2a(060a)         c8 RET Z
-
-if bca6 -> Z: return
-
 bc2b(060b)     dd7e06 LD A,(IX+6)
 bc2e(060e)     219eb8 LD HL,&b89e
 bc31(0611)         96 SUB A,(HL)
-
-a=(ix+6)-(b89e)
-
 bc32(0612)       3806 JR C,a:8
-
-if (b89e) > (ix+6): jump
-
 bc34(0614)     21285d LD HL,&5d28
 bc37(0617)         96 SUB A,(HL)
 bc38(0618)       3006 JR NC,b:8
-
-if (b89e) + (5d28) > (ix+6): jump
-
 bc3a(061a) a:    3e01 LD A,&01
 bc3c(061c)     32375d LD (&5d37),A
 bc3f(061f)         c9 RET
-
-(5d37)=1; return
-
 bc40(0620) b:fd2a86ba LD IY,(&ba86)
 bc44(0624)   fdcb0856 rrc (iy+86)->b
 bc48(0628)       2006 JR NZ,c:8
-
-if ((ba86)+86) / 2 != 0: jump
-
 bc4a(062a)     3ad4bf LD A,(&bfd4)
 bc4d(062d)         b7 OR A
 bc4e(062e)       280b JR Z,d:13
-
-if (bfd4)==0: jump
-
 bc50(0630) c:  cd85c1 CALL &c185
 bc53(0633)       2806 JR Z,d:8
 bc55(0635)       3e01 LD A,&01
 bc57(0637)     32375d LD (&5d37),A
 bc5a(063a)         c9 RET
-
-If Something something overwatch?->Z: return(5d37=1)
-
 bc5b(063b) d:  cd896f CALL &6f89
 bc5e(063e)     2a70bc LD HL,(&bc70)
 bc61(0641)   ed5b245d LD   DE,(&5d24)
@@ -1378,14 +1313,19 @@ bc68(0648)         23 INC HL
 bc69(0649)     2270bc LD (&bc70),HL
 bc6c(064c)     cdbc6b CALL &6bbc
 bc6f(064f)         c9 RET
+bc70(0650)            ; DATA - INOUT, memory address
 
+if Rotate {IX} to face (5d3a) -> Z: return
+if (ix+6) not in range{(b89e), (b89e) + (5d28) - 1}: return(5d37=1)
+if ((ba86)+86) / 2 != 0 && (bfd4) != 0 && Something something overwatch?->Z:
+    return(5d37=1)
 ???
 ((bc70))=(5d24)
-(bc70)++
+(bc70)+=2
 ???
 ...and return.
 
-bc70(0650)            ; DATA - IN, memory address
+The use of ix+6 is a bit odd because elsewhere that looked like the overwatch cost. This could be an overwatch turn-and-fire?
 
 Is (5d3a)<w> in (5c0a)<25t>
 ---------------------------
@@ -1431,8 +1371,8 @@ bca2(0682)         c9 RET
 
 Put 50 (0x32) ffs in 5c0a - 5c3c; also (bc70)=5c0a
 
-Unknown
--------
+Rotate {IX} to face (5d3a) -> Z
+-------------------------------
 
 In: ix, 5d3a, ix+33
 
@@ -1441,15 +1381,13 @@ bca4(0684)            ; DATA - byte, LOCAL; second loop counter?
 bca5(0685)            ; DATA - byte, LOCAL; loop counter?
 bca6(0686)     2a3a5d LD HL,(&5d3a)
 bca9(0689)     22dca5 LD (&a5dc),HL
+
+(a5dc) = (5d3a) [word]
+
 bcac(068c)     dd7e21 LD A,(IX+33)
 bcaf(068f)     32a3bc LD (&bca3),A
 bcb2(0692)         af XOR A
 bcb3(0693)     32a5bc LD (&bca5),A
-
-(a5dc) = (5d3a) [word]
-(bca3) = (ix+33)
-(bca5) = 0
-
 bcb6(0696) b:  3aa3bc LD A,(&bca3)
 bcb9(0699)     cd746e CALL &6e74
 bcbc(069c)     2adca5 LD HL,(&a5dc)
@@ -1457,16 +1395,6 @@ bcbf(069f)   ed5b3a5d LD   DE,(&5d3a)
 bcc3(06a3)         a7 AND A
 bcc4(06a4)       ed52 SBC  HL,DE
 bcc6(06a6)       2815 JR Z,a:23
-
-a=(bca3) [aka (ix+33) + 0-7]
-Unknown call;
-
-Jump if HL == DE (a5dc == 5d3a). Since these were both set to the same value, you can take it that one of them may have been modified.
-
-The strange thing here is "AND A", which only serves to reset the arithmetic flags, which apparently get set on the next instruction.
-
-The JR here is a `break`.
-
 bcc8(06a8)     21a5bc LD HL,&bca5
 bccb(06ab)         34 INC (HL)
 bccc(06ac)     3aa3bc LD A,(&bca3)
@@ -1478,19 +1406,12 @@ bcd7(06b7)         af XOR A
 bcd8(06b8)     32a3bc LD (&bca3),A
 bcdb(06bb)       18d9 JR b:-37
 
-(bca5)++
-(bca3)++
-if (bca3) >= 8: (bca3) = 0
-Jump back
+Find x such that 6e74((ix+33)+x % 8) implies (a5dc)'==(5d3a)' -> (bca5)
 
 bcdd(06bd)  a:     af XOR A
 bcde(06be)     32a4bc LD (&bca4),A
 bce1(06c1)     dd7e21 LD A,(IX+33)
 bce4(06c4)     32a3bc LD (&bca3),A
-
-bca4 = 0
-bca3 = ix+33
-
 bce7(06c7) d:  3aa3bc LD A,(&bca3)
 bcea(06ca)     cd746e CALL &6e74
 bced(06cd)     2adca5 LD HL,(&a5dc)
@@ -1509,61 +1430,40 @@ bd08(06e8)       3e07 LD A,&07
 bd0a(06ea)     32a3bc LD (&bca3),A
 bd0d(06ed)       18d8 JR d:-38
 
-Unknown call;
-
-If HL==DE, jump (`break`)
-
-(bca4)++
-(bca3)--
-if (bca3) == ff[-1]: (bca3) = 7
-Jump back!
+Find x such that 6e74((ix+33)-x % 8) implies (a5dc)'==(5d3a)' -> (bca4)
 
 bd0f(06ef) c:  3aa5bc LD A,(&bca5)
 bd12(06f2)         b7 OR A
-bd13(06f3)       2826 JR Z,e:40
-
-Jump if bca5==0 (equivalent to RET Z here)
-
+bd13(06f3)       2826 JR Z,h:40
 bd15(06f5)     21a4bc LD HL,&bca4
 bd18(06f8)         be CP (HL)
 bd19(06f9)       3811 JR C,f:19
-
-if bca4 > bca5, jump
-
 bd1b(06fb)     3aa4bc LD A,(&bca4)
 bd1e(06fe)         47 LD B,A
-
-b=a=bca4
-
 bd1f(06ff)  g:     c5 PUSH BC
 bd20(0700)     cdde6d CALL &6dde
 bd23(0703)         c1 POP BC
 bd24(0704)     cdb3bd CALL &bdb3
 bd27(0707)         c8 RET Z
 bd28(0708)       10f5 DJNZ g:-9
-
-Although it's unclear what 6dde and bdb3 do, this returns the first one (up to bca4) where those two set Z
-
 bd2a(070a)       180f JR h:17
 bd2c(070c) f:  3aa5bc LD A,(&bca5)
 bd2f(070f)         47 LD B,A
-
-b=a=bca5
-
 bd30(0710)   i:    c5 PUSH BC
 bd31(0711)     cdaf6d CALL &6daf
 bd34(0714)         c1 POP BC
 bd35(0715)     cdb3bd CALL &bdb3
 bd38(0718)         c8 RET Z
 bd39(0719)       10f5 DJNZ i:-9
-
-Returns the first case (up to bca5) where 6daf bdb3 sets Z
-
 bd3b(071b)  h:   3e01 LD A,&01
-bd3d(071d)  e:     b7 OR A
+bd3d(071d)         b7 OR A
 bd3e(071e)         c9 RET
 
-Returns with Z set or unset
+if bca5==0: return(Z)
+(min<bca4,bca5>) times:
+    if {6dde; bdb3}->Z: return(Z)
+
+Otherwise: return(NZ)
 
 Find HL in c914
 ---------------

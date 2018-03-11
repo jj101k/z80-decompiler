@@ -66,7 +66,7 @@ It's likely that this is convenient multipurpose memory.
 5dd8: possible memory address
 5df8: single byte
 
-5dfb-5dfc: Memory address (possibly 5c0a or 5b00)
+5dfb-5dfc: Memory address (possibly 5c0a or 5b00), refers to triple-byte chunk with at least 8 entries
 
 5dfd                  ; DATA
 60af                  ; FUNCTION
@@ -85,9 +85,9 @@ It's likely that this is convenient multipurpose memory.
 
 6daf: function, touches B or C, related to 6dde
 
-6dde: function, touches B or C; may set up memory or other registers.
+6dde: function, touches B or C; may set up memory or other registers. It seems that this is "rotate towards direction A", presumably including AP charge.
 
-6e74: Function, reads A; may read 5d3a and a5dc; modifies 5d3a, a5dc and A (zero or nonzero value).
+6e74: Function, reads A (0-7); may read 5d3a and a5dc; modifies 5d3a, a5dc and A (zero or nonzero value). This appears to be "find coordinates 1 step in direction A" given context (5d3a, a5dc), one of which presumably identifies the start position.
 
 6ebf: Function
 
