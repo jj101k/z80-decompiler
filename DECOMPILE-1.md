@@ -1293,7 +1293,7 @@ bc3a(061a) a:    3e01 LD A,&01
 bc3c(061c)     32375d LD (&5d37),A
 bc3f(061f)         c9 RET
 bc40(0620) b:fd2a86ba LD IY,(&ba86)
-bc44(0624)   fdcb0856 rrc (iy+86)->b
+bc44(0624)   fdcb0856 BIT 2,(IY+8)
 bc48(0628)       2006 JR NZ,c:8
 bc4a(062a)     3ad4bf LD A,(&bfd4)
 bc4d(062d)         b7 OR A
@@ -1317,7 +1317,7 @@ bc70(0650)            ; DATA - INOUT, memory address
 
 if Rotate {IX} to face (5d3a) -> Z: return
 if (ix+6) not in range{(b89e), (b89e) + (5d28) - 1}: return(5d37=1)
-if ((ba86)+86) / 2 != 0 && (bfd4) != 0 && Something something overwatch?->Z:
+if ((ba86)+8)->2 != 0 && (bfd4) != 0 && Something something overwatch?->Z:
     return(5d37=1)
 ???
 ((bc70))=(5d24)
