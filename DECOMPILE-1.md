@@ -449,460 +449,292 @@ b89c(027c)         c9 RET
 
 Sets A to a value with B-1 mapping to {0, 1, 3, 6, 10, 15...} and C mapping to itself. This uniquely identifies each B-C pair with a single value, because C is always less than the next initial B value. 0 if they are the same.
 
-b89d(027d)            ; DATA
-b89e(027e)            ; DATA
+Unknown
+-------
+
+b89d(027d)            ; DATA - byte
+b89e(027e)            ; DATA - byte
 b89f(027f) x6: cd8567 CALL &6785
-
-No idea what this is.
-
 b8a2(0282)     cd2ab6 CALL &b62a
-
-Rejumps to c1e4 (init 11x11 grid)
-
 b8a5(0285)     21505c LD HL,&5c50
 b8a8(0288)       0614 LD B,&14
-
-hl=5c50, b=14 (20)
-
 b8aa(028a)   x5:   c5 PUSH BC
 b8ab(028b)         e5 PUSH HL
 b8ac(028c)         7e LD A,(HL)
-
-This could as easily be before the push.
-
 b8ad(028d)       fe01 CP &01
 b8af(028f)     c24dba JP NZ,x1:&ba4d
-
-Ok, so if (5c50) != 1, jump (absolute). This jump is too far for relative.
-
 b8b2(0292)       3ea0 LD A,&a0
 b8b4(0294)         90 SUB A,B
 b8b5(0295)     32265d LD (&5d26),A
-
-(5d26)=a-b(20)
-
 b8b8(0298)         23 INC HL
 b8b9(0299)         5e LD E,(HL)
-
-e=(5c51)
-
 b8ba(029a)         23 INC HL
 b8bb(029b)         56 LD D,(HL)
-
-d=(5c52)
-
 b8bc(029c)   ed53245d LD   (&5d24),DE
-
-Store. IOW, 5d24 (16b) = 5c51 (16b)
-
 b8c0(02a0)     cd1261 CALL &6112
-
-No idea
-
 b8c3(02a3)     222f5d LD (&5d2f),HL
-
-(5d2f)=5c52
-
 b8c6(02a6)     3a265d LD A,(&5d26)
-
-a=a-b(20)
-
 b8c9(02a9)     cdc267 CALL &67c2
-
-??
-
 b8cc(02ac)   dd22335d LD (&5d33),IX
 b8d0(02b0)     dd6e1a LD L,(IX+26)
 b8d3(02b3)       2600 LD H,&00
 b8d5(02b5)         29 ADD HL,HL
 b8d6(02b6)         29 ADD HL,HL
 b8d7(02b7)         29 ADD HL,HL
-
-So H=0, L = (5d33+26); then HL*=3. Since this can at most be 255, 0<=HL<=765
-
 b8d8(02b8)     dd5e1a LD E,(IX+26)
 b8db(02bb)       1600 LD D,&00
 b8dd(02bd)         19 ADD HL,DE
 b8de(02be)         19 ADD HL,DE
-
-+2*(5d33+26); so 0 <= HL <= 1595
-
 b8df(02bf)     1166c2 LD DE,&c266
 b8e2(02c2)         19 ADD HL,DE
-
-+c266, which must be the base. Not clear what's stored there.
-
 b8e3(02c3)     2286ba LD (&ba86),HL
-
-ba86=HL
-
 b8e6(02c6)       3e01 LD A,&01
 b8e8(02c8)     32365d LD (&5d36),A
-
-5d36=A=1
-
 b8eb(02cb)     cd2ab6 CALL &b62a
-
-This does the ol' 11x11 grid, whatever that is.
-
 b8ee(02ce)     cdd771 CALL &71d7
-
-?
-
 b8f1(02d1)     cd2a6c CALL &6c2a
-
-?
-
 b8f4(02d4)         af XOR A
 b8f5(02d5)     32375d LD (&5d37),A
 b8f8(02d8)     32625d LD (&5d62),A
-
-5d37=5d62=0
-
 b8fb(02db)     dd7e24 LD A,(IX+36)
 b8fe(02de)         b7 OR A
 b8ff(02df)       2022 JR NZ,36:a
-
-So, if (5d33+36) !=0, skip next block
-
 b901(02e1)     cd5d78 CALL &785d
-
-?
-
 b904(02e4)     dd7e23 LD A,(IX+35)
 b907(02e7)     cddf67 CALL &67df
-
-?
-
 b90a(02ea)   dd22c25d LD (&5dc2),IX
 b90e(02ee)     dd7e10 LD A,(IX+16)
 b911(02f1)     cdab78 CALL &78ab
 b914(02f4)   dd2a335d LD IX,(&5d33)
-
-?
-
 b918(02f8)       2009 JR NZ,11:a
-
 b91a(02fa)     cde962 CALL &62e9
 b91d(02fd)     cd019d CALL &9d01
 b920(0300)     cd8b6a CALL &6a8b
-
-All unknown.
-
 b923(0303) a:  3a595d LD A,(&5d59)
 b926(0306)         b7 OR A
 b927(0307)     c4debd CALL NZ,&bdde
-
-Call bdde if 5d59==0. What does it do? Who knows?
-
 b92a(030a)     3a375d LD A,(&5d37)
 b92d(030d)         b7 OR A
 b92e(030e)     c24dba JP NZ,x1:&ba4d
-
-Long jump! Only if 5d37==0
-
 b931(0311)     cd5cba CALL &ba5c
 b934(0314)     c2ffb9 JP NZ,x2:&b9ff
-
-If there's an entry in 5b99 for which 8x<x> is nonzero: Long-ish jump (b713 set)
-
 b937(0317)   fd2a86ba LD IY,(&ba86)
-b93b(031b)   fdcb085e rrc (iy+94)->b
-
-I have no idea what rrc does, but clearly it sets the Z flag, and in this case is operating on ba86+94.
-
+b93b(031b)   fdcb085e BIT 3,(IY+8)
 b93f(031f)     c2cfb9 JP NZ,x3:&b9cf
-
-Another kind-of-long jump
-
 b942(0322) x4: cdd6bf CALL &bfd6
-
-Not completely clear, but it apparently writes back to bfd4/bfd5 a max-val from 5b00<2>. bfd5 is the actual max so probably the least interesting value.
-
 b945(0325)     3ad4bf LD A,(&bfd4)
 b948(0328)         b7 OR A
 b949(0329)     cacfb9 JP Z,x3:&b9cf
-
-Jump if bfd4==0, and it's a long one.
-
 b94c(032c)       d68c SUB A,&8c
 b94e(032e)         5f LD E,A
 b94f(032f)       1600 LD D,&00
 b951(0331)     213ab6 LD HL,&b63a
 b954(0334)         19 ADD HL,DE
-
-hl=b63a+(bdf4)-8c
-
 b955(0335)         7e LD A,(HL)
 b956(0336)         b7 OR A
 b957(0337)     cacfb9 JP Z,x3:&b9cf
-
-if (b63a+(bdf4)-8c) == 0, jump
-
 b95a(033a)     3ad4bf LD A,(&bfd4)
 b95d(033d)     cde4c0 CALL &c0e4
 b960(0340)   ed533a5d LD   (&5d3a),DE
-
-Stores the 8c memory base for (bfd4) in 5d3a
-
 b964(0344)     cdf3c0 CALL &c0f3
-
-Unknown, seems like a write-back routine
-
 b967(0347)     3a8f5d LD A,(&5d8f)
 b96a(034a)         b7 OR A
 b96b(034b)       2862 JR Z,x3:100
-
-If 5d8f==0, jump (short this time)
-
 b96d(034d)     cd66bd CALL &bd66
-
-Find max(?) in c914 -> A
-
 b970(0350)     3288b7 LD (&b788),A
-
-Back up to b788
-
 b973(0353)     3a8f5d LD A,(&5d8f)
 b976(0356)         47 LD B,A
-
-b=5d8f
-
 b977(0357)     210a5c LD HL,&5c0a
 b97a(035a)       3eff LD A,&ff
 b97c(035c)     329db8 LD (&b89d),A
-
-HL=5c0a; b89d=a=ff
-
 b97f(035f)  b:     c5 PUSH BC
 b980(0360)         e5 PUSH HL
 b981(0361)         7e LD A,(HL)
 b982(0362)     3289b7 LD (&b789),A
-
-b789=5c0a
-
 b985(0365)     cd8cb7 CALL &b78c
-
-Build route(?)
-
 b988(0368)     3a8bb7 LD A,(&b78b)
 b98b(036b)         b7 OR A
 b98c(036c)       2812 JR Z,a:20
-
-if b78b==0, jump
-
 b98e(036e)     3a87b7 LD A,(&b787)
 b991(0371)     219db8 LD HL,&b89d
 b994(0374)         be CP (HL)
 b995(0375)       3009 JR NC,a:11
-
-If b89d <= b787, jump
-
 b997(0377)     329db8 LD (&b89d),A
-
-b89d=b787
-
 b99a(037a)     3a89b7 LD A,(&b789)
 b99d(037d)     32afba LD (&baaf),A
-
-baaf=b789
-
 b9a0(0380)  a:     e1 POP HL
 b9a1(0381)         23 INC HL
 b9a2(0382)         c1 POP BC
 b9a3(0383)       10da DJNZ b:-36
-
-Advance HL by 1, loop
-
 b9a5(0385)         af XOR A
-
-a=0
-
 b9a6(0386)     329eb8 LD (&b89e),A
-
-b89e=0
-
 b9a9(0389)     cdb1ba CALL &bab1
-
-Unknown
-
 b9ac(038c)     3a625d LD A,(&5d62)
 b9af(038f)         b7 OR A
 b9b0(0390)       204d JR NZ,x2:79
-
-If 5d62!=0, jump
-
 b9b2(0392)     3a375d LD A,(&5d37)
 b9b5(0395)         b7 OR A
 b9b6(0396)     c24dba JP NZ,x1:&ba4d
-
-if 5d37!=0, jump
-
 b9b9(0399)     3a595d LD A,(&5d59)
 b9bc(039c)         b7 OR A
 b9bd(039d)     c4debd CALL NZ,&bdde
-
-If 5d59!=0, call bdde (unknown)
-
 b9c0(03a0)     3a375d LD A,(&5d37)
 b9c3(03a3)         b7 OR A
 b9c4(03a4)     c24dba JP NZ,x1:&ba4d
-
-If 5d37!=0, jump
-
 b9c7(03a7)     cd5cba CALL &ba5c
 b9ca(03aa)       2033 JR NZ,x2:53
-
-If there's an entry in 5b99 for which 8x<x> is nonzero: jump (b713 set)
-
 b9cc(03ac)     c342b9 JP x4:&b942
-
-Jump back
-
 b9cf(03af)x3:fd2a86ba LD IY,(&ba86)
 b9d3(03b3)         af XOR A
-
-iy=(ba86)
-a=0
-
 b9d4(03b4)     329eb8 LD (&b89e),A
-
-b89e=0
-
-b9d7(03b7)   fdcb0846 rrc (iy+70)->b
-
-rotate right circular into B?
-
+b9d7(03b7)   fdcb0846 BIT 0,(IY+8)
 b9db(03bb)       2014 JR NZ,a:22
-
-Conditional jump, presumably on the rrc itself
-
-b9dd(03bd)   fdcb084e rrc (iy+78)->b
+b9dd(03bd)   fdcb084e BIT 1,(IY+8)
 b9e1(03c1)       2006 JR NZ,b:8
-
-Another rotate and conditional jump
-
 b9e3(03c3)     3a14b7 LD A,(&b714)
 b9e6(03c6)         b7 OR A
 b9e7(03c7)       2808 JR Z,a:10
-
-Jump if b714==0
-
 b9e9(03c9) b:  dd7e05 LD A,(IX+5)
 b9ec(03cc)       cb3f SRL A
-
-Shift A right 1 (divide by 2)
-
 b9ee(03ce)     329eb8 LD (&b89e),A
-
-Store in b89e
-
 b9f1(03d1) a:  cd88ba CALL &ba88
-
-Unknown
-
 b9f4(03d4)     cd5cba CALL &ba5c
 b9f7(03d7)       2006 JR NZ,x2:8
-
-If there's an entry in 5b99 for which 8x<x> is nonzero: jump (b713 set)
-
 b9f9(03d9)     3a625d LD A,(&5d62)
 b9fc(03dc)         b7 OR A
 b9fd(03dd)       283d JR Z,e:63
-
-jump if 5d62==0
-
 b9ff(03df) x2: dd7e08 LD A,(IX+8)
 ba02(03e2)         b7 OR A
 ba03(03e3)       2848 JR Z,x1:74
-
-Jump if (ix+8)==0
-
 ba05(03e5)     3a13b7 LD A,(&b713)
-
-a=b713!
-
 ba08(03e8)     cde4c0 CALL &c0e4
-
-Set DE=8c memory base
-
 ba0b(03eb)   ed53daa5 LD   (&a5da),DE
-
-a5da=de
-
 ba0f(03ef)     2a245d LD HL,(&5d24)
 ba12(03f2)     22dca5 LD (&a5dc),HL
-
-(a5dc) = (5d24) [word]
-
 ba15(03f5)     cde0a5 CALL &a5e0
-
-Unknown
-
 ba18(03f8)     21005b LD HL,&5b00
 ba1b(03fb)         5e LD E,(HL)
 ba1c(03fc)         23 INC HL
 ba1d(03fd)         56 LD D,(HL)
 ba1e(03fe)   ed533a5d LD   (&5d3a),DE
-
-(5d3a) = (5b00) [word]
-
 ba22(0402)     cda6bc CALL &bca6
-
-Rotate {IX} to face (5d3a) -> Z
-
 ba25(0405)         af XOR A
 ba26(0406)     32625d LD (&5d62),A
-
-5d62=0
-
 ba29(0409)     3a595d LD A,(&5d59)
 ba2c(040c)         b7 OR A
 ba2d(040d)     ca42b9 JP Z,x4:&b942
-
-Long jump! If 5d59 == 0
-
 ba30(0410)     cddebd CALL &bdde
 ba33(0413)     3a375d LD A,(&5d37)
 ba36(0416)         b7 OR A
-ba37(0417)       2014 JR NZ,22
-ba39(0419)     c342b9 JP &b942
-
+ba37(0417)       2014 JR NZ,x1:22
+ba39(0419)     c342b9 JP x4:&b942
 ba3c(041c)  e: 3a375d LD A,(&5d37)
 ba3f(041f)         b7 OR A
 ba40(0420)       200b JR NZ,x1:13
-
-if (5d37) != 0: jump
-
 ba42(0422)     3a595d LD A,(&5d59)
 ba45(0425)         b7 OR A
 ba46(0426)       2805 JR Z,x1:7
-
-if (5d59) == 0: jump
-
 ba48(0428)     cddebd CALL &bdde
 ba4b(042b)       18a4 JR a:-90
-
-Unknown call; and jump back!
-
 ba4d(042d) x1:     e1 POP HL
 ba4e(042e)     110400 LD DE,&0004
 ba51(0431)         19 ADD HL,DE
-
-HL+=4
-
 ba52(0432)         c1 POP BC
 ba53(0433)         05 DEC B
 ba54(0434)     c2aab8 JP NZ,x5:&b8aa
-
-This is DJNZ with a long jump!
-
 ba57(0437)         af XOR A
 ba58(0438)     32365d LD (&5d36),A
-
-5d36=0
-
 ba5b(043b)         c9 RET
+
+???
+Init 11x11 grid
+20 times:
+    if (5c50 + 4n) != 1: jump x1
+    (5d26) = 160-20
+    (5d24)=de=(5c50 + 4n + 1)
+    ???
+    (5d2f)=HL
+    a=(5d26)
+    ???
+    (5d33)=IX
+    (ba86)=c266 + (ix+26) * 10 <word>
+    (5d36)=A=1
+    Init 11x11 grid
+    ???
+    ???
+    (5d37)=(5d62)=0
+    if (ix+36) == 0:
+        ???
+        a=(ix+35)
+        ???
+        (5dc2)=ix
+        a=(ix+16)
+        ???
+        ix=(5d33)
+        if Z:
+            ???
+            ???
+            ???
+    if (5d59)->NZ: ?Unknown? bdde
+    if (5d37)!=0: jump x1
+    if there's an entry in 5b99 for which 8x<x> is nonzero: jump x2 (b713 set)
+    iy=(ba86)
+    if (iy+8)->3 != 0: jump x3
+
+    loop:
+        (Not completely clear, but it apparently writes back to bfd4/bfd5 a max-val
+        from 5b00<2>. bfd5 is the actual max so probably the least interesting value.)
+        if {
+            (bfd4)!=0 &&
+            (b63a+(bdf4)-8c) != 0 &&
+            [
+                Store the 8c memory base for (bfd4) -> (5d3a);
+                (Unknown, seems like a write-back routine) c0f3
+            ]
+            (5d8f)!=0
+        } :
+            Find max(?) in c914 -> (b788)
+            (b89d)=A=ff
+            (5d8f) times:
+                (b789)=(5c0a+n)
+                Build route(?)
+                if (b78b)!=0 && (b89d) > (b787):
+                    (b89d)=(b787)
+                    (baaf)=(b789)
+            (b89e)=0
+            ?Unknown bab1
+            if (5d62) == 0:
+                if (5d37) != 0: jump x1
+                if (5d59) != 0: call bdde (unknown)
+                if (5d37) != 0: jump x1
+                if there's not an entry in 5b99 for which 8x<x> is nonzero: `continue`
+        else:
+            iy=(ba86)
+            (b89e)=0
+            if (iy+8)->0 == 0 || (iy+8)->1 != 0 && (b714) != 0:
+                (b89e) = (ix+5) / 2
+            a:
+            ?Unknown? ba88
+            if there's an entry in 5b99 for which 8x<x> is nonzero && (5d62) == 0:
+                `break`
+        x2:
+        if (ix+8) == 0: jump x1
+        a=(b713)
+        Find 8c memory base -> (a5da)
+        (a5dc) = (5d24) [word]
+        ?Unknown? a5e0
+        Rotate {IX} to face (5b00) -> Z
+        (5d62)=0
+        if (5d59) != 0:
+            ?Unknown? bdde
+            if (5d37) != 0: jump x1
+    if (5d37) == 0 && (5d59) != 0:
+        ?Unknown? bdde
+        jump a
+(5d36)=0
+
+This is a hardcore spaghetti mess, suggesting that it warrants a lot of
+attention and optimisation.
 
 Find the first entry in 5b99 for which 8c<x> is nonzero -> b713
 ---------------------------------------------------------------
@@ -1695,8 +1527,7 @@ beb2(0892)         46 LD B,(HL)
 beb3(0893)     3a265d LD A,(&5d26)
 beb6(0896)         77 LD (HL),A
 beb7(0897)     dd7016 LD (IX+22),B
-beba(089a)     dd3606 LD (IX+0),&06
-bebd(089d)         00 NOP
+beba(089a)   dd360600 LD (IX+0),&06
 bebe(089e)     cdc174 CALL &74c1
 bec1(08a1)       3e01 LD A,&01
 bec3(08a3)     32375d LD (&5d37),A
@@ -1770,8 +1601,8 @@ return
 Unknown
 -------
 
-bfd4(09b4)            ; DATA - ? - byte
-bfd5(09b5)            ; DATA - ? - byte
+bfd4(09b4)            ; DATA - OUT - byte
+bfd5(09b5)            ; DATA - OUT - byte
 bfd6(09b6)     3a265d LD A,(&5d26)
 bfd9(09b9)         f5 PUSH AF
 bfda(09ba)     2a245d LD HL,(&5d24)
@@ -1782,20 +1613,10 @@ bfe6(09c6)     21ff5a LD HL,&5aff
 bfe9(09c9)     22fb5d LD (&5dfb),HL
 bfec(09cc)       3e8b LD A,&8b
 bfee(09ce)     32265d LD (&5d26),A
-
-a=(5d26)
-(5d3a)=(5d24) [word]
-Find box for 5d3a-5d3b -> (b87b)
-(5dfb)=5aff
-(5d26)=8b (139)
-
 bff1(09d1) a:  3a265d LD A,(&5d26)
 bff4(09d4)         3c INC A
 bff5(09d5)       fea0 CP &a0
-bff7(09d7)     cab5c0 JP Z,x4:&c0b5
-
-if (5d26)+1 == a0: jump x4
-
+bff7(09d7)     cab5c0 JP Z,y0:&c0b5
 bffa(09da)     2afb5d LD HL,(&5dfb)
 bffd(09dd)         23 INC HL
 bffe(09de)         77 LD (HL),A
@@ -1804,69 +1625,25 @@ c000(09e0)       3600 LD (HL),&00
 c002(09e2)     22fb5d LD (&5dfb),HL
 c005(09e5)     32265d LD (&5d26),A
 c008(09e8)     cdc267 CALL &67c2
-
-((5dfb)+1) = (5d26)+1
-((5dfb)+2) = 0
-(5dfb) = (5dfb)+2
-(5d26) = (5d26)+1
-???
-l = (ix+70) * 2
-
-c00b(09eb)   ddcb2546 sla (IX+70)->l
-
-Misidentified????
-
+c00b(09eb)   ddcb2546 BIT 0,(IX+37)
 c00f(09ef)       20e0 JR NZ,a:-30
-
-Possible jump-back
-
 c011(09f1)     dd7e08 LD A,(IX+8)
 c014(09f4)         b7 OR A
 c015(09f5)       28da JR Z,a:-36
-
-And another, where (IX+8)==0
-
 c017(09f7)     3a265d LD A,(&5d26)
-
-Reload A
-
 c01a(09fa)     cde4c0 CALL &c0e4
-
-// DE=(3 * (a-8c) + 5c51)
-
 c01d(09fd)   ed533a5d LD   (&5d3a),DE
-
-Store that DE at 5d3a
-
 c021(0a01)     cd52b8 CALL &b852
-
-Find box for 5d3a-5d3b
-
 c024(0a04)         b7 OR A
 c025(0a05)       28ca JR Z,a:-52
-
-Possibly jump back
-
 c027(0a07)     327cb8 LD (&b87c),A
-
-Store a at b87c
-
 c02a(0a0a)     dd7e27 LD A,(IX+39)
 c02d(0a0d)     2afb5d LD HL,(&5dfb)
 c030(0a10)         77 LD (HL),A
-
-((5dfb))=(ix+39)
-
 c031(0a11)     cd5d78 CALL &785d
-
-Below the line.
-
 c034(0a14)     3a8f5d LD A,(&5d8f)
 c037(0a17)         b7 OR A
 c038(0a18)       281f JR Z,b:33
-
-Jump if 5d8f==0
-
 c03a(0a1a)         47 LD B,A
 c03b(0a1b)     217a5b LD HL,&5b7a
 c03e(0a1e)  d:     e5 PUSH HL
@@ -1876,91 +1653,44 @@ c042(0a22)         5f LD E,A
 c043(0a23)       1600 LD D,&00
 c045(0a25)     213ec2 LD HL,&c23e
 c048(0a28)         19 ADD HL,DE
-
-b=a; hl=c23e+(5b7a)-6e
-
 c049(0a29)         7e LD A,(HL)
 c04a(0a2a)     2afb5d LD HL,(&5dfb)
 c04d(0a2d)         86 ADD A,(HL)
-
-a=(c23e+(5b7a)-6e)+((5dfb))
-
 c04e(0a2e)       3002 JR NC,4
 c050(0a30)       3eff LD A,&ff
 c052(0a32)         77 LD (HL),A
-
-if(a > 255) a = 255 and store at ((5dfb))
-
-c053(0a33) c:      e1 POP HL
-
-hl=5b7a
-
+c053(0a33)         e1 POP HL
 c054(0a34)         23 INC HL
 c055(0a35)         23 INC HL
 c056(0a36)         23 INC HL
-
-hl=5b7d
-
 c057(0a37)       10e5 DJNZ d:-25
-
-Loop
-
 c059(0a39)b: fd2a86ba LD IY,(&ba86)
 c05d(0a3d)     fd7e09 LD A,(IY+9)
 c060(0a40)         6f LD L,A
 c061(0a41)       2600 LD H,&00
-
-HL=((ba86)+9)
-
 c063(0a43)         29 ADD HL,HL
 c064(0a44)         29 ADD HL,HL
 c065(0a45)         29 ADD HL,HL
 c066(0a46)         29 ADD HL,HL
 c067(0a47)         29 ADD HL,HL
-
-HL*=32
-
 c068(0a48)     3a7cb8 LD A,(&b87c)
 c06b(0a4b)         3d DEC A
 c06c(0a4c)         5f LD E,A
 c06d(0a4d)       1600 LD D,&00
 c06f(0a4f)         19 ADD HL,DE
-
-+(b87c)-1
-
 c070(0a50)     111ec2 LD DE,&c21e
 c073(0a53)         19 ADD HL,DE
-
-+c21e
-
 c074(0a54)         7e LD A,(HL)
 c075(0a55)         b7 OR A
 c076(0a56)       2008 JR NZ,f:10
-
-Jump if (hl) is nonzero
-
 c078(0a58)     2afb5d LD HL,(&5dfb)
 c07b(0a5b)       3600 LD (HL),&00
-
-5dfb=0
-
 c07d(0a5d)     c3f1bf JP a:&bff1
-
-Long jump
-
 c080(0a60) f:  2afb5d LD HL,(&5dfb)
 c083(0a63)         86 ADD A,(HL)
 c084(0a64)       3002 JR NC,g:4
 c086(0a66)       3eff LD A,&ff
-
-hl=(5dfb)
-a+=((5dfb))
-if a > ff: a = ff
-
 c088(0a68) g:      77 LD (HL),A
-
-((5dfb)) = a
-
 c089(0a69)     cd7db8 CALL &b87d
 c08c(0a6c)         47 LD B,A
 c08d(0a6d)       3eff LD A,&ff
@@ -1971,12 +1701,6 @@ c095(0a75)         86 ADD A,(HL)
 c096(0a76)       3002 JR NC,h:4
 c098(0a78)       3eff LD A,&ff
 c09a(0a7a) h:      77 LD (HL),A
-
-b=box pair mapping
-a=(ff - b)/2 + ((5dfb))
-if a > ff: a = ff
-((5dfb)) = a
-
 c09b(0a7b)     3a265d LD A,(&5d26)
 c09e(0a7e)       d68c SUB A,&8c
 c0a0(0a80)         5f LD E,A
@@ -1986,36 +1710,18 @@ c0a6(0a86)         19 ADD HL,DE
 c0a7(0a87)         7e LD A,(HL)
 c0a8(0a88)     2afb5d LD HL,(&5dfb)
 c0ab(0a8b)         86 ADD A,(HL)
-
-a=(b63a + (5d26) - 8c) + ((5dfb))
-
 c0ac(0a8c)     d2b1c0 JP NC,x6:&c0b1
 c0af(0a8f)       3eff LD A,&ff
 c0b1(0a91)  x6:    77 LD (HL),A
 c0b2(0a92)     c3f1bf JP a:&bff1
-
-if a > ff: a = ff
-(5dfb) = a
-Jump back
-
-(I have no idea why the first one is a long jump)
-
-c0b5(0a95) x4:     f1 POP AF
+c0b5(0a95) y0:     f1 POP AF
 c0b6(0a96)     32265d LD (&5d26),A
-
-5d26=a
-
 c0b9(0a99)   fd21005b LD IY,&5b00
 c0bd(0a9d)       0614 LD B,&14
 c0bf(0a9f)         af XOR A
 c0c0(0aa0)     32d4bf LD (&bfd4),A
 c0c3(0aa3)     32d5bf LD (&bfd5),A
 c0c6(0aa6)     110200 LD DE,&0002
-
-b=20
-bfd4=bfd5=0
-de=2
-
 c0c9(0aa9) g:  fd7e01 LD A,(IY+1)
 c0cc(0aac)     21d5bf LD HL,&bfd5
 c0cf(0aaf)         be CP (HL)
@@ -2025,14 +1731,46 @@ c0d5(0ab5)     fd7e00 LD A,(IY+0)
 c0d8(0ab8)     32d4bf LD (&bfd4),A
 c0db(0abb) f:    fd19 ADD IY,DE
 c0dd(0abd)       10ea DJNZ g:-20
-
-So this little loop sets bfd5 to the max second number from 5b00 (up to 20), and bfd4 to the corresponding first number.
-
 c0df(0abf)   dd2a335d LD IX,(&5d33)
-
-ix=5d33!
-
 c0e3(0ac3)         c9 RET
+
+a=(5d26)
+(5d3a)=(5d24) [word]
+Find box for 5d3a-5d3b -> (b87b)
+(5dfb)=5aff
+(5d26)=8b (139)
+while (5d26)+1 != a0: // 160
+    ((5dfb)+1) = (5d26)+1
+    ((5dfb)+2) = 0
+    (5dfb) = (5dfb)+2
+    (5d26) = (5d26)+1
+    ???
+    if (ix+37)->0 != 0: `continue`
+    if (ix+8) == 0: `continue`
+    (5d3a) = (3 * ((5d26)-8c) + 5c51)
+    Find box for 5d3a-5d3b -> A
+    if !A: `continue`
+    (b87c)=A
+    ((5dfb))=(ix+39)
+    ???
+    if (5d8f)!=0:
+        a times:
+            ((5dfb)) += (c23e+(5b7a + 3n)-6e) [max 255]
+    if (((ba86) + 9) * 32 + (b87c) - 1 + c21e) == 0:
+        ((5dfb))=0
+        `continue`
+    ((5dfb)) += (((ba86) + 9) * 32 + (b87c) - 1 + c21e) [max 255]
+    b=box pair mapping
+    ((5dfb)) += (ff - b)/2 [max 255]
+    ((5dfb)) += (b63a + (5d26) - 8c) [max 255]
+(5d26)=(5d26)'
+20 times:
+    b=20
+    bfd4=bfd5=0
+    if (5b00+2n+1) >= (bfd5):
+        (bfd5) = (5b00+2n+1)
+        (bfd4) = (5b00+2n+0)
+return(ix=(5d33))
 
 Set DE=8c memory base
 ---------------------
@@ -2300,7 +2038,7 @@ c23e(0c1e)            ; DATA
 
 0x0bfd-0xc9f: ??
 
-c266(0c46)            ; DATA
+c266(0c46): 8-9 10-byte sequences like 01 17 15 23 28 00 00 00 00 00
 
 0x0ca0: Three 32-byte sequences. Purpose isn't clear. There's 01 mapped as 01110111000000000000000000000000, and otherwise 02 x 32 and 03 x 32.
 
