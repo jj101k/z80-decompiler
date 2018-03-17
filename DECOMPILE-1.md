@@ -1,5 +1,4 @@
-Scenario 1
-----------
+# Scenario
 
 Full-screen image loading appears to be line 0, line 8, line 16..., line 1, line
 9, line 17... and then colours at the last second, at least for direct loading
@@ -88,9 +87,9 @@ b715(00f5)            ; DATA
 
 0x00fd-0x010b: 7-8x number pairs: c2 20, c3 40, c3 4c, c3 30, c5 a4, ca a8, cf 4c, d1
 
-Find b787 at or after offset A in entry b731 in the 8x lists
-------------------------------------------------------------
+## Find b787 at or after offset A in entry b731 in the 8x lists
 
+```
 b72c(010c)            ; DATA - memory offset IN
 b72e(010e)            ; DATA - OUT (original A - starting distance)
 b72f(010f)            ; DATA - memory offset LOCAL
@@ -134,6 +133,7 @@ b773(0153)       30e2 JR NC,d:-28
 b775(0155)         47 LD B,A
 b776(0156)         af XOR A
 b777(0157)         c9 RET
+```
 
 So this finds entry (b731) in the 8x lists, starts at word A looking for words where the first byte is < (b787). If it's found, you get Z and the number in B; if it's not, you get NZ. This excludes any first bytes which are in 5b01<3>. b72e is the distance last tested.
 
@@ -171,9 +171,9 @@ d:
 
 NOTE: b731 gets written to/read from willy-nilly elsewhere, but there's only one caller which definitely DOES set b731. It's likely that the semantics make it "make sense" to use b731 as scratch space for certain purposes.
 
-Is A in 5b01<3>
----------------
+## Is A in 5b01<3>
 
+```
 b778(0158)     21015b LD HL,&5b01
 b77b(015b)     110300 LD DE,&0003
 b77e(015e)       0632 LD B,&32
@@ -183,6 +183,7 @@ b782(0162)         19 ADD HL,DE
 b783(0163)       10fb DJNZ a:-3
 b785(0165)         a7 AND A
 b786(0166)         c9 RET
+```
 
 Finds the first triple-byte from 0x5b01 where the first byte equals a; if it's not in the first 50, returns anyway.
 
@@ -192,8 +193,7 @@ In: A
 
 Effective return: flags(Z if found).
 
-Build route(?)
---------------
+## Build route(?)
 
 b787(0167)            ; DATA
 b788(0168)            ; DATA - byte, IN - map coordinate offset?
@@ -365,8 +365,7 @@ b83d(021d)       18c1 JR b:-61
 So this fundamentally writes to memory starting at (b72c) with three-byte data.
 
 
-Store (c912 + 2A) (word) in 5d3a
---------------------------------
+## Store (c912 + 2A) (word) in 5d3a
 
 b83f(021f)         3d DEC A
 b840(0220)         6f LD L,A
@@ -385,8 +384,7 @@ hl=c912 + 2A
 
 Note: the practical starting point may be c914, ie calling with a=0 may be unintended.
 
-Find box for 5d3a-5d3b
-----------------------
+## Find box for 5d3a-5d3b
 
 b852(0232)     218cc8 LD HL,&c88c
 b855(0235)     110500 LD DE,&0005
@@ -420,8 +418,7 @@ This finds the first x [c88c + 5n] where (x) > (5d3a) >= (x+1) and (x+2) > (5d3b
 
 Sets: A, HL, flags
 
-Find box pair mapping
----------------------
+## Find box pair mapping
 
 b87b(025b)            ; DATA - Box ID?
 b87c(025c)            ; DATA - Box ID?
@@ -449,8 +446,7 @@ b89c(027c)         c9 RET
 
 Sets A to a value with B-1 mapping to {0, 1, 3, 6, 10, 15...} and C mapping to itself. This uniquely identifies each B-C pair with a single value, because C is always less than the next initial B value. 0 if they are the same.
 
-Unknown
--------
+## Unknown
 
 b89d(027d)            ; DATA - byte
 b89e(027e)            ; DATA - byte
@@ -736,8 +732,7 @@ Init 11x11 grid
 This is a hardcore spaghetti mess, suggesting that it warrants a lot of
 attention and optimisation.
 
-Find the first entry in 5b99 for which 8c<x> is nonzero -> b713
----------------------------------------------------------------
+## Find the first entry in 5b99 for which 8c<x> is nonzero -> b713
 
 ba5c(043c)     21995b LD HL,&5b99
 ba5f(043f)  b:     7e LD A,(HL)
@@ -778,8 +773,7 @@ else `continue`
 
 So this terminates at ff---- or --ff--. Only the first two bytes are considered at all - and the first needs to be an offset mapping to a nonzero value.
 
-Unknown
--------
+## Unknown
 
 ba86(0466)            ; DATA - IN, memory address
 ba88(0468)  b:     af XOR A
@@ -819,8 +813,7 @@ baad(048d)       18d9 JR b:-37
 
 (ba86)++; `continue`
 
-Unknown
--------
+## Unknown
 
 baaf(048f)            ; DATA - IN, word
 bab0(0490)            ; DATA - LOCAL, byte
@@ -1109,8 +1102,7 @@ bc26(0606)         c9 RET
 if 9a16->NZ: return via 7042
 else return
 
-Overwatch turn-and-fire?
-------------------------
+## Overwatch turn-and-fire?
 
 bc27(0607)     cda6bc CALL &bca6
 bc2a(060a)         c8 RET Z
@@ -1159,8 +1151,7 @@ if ((ba86)+8)->2 != 0 && (bfd4) != 0 && Something something overwatch?->Z:
 
 The use of ix+6 is a bit odd because elsewhere that looked like the overwatch cost. This could be an overwatch turn-and-fire?
 
-Is (5d3a)<w> in (5c0a)<25t>
----------------------------
+## Is (5d3a)<w> in (5c0a)<25t>
 
 bc72(0652)     210a5c LD HL,&5c0a
 bc75(0655)       0619 LD B,&19
@@ -1184,8 +1175,7 @@ bc91(0671)         c9 RET
 
 So this returns (Z) if (5d3a)<w> is in (5c0a)<25t> before it hits an ff first byte
 
-Bitfill 5c0a(50)
-----------------
+## Bitfill 5c0a(50)
 
 bc92(0672)     210a5c LD HL,&5c0a
 bc95(0675)     2270bc LD (&bc70),HL
@@ -1203,8 +1193,7 @@ bca2(0682)         c9 RET
 
 Put 50 (0x32) ffs in 5c0a - 5c3c; also (bc70)=5c0a
 
-Rotate {IX} to face (5d3a) -> Z
--------------------------------
+## Rotate {IX} to face (5d3a) -> Z
 
 In: ix, 5d3a, ix+33
 
@@ -1297,8 +1286,7 @@ if bca5==0: return(Z)
 
 Otherwise: return(NZ)
 
-Find HL in c914
----------------
+## Find HL in c914
 
 bd3f(071f)            ; DATA - LOCAL, word- from hl
 bd40(0720)            ; DATA - LOCAL, word+
@@ -1329,8 +1317,7 @@ Otherwise return (a=0)
 
 IOW, this finds hl in c914; if it takes over c21d steps, a=0; otherwise a is the number of steps left.
 
-Find max(?) in c914
--------------------
+## Find max(?) in c914
 
 bd64(0744)            ; DATA - LOCAL, byte - words after this
 bd65(0745)            ; DATA - LOCAL, byte
@@ -1394,8 +1381,7 @@ Return with a=number of words after the highest A<?> found
 
 This probably finds the closest value to (5d47)/(a54b)/(5d24)
 
-Unknown
--------
+## Unknown
 
 bdb3(0793)     dd7e06 LD A,(IX+6)
 bdb6(0796)         b7 OR A
@@ -1432,8 +1418,7 @@ Out: a(0|1); flags; 5d37; b714
 
 ix+8 is constitution (if on the unit list), which may mean the unit is dead.
 
-Unknown
--------
+## Unknown
 
 bddb(07bb)            ; DATA - LOCAL, word
 bddd(07bd)            ; DATA - LOCAL, byte
@@ -1578,8 +1563,7 @@ de=(5d24)
 The amazing 11x11 grid
 `return`
 
-Set up ix/5d37?
----------------
+## Set up ix/5d37?
 
 beca(08aa) x7: cdcf99 CALL &99cf
 becd(08ad)     cdd771 CALL &71d7
@@ -1598,8 +1582,7 @@ if (ix+36) == 0:
     (5d37)=1
 return
 
-Unknown
--------
+## Unknown
 
 bfd4(09b4)            ; DATA - OUT - byte
 bfd5(09b5)            ; DATA - OUT - byte
@@ -1772,8 +1755,7 @@ while (5d26)+1 != a0: // 160
         (bfd4) = (5b00+2n+0)
 return(ix=(5d33))
 
-Set DE=8c memory base
----------------------
+## Set DE=8c memory base
 
 c0e4(0ac4)       d68c SUB A,&8c
 c0e6(0ac6)         6f LD L,A
@@ -1790,8 +1772,7 @@ c0f2(0ad2)         c9 RET
 So this sets DE=(4 * (a-8c) + 5c51); it does modify a and hl but that seems incidental.
 
 
-Unknown
--------
+## Unknown
 
 c0f3(0ad3)     2a3a5d LD HL,(&5d3a)
 c0f6(0ad6)     22475d LD (&5d47),HL
@@ -1855,8 +1836,7 @@ if find (5d3a) in c914 -> A != 0:
     (b78a)++
 
 
-Op<HL> -> init {7091, 7093}
----------------------------
+## Op<HL> -> init {7091, 7093}
 
 c14c(0b2c)x8:ed5b245d LD   DE,(&5d24)
 c150(0b30)         d5 PUSH DE
@@ -1895,8 +1875,7 @@ if (5b97) != ff:
 
 This retains the original version of 5d24 on return.
 
-Something something overwatch?
-------------------------------
+## Something something overwatch?
 
 c185(0b65)     2a245d LD HL,(&5d24)
 c188(0b68)         e5 PUSH HL
@@ -1994,8 +1973,7 @@ One of 726a, 67c2 or 7326 probably sets IX. Given the offsets, this is probably 
 
 5d24 gets replaced on exit with its original value.
 
-Init 11x11 grid
----------------
+## Init 11x11 grid
 
 c1e4(0bc4) x9: 3a15b7 LD A,(&b715)
 c1e7(0bc7)         b7 OR A
