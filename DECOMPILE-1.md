@@ -685,7 +685,7 @@ Init 11x11 grid
             (b63a+(bdf4)-8c) != 0 &&
             [
                 Store the 8c memory base for (bfd4) -> (5d3a);
-                (Unknown, seems like a write-back routine) c0f3
+                Fill 5c0a from 5d3a via c914/c21d -> b78a
             ]
             (5d8f)!=0
         } :
@@ -1738,7 +1738,7 @@ c0f2(0ad2)         c9 RET
 So this sets DE=(4 * (a-8c) + 5c51); it does modify a and hl but that seems incidental.
 
 
-## Unknown
+## Fill 5c0a from 5d3a via c914/c21d -> b78a
 
 c0f3(0ad3)     2a3a5d LD HL,(&5d3a)
 c0f6(0ad6)     22475d LD (&5d47),HL
@@ -1785,22 +1785,23 @@ c148(0b28)         c1 POP BC
 c149(0b29)       10d9 DJNZ c:-37
 c14b(0b2b)         c9 RET
 
-(5d47)=(5d3a) [word]
-5d8f=0
-(5dfb)=5c0a
-b78a=1
+(5d47) = (5d3a) [word]
+(5d8f) = 0
+(5dfb) = 5c0a
+(b78a) = 1
 if find (5d3a) in c914 -> A != 0:
-    ((5dfb))=A
-    (5dfb)++
-    (5d8f)=1
+    ((5dfb) + (5d8f)) = A
+    (5d8f)++
 (c21d) times:
-    (5d49)=(c914+2n)
+    (5d49) = (c914 + 2n)
     if 7209->Z:
-        ((5dfb))=(b78a)
-        (5dfb)++
+        ((5dfb) + (5d8f)) = (b78a)
         (5d8f)++
     (b78a)++
 
+This looks like it works from the (5d3a)/(c914) relationship: if the find
+works, it takes one step forward. However it's not mutable, so this isn't an
+init routine, more a routine which may have a particular start.
 
 ## Op<HL> -> init {7091, 7093}
 
