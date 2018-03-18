@@ -818,17 +818,11 @@ through until bab1->bab0(x) is zero.
 ## Unknown
 
 baaf(048f)            ; DATA - IN, word
-bab0(0490)            ; DATA - LOCAL, byte
+bab0(0490)            ; DATA - OUT, byte
 bab1(0491)         af XOR A
 bab2(0492)     32b0ba LD (&bab0),A
-
-(bab0)=0
-
 bab5(0495)     2a245d LD HL,(&5d24)
 bab8(0498)     cd41bd CALL &bd41
-
-Find (5d24) in c914 -> A
-
 babb(049b)     21afba LD HL,&baaf
 babe(049e)         be CP (HL)
 babf(049f)       200c JR NZ,a:14
@@ -838,11 +832,6 @@ bac6(04a6)     3ad4bf LD A,(&bfd4)
 bac9(04a9)         b7 OR A
 baca(04aa)       205e JR NZ,d:96
 bacc(04ac)         c9 RET
-
-if a == (baaf): bab0=1
-    if (bfd4)==0: `return`
-    else: jump
-
 bacd(04ad) a:  21f05c LD HL,&5cf0
 bad0(04b0)     222cb7 LD (&b72c),HL
 bad3(04b3)     3aafba LD A,(&baaf)
@@ -856,12 +845,6 @@ bae5(04c5)     3a88b7 LD A,(&b788)
 bae8(04c8)     21f05c LD HL,&5cf0
 baeb(04cb)         77 LD (HL),A
 baec(04cc)       1827 JR c:41
-
-(b72c)=5cf0
-(b789)=(baaf)
-Find max(?) in c914 -> b788
-if (b788) == (b789): (5cf0) = (b788); jump
-
 baee(04ce) b:  cd8cb7 CALL &b78c
 baf1(04d1)     21f05c LD HL,&5cf0
 baf4(04d4)     222cb7 LD (&b72c),HL
@@ -872,21 +855,11 @@ bb00(04e0)         23 INC HL
 bb01(04e1)         7e LD A,(HL)
 bb02(04e2)     cd3fb8 CALL &b83f
 bb05(04e5)   ed53495d LD   (&5d49),DE
-
-Build route(?)
-(b72c)=5cf0
-(5d47)=(5d24) [word]
-Store (c912 + 2 * ((b72c)+1)) (word) in 5d3a
-(5d49)=DE
-
 bb09(04e9)     cd0172 CALL &7201
 bb0c(04ec)       2007 JR NZ,c:9
 bb0e(04ee)     2a2cb7 LD HL,(&b72c)
 bb11(04f1)         23 INC HL
 bb12(04f2)     222cb7 LD (&b72c),HL
-
-if ???->Z: (b72c)=(b72c)+1 [word]
-
 bb15(04f5) c:  2a2cb7 LD HL,(&b72c)
 bb18(04f8)         7e LD A,(HL)
 bb19(04f9)     3231b7 LD (&b731),A
@@ -895,13 +868,6 @@ bb1d(04fd)     222cb7 LD (&b72c),HL
 bb20(0500)     cd3fb8 CALL &b83f
 bb23(0503)   ed53daa5 LD   (&a5da),DE
 bb27(0507)     cd92bc CALL &bc92
-
-(b731)=((b72c))
-(b72c)=(b72c)+1 [word]
-Store (c912 + 2*(b731)) (word) in 5d3a
-(a5da)=(5d3a)
-Bitfill 5c0a(50)
-
 bb2a(050a) d:  3ab0ba LD A,(&bab0)
 bb2d(050d)         b7 OR A
 bb2e(050e)       2812 JR Z,e:20
@@ -926,29 +892,11 @@ bb5a(053a)       18ce JR d:-48
 bb5c(053c) g:  2131b7 LD HL,&b731
 bb5f(053f)         be CP (HL)
 bb60(0540)       28b3 JR Z,c:-75
-
-if (bab0) != 0 && (bfd4) != 0:
-    a=(bfd4)
-    Set (a5da)=8c memory base
-    Jump
-else:
-    Find (5d24) in c914 -> A
-    if (baaf) == A:
-        bab0 = 1
-        if (bfd4) == 0: jump forward
-        else: jump back
-    else if (b731) == A: jump back
-
 bb62(0542) f:  2a245d LD HL,(&5d24)
 bb65(0545)     22dca5 LD (&a5dc),HL
 bb68(0548)     cde0a5 CALL &a5e0
 bb6b(054b)     21005b LD HL,&5b00
 bb6e(054e)     22fb5d LD (&5dfb),HL
-
-(a5dc)=(5d24) [word]
-???
-(5dfb)=5b00
-
 bb71(0551)       0608 LD B,&08
 bb73(0553)  h:     c5 PUSH BC
 bb74(0554)     2afb5d LD HL,(&5dfb)
@@ -983,23 +931,6 @@ bbae(058e)       10c3 DJNZ h:-59
 bbb0(0590)     cd169a CALL &9a16
 bbb3(0593)     c24270 JP NZ,&7042
 bbb6(0596)         c9 RET
-
-8 times:
-
-if byte((5dfb)+3n)!=ff:
-    if word((5dfb)+3n) is in (5c0a)<25t>, jump l
-    else:
-        (5d38)=0
-        ???
-        if (5d29) == 2: jump k
-        else if (5d29) == 5: jump l
-        else if (ix+22) == 8c: `continue`
-        else if (5d29) == 1: jump k
-        else: `continue`
-
-if ???->NZ: return via 7042
-else: return
-
 bbb7(0597) m:  2a3e5d LD HL,(&5d3e)
 bbba(059a)         7e LD A,(HL)
 bbbb(059b)     cdf767 CALL &67f7
@@ -1014,13 +945,6 @@ bbcd(05ad)       284c JR Z,x9:78
 bbcf(05af)     cdf779 CALL &79f7
 bbd2(05b2)       3847 JR C,x9:73
 bbd4(05b4)     c32abb JP d:&bb2a
-
-a=((5d3e))
-???
-if (iy+8) != 1:
-    if Rotate {IX} to face (5d3a) -> Z || 79f7 -> C: jump x9
-    else: jump back to d
-
 bbd7(05b7) n:  2a3e5d LD HL,(&5d3e)
 bbda(05ba)         7e LD A,(HL)
 bbdb(05bb)       0608 LD B,&08
@@ -1030,79 +954,119 @@ bbe1(05c1)       2805 JR Z,o:7
 bbe3(05c3)         23 INC HL
 bbe4(05c4)       10fa DJNZ p:-4
 bbe6(05c6)       18c5 JR i:-57
-
-8 times:
-    if (c25e) == ((5d3e+n)): `break`
-
-if fall through: jump back
-
 bbe8(05c8)  o:     c1 POP BC
 bbe9(05c9)     cda6bc CALL &bca6
 bbec(05cc)       282d JR Z,x9:47
-
-if Rotate {IX} to face (5d3a) -> Z: jump x9
-
 bbee(05ce)     cd0b7f CALL &7f0b
 bbf1(05d1)     3a375d LD A,(&5d37)
 bbf4(05d4)         b7 OR A
 bbf5(05d5)       2024 JR NZ,x9:38
-
-???
-
-Jump if (5d37)!=0
-
 bbf7(05d7)     c32abb JP d:&bb2a
-
-Jump back!
-
 bbfa(05da) k:      c1 POP BC
 bbfb(05db)       181e JR x9:32
-
-Jump x9
-
 bbfd(05dd) l:      c1 POP BC
 bbfe(05de)     cd27bc CALL &bc27
-
-Overwatch turn-and-fire?
-
 bc01(05e1)     3a595d LD A,(&5d59)
 bc04(05e4)         b7 OR A
 bc05(05e5)       2019 JR NZ,m:27
-
-if (5d59) != 0: jump
-
 bc07(05e7)     3a625d LD A,(&5d62)
 bc0a(05ea)         b7 OR A
 bc0b(05eb)       2013 JR NZ,m:21
-
-If (5d62) != 0: jump
-
 bc0d(05ed)     cdb3bd CALL &bdb3
 bc10(05f0)       2809 JR Z,x9:11
-
-if bdb3->Z: jump
-
 bc12(05f2)     3a375d LD A,(&5d37)
 bc15(05f5)         b7 OR A
 bc16(05f6)       2008 JR NZ,m:10
-
-if (5d37) != 0: jump
-
 bc18(05f8)     c32abb JP d:&bb2a
-
-else jump back
-
 bc1b(05fb)  x9:  3e01 LD A,&01
 bc1d(05fd)     32375d LD (&5d37),A
-
-(5d37)=1
-
 bc20(0600) m:  cd169a CALL &9a16
 bc23(0603)     c24270 JP NZ,&7042
 bc26(0606)         c9 RET
 
-if 9a16->NZ: return via 7042
-else return
+(bab0)=0
+if Find (5d24) in c914 == (baaf):
+    bab0 = 1
+    if (bfd4)==0: `return`
+    else: jump d
+else:
+    (b72c)=5cf0
+    (b789)=(baaf)
+    Find max(?) in c914 -> b788
+    if (b788) == (b789):
+        (5cf0) = (b788)
+    else:
+        Build route(?)
+        (b72c)=5cf0
+        (5d47)=(5d24) [word]
+        Store (c912 + 2 * ((b72c)+1)) (word) in 5d3a
+        (5d49)=DE
+        if ???->Z: (b72c)++
+loop c:
+    (b731)=((b72c))
+    (b72c)++
+    Store (c912 + 2*(b731)) (word) in 5d3a
+    (a5da)=(5d3a)
+    Bitfill 5c0a(50)
+    loop d:
+        if (bab0) != 0 && (bfd4) != 0:
+            a=(bfd4)
+            Set (a5da)=8c memory base
+        else:
+            Find (5d24) in c914 -> A
+            if (baaf) == A:
+                (bab0) = 1
+                if (bfd4) == 0: &return(true)
+                else: `continue`
+            else if (b731) == A: `continue c`
+        (a5dc)=(5d24) [word]
+        ???
+        (5dfb)=5b00
+        8 times:
+            if byte((5dfb)+3n)!=ff:
+                if word((5dfb)+3n) is in (5c0a)<25t>:
+                    Overwatch turn-and-fire?
+                    if (5d59) != 0 || (5d62) != 0 || {bdb3->NZ && (5d37) != 0}:
+                        &return(false)
+                    else if bdb3->NZ && (5d37) != 0:
+                        `continue`
+                    else:
+                        &return(true)
+                else:
+                    (5d38)=0
+                    ???
+                    if (5d29) == 2: &return(true)
+                    else if (5d29) == 5:
+                        Overwatch turn-and-fire?
+                        if (5d59) != 0 || (5d62) != 0 || {bdb3->NZ && (5d37) != 0}:
+                            &return(false)
+                        else if bdb3->NZ && (5d37) != 0:
+                            `continue`
+                        else:
+                            &return(true)
+                    else if (ix+22) == 8c: `continue`
+                    else if (5d29) == 1:
+                        a=((5d3e))
+                        ???
+                        if (iy+8) != 1:
+                            if Rotate {IX} to face (5d3a) -> Z || 79f7 -> C:
+                                &return(true)
+                        else:
+                            8 times:
+                                if (c25e) == ((5d3e+n)):
+                                    if {
+                                        Rotate {IX} to face (5d3a) -> Z ||
+                                        ???->(5d37) != 0
+                                    }:
+                                        &return(true)
+                    else if last loop:
+                        &return(false)
+
+&return(set) {
+    if set: (5d37) = 1
+    if 9a16->NZ: return via 7042
+    else return
+}
 
 ## Overwatch turn-and-fire?
 
