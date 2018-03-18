@@ -710,7 +710,7 @@ Init 11x11 grid
             if (iy+8)->0 == 0 || (iy+8)->1 != 0 && (b714) != 0:
                 (b89e) = (ix+5) / 2
             a:
-            ?Unknown? ba88
+            Find an entry in distance-list ((ba86)) for which bab1->bab0 is zero
             if there's an entry in 5b99 for which 8x<x> is nonzero && (5d62) == 0:
                 `break`
         x2:
@@ -773,7 +773,7 @@ else `continue`
 
 So this terminates at ff---- or --ff--. Only the first two bytes are considered at all - and the first needs to be an offset mapping to a nonzero value.
 
-## Unknown
+## Find an entry in distance-list ((ba86)) for which bab1->bab0 is zero
 
 ba86(0466)            ; DATA - IN, memory address
 ba88(0468)  b:     af XOR A
@@ -789,29 +789,31 @@ ba98(0478)       2007 JR NZ,a:9
 ba9a(047a)     2a86ba LD HL,(&ba86)
 ba9d(047d)       3601 LD (HL),&01
 ba9f(047f)       18e7 JR b:-23
-
-bfd4=0
-
-baaf=((ba86)+((ba86)))
-
-if ((ba86)+((ba86)))!=0: `break`
-else: ((ba86))=1; `continue`
-
 baa1(0481) a:  cdb1ba CALL &bab1
-
-Unknown.
-
 baa4(0484)     3ab0ba LD A,(&bab0)
 baa7(0487)         b7 OR A
 baa8(0488)         c8 RET Z
-
-Return if bab0==0 (with A set to bab0)
-
 baa9(0489)     2a86ba LD HL,(&ba86)
 baac(048c)         34 INC (HL)
 baad(048d)       18d9 JR b:-37
 
-(ba86)++; `continue`
+loop:
+    (bfd4) = 0
+    (baaf) = (((ba86)) + n + (((ba86)) + n))
+
+    if (((ba86)) + n + (((ba86)) + n)) == 0:
+        // Reset to ((ba86)) + n == 1
+    else:
+        ?Unknown? bab1
+        if (bab0) == 0: return
+
+Ugh so much dereferencing.
+
+The value in (ba86) never changes, but the value in ((ba86)) - let's say (ba86')
+- is incremented or reset to 1. This refers to a distance after ba86' which
+contains a value of some kind. IOW, these look a lot like "cheap strings", as
+<distance>, <byte1>, <byte2>, ... <null>. It just starts where it is, and runs
+through until bab1->bab0(x) is zero.
 
 ## Unknown
 
