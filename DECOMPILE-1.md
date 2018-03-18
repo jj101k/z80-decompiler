@@ -1686,32 +1686,30 @@ c0e3(0ac3)         c9 RET
 a=(5d26)
 (5d3a)=(5d24) [word]
 Find box for 5d3a-5d3b -> (b87b)
-(5dfb)=5aff
+(5dfb)=5b00 - 1
 (5d26)=8b (139)
-while (5d26)+1 != a0: // 160
-    ((5dfb)+1) = (5d26)+1
-    ((5dfb)+2) = 0
-    (5dfb) = (5dfb)+2
-    (5d26) = (5d26)+1
+while (5d26 + n) + 1 != a0: // 160
+    ((5dfb) + 2n + 1) = (5d26 + n) + 1
+    ((5dfb) + 2n + 2) = 0
     ???
     if (ix+37)->0 != 0: `continue`
     if (ix+8) == 0: `continue`
-    (5d3a) = (3 * ((5d26)-8c) + 5c51)
+    (5d3a) = (3 * ((5d26 + n)-8c) + 5c51)
     Find box for 5d3a-5d3b -> A
     if !A: `continue`
     (b87c)=A
-    ((5dfb))=(ix+39)
+    ((5dfb) + 2n + 2)=(ix+39)
     ???
     if (5d8f)!=0:
         a times:
-            ((5dfb)) += (c23e+(5b7a + 3n)-6e) [max 255]
+            ((5dfb) + 2n + 2) += (c23e+(5b7a + 3n)-6e) [max 255]
     if (((ba86) + 9) * 32 + (b87c) - 1 + c21e) == 0:
-        ((5dfb))=0
+        ((5dfb) + 2n + 2)=0
         `continue`
-    ((5dfb)) += (((ba86) + 9) * 32 + (b87c) - 1 + c21e) [max 255]
+    ((5dfb) + 2n + 2) += (((ba86) + 9) * 32 + (b87c) - 1 + c21e) [max 255]
     b=box pair mapping
-    ((5dfb)) += (ff - b)/2 [max 255]
-    ((5dfb)) += (b63a + (5d26) - 8c) [max 255]
+    ((5dfb) + 2n + 2) += (ff - b)/2 [max 255]
+    ((5dfb) + 2n + 2) += (b63a + (5d26 + n) - 8c) [max 255]
 (5d26)=(5d26)'
 20 times:
     b=20
