@@ -402,6 +402,18 @@ class MapUnit {
         this.map = map
         this.n = n
     }
+    get actionPoints() {
+        return this.data[27]
+    }
+    get agility() {
+        return this.data[21]
+    }
+    get closeCombat() {
+        return this.data[19]
+    }
+    get constitution() {
+        return this.data[7]
+    }
     get data() {
         return this.map.unitData.slice(
             this.n * 40,
@@ -412,9 +424,32 @@ class MapUnit {
         return this.data[3]
     }
     get dump() {
-        return `deathSprite = ${this.deathSprite}; weaponEntity = ${this.weaponEntity}; ${this.data}`
+        return [
+            "actionPoints",
+            "agility",
+            "closeCombat",
+            "constitution",
+            "deathSprite",
+            "morale",
+            "stamina",
+            "strength",
+            "weaponEntity",
+            "weaponSkill"
+        ].map(k => `${k} = ${this[k]}`).join("; ") + `; ${this.data}`
+    }
+    get morale() {
+        return this.data[11]
+    }
+    get stamina() {
+        return this.data[9]
+    }
+    get strength() {
+        return this.data[20]
     }
     get weaponEntity() {
         return this.data[35]
+    }
+    get weaponSkill() {
+        return this.data[18]
     }
 }
