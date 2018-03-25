@@ -403,7 +403,7 @@ class MapUnit {
         this.n = n
     }
     get actionPoints() {
-        return this.data[27]
+        return this.data[27] // Possibly including 28
     }
     get agility() {
         return this.data[21]
@@ -412,7 +412,7 @@ class MapUnit {
         return this.data[19]
     }
     get constitution() {
-        return this.data[7]
+        return this.data[7] // and 8
     }
     get data() {
         return this.map.unitData.slice(
@@ -438,10 +438,10 @@ class MapUnit {
         ].map(k => `${k} = ${this[k]}`).join("; ") + `; ${this.data}`
     }
     get morale() {
-        return this.data[11]
+        return this.data[11] // and 12
     }
     get stamina() {
-        return this.data[9]
+        return this.data[9] // and 10
     }
     get strength() {
         return this.data[20]
