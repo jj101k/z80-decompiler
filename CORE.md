@@ -10,11 +10,10 @@ Information about the core program
 
 5b00-5b95: Up to 20 words where the max second byte may be meaningful. These
 *might* be 16-bit numbers which are ordered, but that's a bit unlikely. The
-first number is meaningful with 8c subtracted, so it *may* be masked with 8f,
-ie. it may be a single bit in the left four, and 2+2 bits in the right four. The
-alternative is that it may be masked to fc, making it 1+3+2+(..). It can
-definitely be used as a jump distance from b63a. First of each pair may come
-from 5d26, second starts as ix+39 and is meaningfully capped at 255.
+first number is meaningful with 8c (the first-unit offset in the entity list)
+subtracted. It can definitely be used as a jump distance from b63a. First of
+each pair may come from 5d26, second starts as ix+39 and is meaningfully capped
+at 255.
 
 0 is a valid value for 5b00.
 
@@ -29,7 +28,7 @@ It's likely that this is convenient multipurpose memory.
 storage.
 5b97                  ; DATA - may be ff
 
-5b99-?: triple-byte values where the first is an 8c offset or ff; and the second
+5b99-?: triple-byte values where the first is a map entity or ff; and the second
 may be ff.
 
 5c0a-5c3c - single bytes, 50x, ff is valid
@@ -47,7 +46,7 @@ memory base.
 
 5d24-5d25: Apparent memory address
 
-5d26 - byte, may be ff or 8c+n
+5d26 - byte, may be ff or a map entity
 5d2f                  ; DATA
 5d33                  ; DATA
 5d36                  ; DATA

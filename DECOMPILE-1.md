@@ -35,7 +35,7 @@ b636(0016)         c9 RET
 
 b639(0019): ?
 
-b63a(001a): Up to 115 bytes of data - thus ending by b6ae(008e). In practice this may end significantly sooner, since the only known criteria are that offsets are n-8c and ff is not considered valid. This relates to 5b00, 5b99, 5d26 all of which may contain "8c offsets". Since those offsets aren't static, it's likely that they are related in common cases.
+b63a-b64d(001a-002d): Per-unit data (20 bytes). This relates to 5b00, 5b99, 5d26.
 
 0x002e-0x0038: Short sequence a5 a6 a7 a8 ff 98 97 01 02 03 04. Possibly an entity order hint.
 
@@ -77,7 +77,7 @@ ff = weapon
 
 (nulls)
 
-b713(00f3)            ; DATA - byte from 8c set
+b713(00f3)            ; DATA - byte, unit id
 b714(00f4)            ; DATA
 b715(00f5)            ; DATA
 
@@ -684,7 +684,7 @@ Init 11x11 grid
             (bfd4)!=0 &&
             (b63a+(bdf4)-8c) != 0 &&
             [
-                Store the 8c memory base for (bfd4) -> (5d3a);
+                Store the unit 5c51 memory base for (bfd4) -> (5d3a);
                 Fill 5c0a from 5d3a via c914/c21d -> b78a
             ]
             (5d8f)!=0
@@ -716,7 +716,7 @@ Init 11x11 grid
         x2:
         if (ix+8) == 0: jump x1
         a=(b713)
-        Find 8c memory base -> (a5da)
+        Find unit 5c51 memory base -> (a5da)
         (a5dc) = (5d24) [word]
         ?Unknown? a5e0
         Rotate {IX} to face (5b00) -> Z
@@ -732,7 +732,7 @@ Init 11x11 grid
 This is a hardcore spaghetti mess, suggesting that it warrants a lot of
 attention and optimisation.
 
-## Find the first entry in 5b99 for which 8c<x> is nonzero -> b713
+## Find the first entry in 5b99 for which b63a<unit<x>> is nonzero -> b713
 
 ba5c(043c)     21995b LD HL,&5b99
 ba5f(043f)  b:     7e LD A,(HL)
@@ -1011,7 +1011,7 @@ loop c:
     loop d:
         if (bab0) != 0 && (bfd4) != 0:
             a=(bfd4)
-            Set (a5da)=8c memory base
+            Set (a5da)=unit 5c51 memory base
         else:
             Find (5d24) in c914 -> A
             if (baaf) == A:
@@ -1719,7 +1719,7 @@ while (5d26 + n) + 1 != a0: // 160
         (bfd4) = (5b00+2n+0)
 return(ix=(5d33))
 
-## Set DE=8c memory base
+## Set DE=unit 5c51 memory base
 
 c0e4(0ac4)       d68c SUB A,&8c
 c0e6(0ac6)         6f LD L,A
