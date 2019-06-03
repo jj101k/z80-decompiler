@@ -341,7 +341,7 @@ class MapSprite {
         // 64 = Deployment?
         // 128 = ?
         const colours = this.colours
-        const x = this.imageData
+        const id = this.imageData
         function bit(n, j) {
             return (n >> (7-j)) & 1
         }
@@ -356,14 +356,14 @@ class MapSprite {
         for(let i = 0; i < 2; i++) {
             for(let r = 0; r < S; r++) {
                 for(let j = 0; j < S; j++) {
-                    const a = bit(x[r + i * S * 2], j)
+                    const a = bit(id[r + i * S * 2], j)
                     const y = i * S + r
                     d.data[pixel(j, y) + 0] = colours.fg[0] * a + colours.bg[0] * (1 - a)
                     d.data[pixel(j, y) + 1] = colours.fg[1] * a + colours.bg[1] * (1 - a)
                     d.data[pixel(j, y) + 2] = colours.fg[2] * a + colours.bg[2] * (1 - a)
                     d.data[pixel(j, y) + 3] = 255
 
-                    const b = bit(x[r + i * S * 2 + S], j)
+                    const b = bit(id[r + i * S * 2 + S], j)
                     d.data[pixel(j + S, y) + 0] = colours.fg[0] * b + colours.bg[0] * (1 - b)
                     d.data[pixel(j + S, y) + 1] = colours.fg[1] * b + colours.bg[1] * (1 - b)
                     d.data[pixel(j + S, y) + 2] = colours.fg[2] * b + colours.bg[2] * (1 - b)
