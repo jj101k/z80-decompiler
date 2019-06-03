@@ -340,24 +340,34 @@ class MapSprite {
         let d = ctx.createImageData(16, 16)
         // 64 = Deployment?
         // 128 = ?
-        let colours = this.colours
-        let x = this.imageData
-        let bit = (n, j) => {
+        const colours = this.colours
+        const x = this.imageData
+        function bit(n, j) {
             return (n >> (7-j)) & 1
         }
+        function pixel(x, y) {
+            return (x + y * 16) * 4
+        }
+        // Each output row is 16 pixels wide at 4 bytes per pixel = 64 bytes
+        // There are 16 of those = 1024 bytes
+        //
+        // Input is four 8x8 mini-sprites
+        const S = 8 // The size of a mini-sprite
         for(let i = 0; i < 2; i++) {
-            for(let r = 0; r < 8; r++) {
-                for(let j = 0; j < 8; j++) {
-                    let a = bit(x[r + i * 16], j)
-                    let b = bit(x[r + i * 16 + 8], j)
-                    d.data[i * 512 + r * 64 + j * 4 + 0] = colours.fg[0] * a + colours.bg[0] * (1 - a)
-                    d.data[i * 512 + r * 64 + j * 4 + 1] = colours.fg[1] * a + colours.bg[1] * (1 - a)
-                    d.data[i * 512 + r * 64 + j * 4 + 2] = colours.fg[2] * a + colours.bg[2] * (1 - a)
-                    d.data[i * 512 + r * 64 + j * 4 + 3] = 255
-                    d.data[i * 512 + r * 64 + 32 + j * 4 + 0] = colours.fg[0] * b + colours.bg[0] * (1 - b)
-                    d.data[i * 512 + r * 64 + 32 + j * 4 + 1] = colours.fg[1] * b + colours.bg[1] * (1 - b)
-                    d.data[i * 512 + r * 64 + 32 + j * 4 + 2] = colours.fg[2] * b + colours.bg[2] * (1 - b)
-                    d.data[i * 512 + r * 64 + 32 + j * 4 + 3] = 255
+            for(let r = 0; r < S; r++) {
+                for(let j = 0; j < S; j++) {
+                    const a = bit(x[r + i * S * 2], j)
+                    const y = i * S + r
+                    d.data[pixel(j, y) + 0] = colours.fg[0] * a + colours.bg[0] * (1 - a)
+                    d.data[pixel(j, y) + 1] = colours.fg[1] * a + colours.bg[1] * (1 - a)
+                    d.data[pixel(j, y) + 2] = colours.fg[2] * a + colours.bg[2] * (1 - a)
+                    d.data[pixel(j, y) + 3] = 255
+
+                    const b = bit(x[r + i * S * 2 + S], j)
+                    d.data[pixel(j + S, y) + 0] = colours.fg[0] * b + colours.bg[0] * (1 - b)
+                    d.data[pixel(j + S, y) + 1] = colours.fg[1] * b + colours.bg[1] * (1 - b)
+                    d.data[pixel(j + S, y) + 2] = colours.fg[2] * b + colours.bg[2] * (1 - b)
+                    d.data[pixel(j + S, y) + 3] = 255
                 }
             }
         }
