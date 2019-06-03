@@ -5,6 +5,8 @@
         <style type="text/css">
             canvas#map {
                 border: 1px solid black;
+                height: 800px;
+                width: 1280px;
             }
             #output canvas {
                 border: 1px solid black;
@@ -29,7 +31,7 @@
         <p>
             <fieldset id="selections"></fieldset>
         </p>
-        <canvas id="map" width="1280" height="800"></canvas>
+        <canvas id="map"></canvas>
         <pre id="output"></pre>
         <script>
             let m = new MapReader("#file", "#output", "#map", "#selections")

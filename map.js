@@ -201,10 +201,9 @@ class MapReader {
         map_instance.spriteCount = 185 // 0xb0 // 176
 
         map_instance.chunk = chunk
-        let ctx = this.mapOut.getContext("2d")
-        let bit = (n, j) => {
-            return (n >> (7-j)) & 1
-        }
+        this.mapOut.width = this.mapOut.clientWidth * window.devicePixelRatio
+        this.mapOut.height = this.mapOut.clientHeight * window.devicePixelRatio
+        const ctx = this.mapOut.getContext("2d")
         let sprite_for = this.altMap ?
             map_instance.altSpriteFor :
             map_instance.spriteFor
@@ -219,8 +218,8 @@ class MapReader {
                         7,
                         i
                     ).colouredImageData(ctx),
-                    (i % 80) * 16,
-                    Math.floor(i / 80) * 32
+                    (i % 80) * 16 * window.devicePixelRatio,
+                    Math.floor(i / 80) * 32 * window.devicePixelRatio
                 )
                 ctx.fillStyle = "red"
                 ctx.fillText(
@@ -236,8 +235,8 @@ class MapReader {
                 row.forEach((n, x) => {
                     ctx.putImageData(
                         sprite_for[n].colouredImageData(ctx),
-                        x * 16,
-                        i * 16
+                        x * 16 * window.devicePixelRatio,
+                        i * 16 * window.devicePixelRatio
                     )
                 })
             }
@@ -251,8 +250,10 @@ class MapReader {
             line.appendChild(document.createTextNode(tile.dump))
             if(sprite_for[n]) {
                 let canvas = document.createElement("canvas")
-                canvas.width = 16
-                canvas.height = 16
+                canvas.width = 16 * window.devicePixelRatio
+                canvas.height = 16 * window.devicePixelRatio
+                canvas.style.height = "16px"
+                canvas.style.width = "16px"
                 line.appendChild(canvas)
                 let ctx = canvas.getContext("2d")
                 ctx.putImageData(
@@ -337,7 +338,7 @@ class MapSprite {
      * @param {CanvasRenderingContext2D} ctx
      */
     colouredImageData(ctx) {
-        let d = ctx.createImageData(16, 16)
+        const d = ctx.createImageData(16 * window.devicePixelRatio, 16 * window.devicePixelRatio)
         // 64 = Deployment?
         // 128 = ?
         const colours = this.colours
@@ -346,7 +347,7 @@ class MapSprite {
             return (n >> (7-j)) & 1
         }
         function pixel(x, y) {
-            return (x + y * 16) * 4
+            return (x + y * 16 * window.devicePixelRatio) * 4
         }
         // Each output row is 16 pixels wide at 4 bytes per pixel = 64 bytes
         // There are 16 of those = 1024 bytes
@@ -357,17 +358,23 @@ class MapSprite {
             for(let r = 0; r < S; r++) {
                 for(let j = 0; j < S; j++) {
                     const a = bit(id[r + i * S * 2], j)
-                    const y = i * S + r
-                    d.data[pixel(j, y) + 0] = colours.fg[0] * a + colours.bg[0] * (1 - a)
-                    d.data[pixel(j, y) + 1] = colours.fg[1] * a + colours.bg[1] * (1 - a)
-                    d.data[pixel(j, y) + 2] = colours.fg[2] * a + colours.bg[2] * (1 - a)
-                    d.data[pixel(j, y) + 3] = 255
-
                     const b = bit(id[r + i * S * 2 + S], j)
-                    d.data[pixel(j + S, y) + 0] = colours.fg[0] * b + colours.bg[0] * (1 - b)
-                    d.data[pixel(j + S, y) + 1] = colours.fg[1] * b + colours.bg[1] * (1 - b)
-                    d.data[pixel(j + S, y) + 2] = colours.fg[2] * b + colours.bg[2] * (1 - b)
-                    d.data[pixel(j + S, y) + 3] = 255
+                    for(let ox = 0; ox < window.devicePixelRatio; ox++) {
+                        for(let oy = 0; oy < window.devicePixelRatio; oy++) {
+                            const x1 = j * window.devicePixelRatio + ox
+                            const y = (i * S + r) * window.devicePixelRatio + oy
+                            d.data[pixel(x1, y) + 0] = colours.fg[0] * a + colours.bg[0] * (1 - a)
+                            d.data[pixel(x1, y) + 1] = colours.fg[1] * a + colours.bg[1] * (1 - a)
+                            d.data[pixel(x1, y) + 2] = colours.fg[2] * a + colours.bg[2] * (1 - a)
+                            d.data[pixel(x1, y) + 3] = 255
+
+                            const x2 = (j + S) * window.devicePixelRatio + ox
+                            d.data[pixel(x2, y) + 0] = colours.fg[0] * b + colours.bg[0] * (1 - b)
+                            d.data[pixel(x2, y) + 1] = colours.fg[1] * b + colours.bg[1] * (1 - b)
+                            d.data[pixel(x2, y) + 2] = colours.fg[2] * b + colours.bg[2] * (1 - b)
+                            d.data[pixel(x2, y) + 3] = 255
+                        }
+                    }
                 }
             }
         }
