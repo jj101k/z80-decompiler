@@ -320,6 +320,8 @@ class MapSprite {
         this.map = map
         this.sprite = n
         this.colour = colour
+        /** @type {?ImageData} */
+        this.cachedImageData = null
     }
     get colours() {
         return {
@@ -338,47 +340,50 @@ class MapSprite {
      * @param {CanvasRenderingContext2D} ctx
      */
     colouredImageData(ctx) {
-        const d = ctx.createImageData(16 * window.devicePixelRatio, 16 * window.devicePixelRatio)
-        // 64 = Deployment?
-        // 128 = ?
-        const colours = this.colours
-        const id = this.imageData
-        function bit(n, j) {
-            return (n >> (7-j)) & 1
-        }
-        function pixel(x, y) {
-            return (x + y * 16 * window.devicePixelRatio) * 4
-        }
-        // Each output row is 16 pixels wide at 4 bytes per pixel = 64 bytes
-        // There are 16 of those = 1024 bytes
-        //
-        // Input is four 8x8 mini-sprites
-        const S = 8 // The size of a mini-sprite
-        for(let i = 0; i < 2; i++) {
-            for(let r = 0; r < S; r++) {
-                for(let j = 0; j < S; j++) {
-                    const a = bit(id[r + i * S * 2], j)
-                    const b = bit(id[r + i * S * 2 + S], j)
-                    for(let ox = 0; ox < window.devicePixelRatio; ox++) {
-                        for(let oy = 0; oy < window.devicePixelRatio; oy++) {
-                            const x1 = j * window.devicePixelRatio + ox
-                            const y = (i * S + r) * window.devicePixelRatio + oy
-                            d.data[pixel(x1, y) + 0] = colours.fg[0] * a + colours.bg[0] * (1 - a)
-                            d.data[pixel(x1, y) + 1] = colours.fg[1] * a + colours.bg[1] * (1 - a)
-                            d.data[pixel(x1, y) + 2] = colours.fg[2] * a + colours.bg[2] * (1 - a)
-                            d.data[pixel(x1, y) + 3] = 255
+        if(!this.cachedImageData) {
+            const d = ctx.createImageData(16 * window.devicePixelRatio, 16 * window.devicePixelRatio)
+            // 64 = Deployment?
+            // 128 = ?
+            const colours = this.colours
+            const id = this.imageData
+            function bit(n, j) {
+                return (n >> (7-j)) & 1
+            }
+            function pixel(x, y) {
+                return (x + y * 16 * window.devicePixelRatio) * 4
+            }
+            // Each output row is 16 pixels wide at 4 bytes per pixel = 64 bytes
+            // There are 16 of those = 1024 bytes
+            //
+            // Input is four 8x8 mini-sprites
+            const S = 8 // The size of a mini-sprite
+            for(let i = 0; i < 2; i++) {
+                for(let r = 0; r < S; r++) {
+                    for(let j = 0; j < S; j++) {
+                        const a = bit(id[r + i * S * 2], j)
+                        const b = bit(id[r + i * S * 2 + S], j)
+                        for(let ox = 0; ox < window.devicePixelRatio; ox++) {
+                            for(let oy = 0; oy < window.devicePixelRatio; oy++) {
+                                const x1 = j * window.devicePixelRatio + ox
+                                const y = (i * S + r) * window.devicePixelRatio + oy
+                                d.data[pixel(x1, y) + 0] = colours.fg[0] * a + colours.bg[0] * (1 - a)
+                                d.data[pixel(x1, y) + 1] = colours.fg[1] * a + colours.bg[1] * (1 - a)
+                                d.data[pixel(x1, y) + 2] = colours.fg[2] * a + colours.bg[2] * (1 - a)
+                                d.data[pixel(x1, y) + 3] = 255
 
-                            const x2 = (j + S) * window.devicePixelRatio + ox
-                            d.data[pixel(x2, y) + 0] = colours.fg[0] * b + colours.bg[0] * (1 - b)
-                            d.data[pixel(x2, y) + 1] = colours.fg[1] * b + colours.bg[1] * (1 - b)
-                            d.data[pixel(x2, y) + 2] = colours.fg[2] * b + colours.bg[2] * (1 - b)
-                            d.data[pixel(x2, y) + 3] = 255
+                                const x2 = (j + S) * window.devicePixelRatio + ox
+                                d.data[pixel(x2, y) + 0] = colours.fg[0] * b + colours.bg[0] * (1 - b)
+                                d.data[pixel(x2, y) + 1] = colours.fg[1] * b + colours.bg[1] * (1 - b)
+                                d.data[pixel(x2, y) + 2] = colours.fg[2] * b + colours.bg[2] * (1 - b)
+                                d.data[pixel(x2, y) + 3] = 255
+                            }
                         }
                     }
                 }
             }
+            this.cachedImageData = d
         }
-        return d
+        return this.cachedImageData
     }
 }
 class MapTile {
