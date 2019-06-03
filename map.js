@@ -359,24 +359,25 @@ class MapSprite {
             const S = 8 // The size of a mini-sprite
             for(let i = 0; i < 2; i++) {
                 for(let r = 0; r < S; r++) {
+                    const ao = id[r + i * S * 2]
+                    const bo = id[r + i * S * 2 + S]
                     for(let j = 0; j < S; j++) {
-                        const a = bit(id[r + i * S * 2], j)
-                        const b = bit(id[r + i * S * 2 + S], j)
-                        for(let ox = 0; ox < window.devicePixelRatio; ox++) {
-                            for(let oy = 0; oy < window.devicePixelRatio; oy++) {
-                                const x1 = j * window.devicePixelRatio + ox
-                                const y = (i * S + r) * window.devicePixelRatio + oy
-                                d.data[pixel(x1, y) + 0] = colours.fg[0] * a + colours.bg[0] * (1 - a)
-                                d.data[pixel(x1, y) + 1] = colours.fg[1] * a + colours.bg[1] * (1 - a)
-                                d.data[pixel(x1, y) + 2] = colours.fg[2] * a + colours.bg[2] * (1 - a)
-                                d.data[pixel(x1, y) + 3] = 255
+                        const a = (bit(ao, j) ? colours.fg : colours.bg).concat([255])
+                        const b = (bit(bo, j) ? colours.fg : colours.bg).concat([255])
 
-                                const x2 = (j + S) * window.devicePixelRatio + ox
-                                d.data[pixel(x2, y) + 0] = colours.fg[0] * b + colours.bg[0] * (1 - b)
-                                d.data[pixel(x2, y) + 1] = colours.fg[1] * b + colours.bg[1] * (1 - b)
-                                d.data[pixel(x2, y) + 2] = colours.fg[2] * b + colours.bg[2] * (1 - b)
-                                d.data[pixel(x2, y) + 3] = 255
-                            }
+                        let a_w = []
+                        let b_w = []
+                        for(let ox = 0; ox < window.devicePixelRatio; ox++) {
+                            a_w = a_w.concat(a)
+                            b_w = b_w.concat(b)
+                        }
+                        const x1 = j * window.devicePixelRatio
+                        const x2 = (j + S) * window.devicePixelRatio
+
+                        for(let oy = 0; oy < window.devicePixelRatio; oy++) {
+                            const y = (i * S + r) * window.devicePixelRatio + oy
+                            d.data.set(a_w, pixel(x1, y))
+                            d.data.set(b_w, pixel(x2, y))
                         }
                     }
                 }
