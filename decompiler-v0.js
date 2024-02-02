@@ -44,6 +44,25 @@ const tryDecode = (n, o) => {
         return {o: o + 1, n: `${op} ${r}`}
     }
 
+    // 16-bit arithmetic
+    if((n & 0b1100_0101) == 0b0000_0001) {
+        const rpR = {
+            [0b00]: "BC",
+            [0b01]: "DE",
+            [0b10]: "HL",
+            [0b11]: "SP",
+        }
+        const rp = rpR[(n >> 4) & 0b11]
+        const x = {
+            [0b1001]: "ADD HL,",
+            [0b0011]: "INC",
+            [0b1011]: "DEC",
+        }
+        if(x[n & 0b1111]) {
+            return {o: o + 1, n: `${x[n & 0b1111]} ${rp}`}
+        }
+    }
+
     // 8-bit load group LD (grouped cases)
     if(n == 0xfd || n == 0xdd) {
         const r1 = (n == 0xfd) ? "IY" : "IX"
