@@ -5,6 +5,25 @@ const contents = fs.readFileSync(filename)
 
 const loadPoint = 0x5e27 // From previous file
 
+const tryDecode = (n) => {
+    // 8-bit load group LD (40-7f excl. 76)
+    if(((n >> 6) & 0b11) == 0b01 && n != 0x76) {
+        const registerRef = {
+            [0b111]: "A",
+            [0b000]: "B",
+            [0b001]: "C",
+            [0b010]: "D",
+            [0b011]: "E",
+            [0b100]: "F",
+            [0b101]: "L",
+            [0b110]: "(HL)",
+        }
+        const s = registerRef[n & 0b111]
+        const d = registerRef[(n >> 3) & 0b111]
+        return `LD ${d}, ${s}`
+    }
+}
+
 const codes = {
     [0x00]: {n: "NOP"},
     [0x01]: {a: "s", n: "LD BC, nn"},
@@ -19,9 +38,6 @@ const codes = {
     [0x36]: {a: "c", n: "LD (HL), n"},
     [0x3a]: {a: "s", n: "LD A, (nn)"},
     [0x3e]: {a: "c", n: "LD A, n"},
-    [0x47]: {n: "LD B, A"},
-    [0x5f]: {n: "LD E, A"},
-    [0x78]: {n: "LD A, B"},
     [0x90]: {n: "SUB B"},
     [0xaf]: {n: "XOR A"},
     [0xb7]: {n: "OR A"},
@@ -84,6 +100,10 @@ const l = (o2, {o, n}) => {
 }
 
 const decode = (o) => {
+    const n = tryDecode(contents[o])
+    if(n) {
+        return l(o, {o: o + 1, n})
+    }
     const c = codes[contents[o]]
     if(c) {
         return l(o, handleCode(c, o + 1))
