@@ -28,6 +28,71 @@ const tryDecode = (n, o) => {
         [0b111]: "CP",
     }
 
+    // Bit manipulation
+    const bitR = {
+        [0b01]: "BIT",
+        [0b10]: "RES",
+        [0b11]: "SET",
+    }
+
+    if(n == 0xdd || n == 0xfd) {
+        const r1 = (n == 0xfd) ? "IY" : "IX"
+        const nn = contents[o + 1]
+        if(nn == 0xcb) {
+            const a = contents[o + 2]
+            const e = contents[o + 3]
+            if((e & 0b111) == 0b110 && (e >> 6) != 0b00) {
+                return {o: o + 4, n: `${bitR[e >> 6]} ${(e >> 3) & 0b111} (${r1} + ${a.toString(16)})`}
+            }
+        }
+    } else if(n == 0xcb) {
+        const e = contents[o + 1]
+        const r = registerRef[o & 0b111]
+        if((e & 0b111) == 0b110 && (e >> 6) != 0b00) {
+            return {o: o + 2, n: `${bitR[e >> 6]} ${(e >> 3) & 0b111} ${r}`}
+        }
+    }
+
+    // Jump/Call/Return group
+    if((n & 0b1110_0111) == 0b0010_0000) {
+        const fR = {
+            [0b00]: "NZ",
+            [0b01]: "Z",
+            [0b10]: "NC",
+            [0b11]: "C",
+        }
+
+        let dv = new DataView(contents.buffer, o + 1, 1)
+        const a = dv.getInt8(0)
+        return {o: o + 2, n: `JR ${fR[(n >> 3) & 0b11]} ${a}`}
+    } else if((n >> 6) == 0b11) {
+        const fR = {
+            [0b000]: "NZ",
+            [0b001]: "Z",
+            [0b010]: "NC",
+            [0b011]: "C",
+            [0b100]: "NP",
+            [0b101]: "P",
+            [0b110]: "NS",
+            [0b111]: "S",
+        }
+        const jcrR = {
+            [0b000]: "RET",
+            [0b010]: "JP",
+            [0b100]: "CALL",
+        }
+
+        if(jcrR[n & 0b111]) {
+            if(jcrR[n & 0b111] == "RET") {
+                return {o: o + 1, n: `${jcrR[n & 0b111]} ${fR[(n >> 3) & 0b111]}`}
+            } else {
+                let dv = new DataView(contents.buffer, o + 1, 2)
+                const a = dv.getUint16(0, true)
+                return {o: o + 3, n: `${jcrR[n & 0b111]} ${fR[(n >> 3) & 0b111]} ${a}`}
+            }
+        }
+    }
+
     // 8-bit arithmetic & logic
     if((n >> 6) == 0b10) {
         const op = opR[(n >> 3) & 0b111]
@@ -115,7 +180,6 @@ const codes = {
     [0x3a]: {a: "s", n: "LD A, (nn)"},
     [0x3e]: {a: "c", n: "LD A, n"},
     [0xc1]: {n: "POP BC"},
-    [0xc2]: {a: "s", n: "JP NZ nn"},
     [0xc3]: {a: "s", n: "JP nn", o: 1},
     [0xc5]: {n: "PUSH BC"},
     [0xcd]: {a: "s", n: "CALL nn"},
@@ -194,7 +258,7 @@ const decode = (o) => {
             }
         }
     }
-    const bytes = [...contents.subarray(o, o + 3)].map(i => (+i).toString(16).padStart(2, "0"))
+    const bytes = [...contents.subarray(o, o + 4)].map(i => (+i).toString(16).padStart(2, "0"))
     throw new Error(`Cannot decode value: ` + bytes.join(" "))
 }
 let o = 1
