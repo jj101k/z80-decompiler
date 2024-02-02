@@ -16,6 +16,34 @@ const tryDecode = (n, o) => {
         [0b101]: "L",
         [0b110]: "(HL)",
     }
+
+    const opR = {
+        [0b000]: "ADD",
+        [0b001]: "ADC",
+        [0b010]: "SUB",
+        [0b011]: "SBC",
+        [0b100]: "AND",
+        [0b101]: "XOR",
+        [0b110]: "OR",
+        [0b111]: "CP",
+    }
+
+    // 8-bit arithmetic & logic
+    if((n >> 6) == 0b10) {
+        const op = opR[(n >> 3) & 0b111]
+        const r = registerRef[n & 0b111]
+
+        return {o: o + 1, n: `${op} ${r}`}
+    } else if((n >> 6) == 0b11 && (n & 0b111) == 0b110) {
+        const op = opR[(n >> 3) & 0b111]
+        const a = contents[o + 1]
+        return {o: o + 2, n: `${op} ${a.toString(16)}`}
+    } else if((n & 0b1100_0110) == 0b0000_0100) {
+        const op = (n & 0b0001_0000) ? "DEC" : "INC"
+        const r = registerRef[(n >> 3) & 0b111]
+        return {o: o + 1, n: `${op} ${r}`}
+    }
+
     // 8-bit load group LD (grouped cases)
     if(n == 0xfd || n == 0xdd) {
         const r1 = (n == 0xfd) ? "IY" : "IX"
@@ -64,21 +92,15 @@ const codes = {
     [0x21]: {a: "s", n: "LD HL, nn"},
     [0x31]: {a: "s", n: "LD SP, nn"},
     [0x32]: {a: "s", n: "LD (nn), A"},
-    [0x34]: {n: "INC (HL)"},
     [0x36]: {a: "c", n: "LD (HL), n"},
     [0x3a]: {a: "s", n: "LD A, (nn)"},
     [0x3e]: {a: "c", n: "LD A, n"},
-    [0x90]: {n: "SUB B"},
-    [0xaf]: {n: "XOR A"},
-    [0xb7]: {n: "OR A"},
     [0xc1]: {n: "POP BC"},
     [0xc2]: {a: "s", n: "JP NZ nn"},
     [0xc3]: {a: "s", n: "JP nn", o: 1},
     [0xc5]: {n: "PUSH BC"},
-    [0xc6]: {a: "c", n: "ADD A, n"},
     [0xcd]: {a: "s", n: "CALL nn"},
     [0xd3]: {a: "c", n: "OUT (n), A"},
-    [0xd6]: {a: "c", n: "SUB n"},
     [0xdd36]: {a: "c", n: "LD (IX+d), n"},
     [0xed47]: {n: "LD I, A"},
     [0xed4f]: {n: "LD R, A"},
@@ -88,7 +110,6 @@ const codes = {
     [0xfd36]: {a: "c", n: "LD (IY+d), n"},
     [0xf3]: {n: "DI"},
     [0xf5]: {n: "PUSH AF"},
-    [0xfe]: {a: "c", n: "CP n"},
 }
 
 const tryCodes = {
