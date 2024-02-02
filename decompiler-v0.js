@@ -43,20 +43,21 @@ const tryCodes = {
     [0xed]: [0xb0],
 }
 
-const handleCode = (c, o, o2) => {
+const handleCode = (c, o) => {
+    let n
     if(c.a) {
         switch(c.a) {
             case "c": {
                 const a = contents[o]
                 o ++
-                console.log(`${o2}: ` + c.n.replace(/n/, a.toString(16)))
+                n = c.n.replace(/n/, a.toString(16))
                 break
             }
             case "d": {
                 let dv = new DataView(contents.buffer, o, 2)
                 const a = dv.getInt8(0)
                 o ++
-                console.log(`${o2}: ` + c.n.replace(/d/, a.toString(16)))
+                n = c.n.replace(/d/, a.toString(16))
                 break
             }
             case "s": {
@@ -67,26 +68,31 @@ const handleCode = (c, o, o2) => {
                 } else {
                     o += 2
                 }
-                console.log(`${o2}: ` + c.n.replace(/nn/, a.toString(16)))
+                n = c.n.replace(/nn/, a.toString(16))
                 break
             }
         }
     } else {
-        console.log(`${o2}: ` + c.n)
+        n = c.n
     }
+    return {o, n}
+}
+
+const l = (o2, {o, n}) => {
+    console.log(`${o2.toString(16).padStart(4, "0")}: ${n}`)
     return o
 }
 
 const decode = (o) => {
     const c = codes[contents[o]]
     if(c) {
-        return handleCode(c, o + 1, o)
+        return l(o, handleCode(c, o + 1))
     }
     if(tryCodes[contents[o]]) {
         if(tryCodes[contents[o]].includes(contents[o+1])) {
             const c = codes[(contents[o] << 8) + contents[o+1]]
             if(c) {
-                return handleCode(c, o + 2, o)
+                return l(o, handleCode(c, o + 2))
             } else {
                 throw new Error("internal error")
             }
