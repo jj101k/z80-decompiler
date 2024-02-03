@@ -8,6 +8,13 @@ const bitR = {
     [0b11]: "SET",
 }
 
+const rpR = {
+    [0b00]: "BC",
+    [0b01]: "DE",
+    [0b10]: "HL",
+    [0b11]: "SP",
+}
+
 const loadPoint = 0x5e27 // From previous file
 
 class DataWalker {
@@ -76,7 +83,7 @@ const hlIndirect = 0b110
 /**
  *
  */
-class Wn {
+class BitView {
     #n
     /**
      * **nn ****
@@ -115,6 +122,12 @@ class Wn {
         return this.#n >> 6
     }
     /**
+     * **nn nnnn
+     */
+    get rest() {
+        return this.#n & 0b111111
+    }
+    /**
      *
      * @param {number} n
      */
@@ -148,26 +161,15 @@ class FDDD {
      * @returns {string | undefined | null}
      */
     try() {
-        const nn = this.#dw.uint8()
-
-        if(nn == 0x36) {
-            const d = this.#dw.int8()
-            const n = this.#dw.uint8()
-            return `LD (${this.offsetRegister}+${d.toString(16)}), ${n.toString(16)}`
-        } else if(nn == 0xcb) {
-            // Bit manipulation
-            const a = this.#dw.uint8()
-            const e = new Wn(this.#dw.uint8())
-            if(e.pre != 0b00 && e.b3 == hlIndirect) {
-                return `${bitR[e.pre]} ${e.a3} (${this.offsetRegister} + ${a.toString(16)})`
-            }
-        }
-
-        const nnx = new Wn(nn)
+        const nnx = new BitView(this.#dw.uint8())
 
         switch(nnx.pre) {
             case 0b00: {
-                if((nnx.b3 & 0b110) == 0b100) {
+                if(nnx.a3 == hlIndirect && nnx.b3 == hlIndirect) {
+                    const d = this.#dw.int8()
+                    const n = this.#dw.uint8()
+                    return `LD (${this.offsetRegister}+${d.toString(16)}), ${n.toString(16)}`
+                } else if((nnx.b3 & 0b110) == 0b100) {
                     const op = (nnx.b3 & 1) ? "DEC" : "INC"
                     const d = this.#dw.int8()
                     return `${op} (${this.offsetRegister}+${d.toString(16)})`
@@ -196,7 +198,14 @@ class FDDD {
                 break
             }
             case 0b11: {
-                // Nothing here (yet)
+                if(nnx.rest == 0b00_1011) {
+                    // Bit manipulation
+                    const a = this.#dw.uint8()
+                    const e = new BitView(this.#dw.uint8())
+                    if(e.pre != 0b00 && e.b3 == hlIndirect) {
+                        return `${bitR[e.pre]} ${e.a3} (${this.offsetRegister} + ${a.toString(16)})`
+                    }
+                }
                 break
             }
         }
@@ -226,85 +235,6 @@ class DecompileWalker {
     #dw
 
     /**
-     * @type {Set<number> | undefined}
-     */
-    #extendedCodes
-
-    /**
-     *
-     * @param {number} next
-     * @returns {string | null | undefined}
-     */
-    #decodeInner(next) {
-        const r = this.semanticDecode(next)
-        if(r) {
-            return r
-        }
-        if(this.extendedCodes.has(next)) {
-            let then = this.#dw.uint8()
-            return this.#decodeInner((next << 8) + then)
-        }
-        // This is based on a flat map
-        const c = this.codes[next]
-        if(c) {
-            return this.handleCode(c)
-        }
-        return undefined
-    }
-
-    /**
-     *
-     */
-    codes = {
-        [0x00]: {n: "NOP"},
-        [0x01]: {a: "s", n: "LD BC, nn"},
-        [0x02]: {n: "LD (BC), A"},
-        [0x06]: {a: "c", n: "LD B, n"},
-        [0x0a]: {n: "LD A, (BC)"},
-        [0x11]: {a: "s", n: "LD DE, nn"},
-        [0x12]: {n: "LD (DE), A"},
-        [0x16]: {a: "c", n: "LD D, n"},
-        [0x1a]: {n: "LD A, (DE)"},
-        [0x20]: {a: "d", n: "JR NZ, d"},
-        [0x21]: {a: "s", n: "LD HL, nn"},
-        [0x31]: {a: "s", n: "LD SP, nn"},
-        [0x32]: {a: "s", n: "LD (nn), A"},
-        [0x36]: {a: "c", n: "LD (HL), n"},
-        [0x3a]: {a: "s", n: "LD A, (nn)"},
-        [0x3e]: {a: "c", n: "LD A, n"},
-        [0xc1]: {n: "POP BC"},
-        [0xc3]: {a: "s", n: "JP nn", o: 1},
-        [0xc5]: {n: "PUSH BC"},
-        [0xcd]: {a: "s", n: "CALL nn"},
-        [0xd3]: {a: "c", n: "OUT (n), A"},
-        [0xed47]: {n: "LD I, A"},
-        [0xed4f]: {n: "LD R, A"},
-        [0xed57]: {n: "LD A, I"},
-        [0xed5f]: {n: "LD A, R"},
-        [0xedb0]: {n: "LDIR"},
-        [0xf3]: {n: "DI"},
-        [0xf5]: {n: "PUSH AF"},
-    }
-
-    /**
-     *
-     */
-    get extendedCodes() {
-        if(!this.#extendedCodes) {
-            this.#extendedCodes = new Set()
-            for(const code of Object.keys(this.codes)) {
-                let c = (+code) >> 8
-                // Optimisation note: no compound codes start with 00.
-                while(c) {
-                    this.#extendedCodes.add(c)
-                    c >>= 8
-                }
-            }
-        }
-        return this.#extendedCodes
-    }
-
-    /**
      *
      * @param {DataWalker} dw
      */
@@ -317,52 +247,16 @@ class DecompileWalker {
      * @returns {string | null | undefined}
      */
     decode() {
-        return this.#decodeInner(this.#dw.uint8())
-    }
-
-    /**
-     *
-     * @param {{o: any, n: string, a: any}} c
-     * @returns
-     */
-    handleCode(c) {
-        let n
-        if(c.a) {
-            switch(c.a) {
-                case "c": {
-                    const a = this.#dw.uint8()
-                    n = c.n.replace(/n/, a.toString(16))
-                    break
-                }
-                case "d": {
-                    const a = this.#dw.int8()
-                    n = c.n.replace(/d/, a.toString(16))
-                    break
-                }
-                case "s": {
-                    const a = this.#dw.uint16()
-                    if(c.o) {
-                        this.#dw.offset = a - loadPoint
-                    }
-                    n = c.n.replace(/nn/, a.toString(16))
-                    break
-                }
-            }
-        } else {
-            n = c.n
-        }
-        return n
+        return this.semanticDecode(new BitView(this.#dw.uint8()))
     }
 
     /**
      * This decodes based on rules
      *
-     * @param {number} n
+     * @param {BitView} n
      * @returns {string | undefined | null}
      */
     semanticDecode(n) {
-        const nx = new Wn(n)
-
         const registerRef = {
             [0b111]: "A",
             [0b000]: "B",
@@ -381,37 +275,29 @@ class DecompileWalker {
          */
         const register = (n) => registerRef[n]
 
-        if(n == 0xfd) {
-            return new FD(this.#dw).try()
-        } else if(n == 0xdd) {
-            return new DD(this.#dw).try()
-        } else if(n == 0xcb) {
-            // Bit manipulation
-            const e = new Wn(this.#dw.uint8())
-            const r = register(e.b3)
-            if(e.pre != 0b00 && e.b3 == hlIndirect) {
-                return `${bitR[e.pre]} ${e.a3} ${r}`
-            }
-
-            // Rotate / shift
-            if(e.pre == 0b00 && e.a3 != 0b110) {
-                const rsR = {
-                    [0b000]: "RCL",
-                    [0b001]: "RRC",
-                    [0b010]: "RL",
-                    [0b011]: "RR",
-                    [0b100]: "SLA",
-                    [0b101]: "SRA",
-                    // Note: no 110
-                    [0b111]: "RCL",
-                }
-                return `${rsR[e.a3]} ${r}`
-            }
-        }
-
-        switch(nx.pre) {
+        switch(n.pre) {
             case 0b00: {
-                if((nx.a3 & 0b100) == 0b100 && nx.b3 == 0b000) {
+                if(n.rest == 0b00_0000) {
+                    return `NOP`
+                } else if(n.rest == 0b11_0110) {
+                    const a = this.#dw.uint8()
+                    return `LD (HL), ${a}`
+                } else if(n.rest == 0b11_0010) {
+                    const s = this.#dw.uint16()
+                    return `LD (${s}), A`
+                } else if(n.rest == 0b11_1010) {
+                    const s = this.#dw.uint16()
+                    return `LD A, (${s})`
+                } else if(n.b4 == 0b0001) {
+                    const s = this.#dw.uint16()
+                    return `LD ${rpR[n.a2]}, ${s}`
+                } else if((n.a3 & 0b101) == 0b000 && n.b3 == 0b010) {
+                    const idr = n.a3 ? "DE" : "BC"
+                    return `LD (${idr}), A`
+                } else if((n.a3 & 0b101) == 0b001 && n.b3 == 0b010) {
+                    const isr = (n.a3 & 0b010) ? "DE" : "BC"
+                    return `LD A, (${isr})`
+                } else if((n.a3 & 0b100) == 0b100 && n.b3 == 0b000) {
                     const fR = {
                         [0b100]: "NZ",
                         [0b101]: "Z",
@@ -420,56 +306,107 @@ class DecompileWalker {
                     }
 
                     const a = this.#dw.int8()
-                    return `JR ${fR[nx.a3]} ${a}`
-                } else if((nx.b3 & 0b110) == 0b100) {
-                    const op = (nx.b3 & 1) ? "DEC" : "INC"
-                    const r = register(nx.a3)
+                    return `JR ${fR[n.a3]} ${a}`
+                } else if((n.b3 & 0b110) == 0b100) {
+                    const op = (n.b3 & 1) ? "DEC" : "INC"
+                    const r = register(n.a3)
                     return `${op} ${r}`
-                } else if((nx.b3 & 0b101) == 0b001) {
+                } else if((n.b3 & 0b101) == 0b001) {
                     // 16-bit arithmetic
-                    const rpR = {
-                        [0b00]: "BC",
-                        [0b01]: "DE",
-                        [0b10]: "HL",
-                        [0b11]: "SP",
-                    }
-                    const rp = rpR[nx.a2]
+                    const rp = rpR[n.a2]
                     const x = {
                         [0b1001]: "ADD HL,",
                         [0b0011]: "INC",
                         [0b1011]: "DEC",
                     }
-                    if(x[nx.b4]) {
-                        return `${x[nx.b4]} ${rp}`
+                    if(x[n.b4]) {
+                        return `${x[n.b4]} ${rp}`
                     }
-                } else if(nx.a3 != hlIndirect && nx.b3 == hlIndirect) {
-                    const d = register(nx.a3)
+                } else if(n.a3 != hlIndirect && n.b3 == hlIndirect) {
+                    const d = register(n.a3)
                     const a = this.#dw.uint8()
                     return `LD ${d}, ${a.toString(16)}`
                 }
                 break
             }
             case 0b01: {
-                if(nx.a3 != hlIndirect && nx.b3 == hlIndirect) {
-                    const d = register(nx.a3)
+                if(n.a3 != hlIndirect && n.b3 == hlIndirect) {
+                    const d = register(n.a3)
                     return `LD ${d}, (HL)`
-                } else if(nx.a3 == hlIndirect && nx.b3 != hlIndirect) {
-                    const s = register(nx.b3)
+                } else if(n.a3 == hlIndirect && n.b3 != hlIndirect) {
+                    const s = register(n.b3)
                     return `LD (HL), ${s}`
-                } else if(!(nx.a3 == hlIndirect && nx.b3 == hlIndirect)) {
-                    const s = register(nx.b3)
-                    const d = register(nx.a3)
+                } else if(!(n.a3 == hlIndirect && n.b3 == hlIndirect)) {
+                    const s = register(n.b3)
+                    const d = register(n.a3)
                     return `LD ${d}, ${s}`
                 }
                 break
             }
             case 0b10: {
-                const op = opR[nx.a3]
-                const r = register(nx.b3)
+                const op = opR[n.a3]
+                const r = register(n.b3)
 
                 return `${op} ${r}`
             }
             case 0b11: {
+                if(n.b4 == 0b0001) {
+                    return `POP ${rpR[n.a2]}`
+                } else if(n.b4 == 0b0101) {
+                    return `PUSH ${rpR[n.a2]}`
+                } else if(n.rest == 0b00_0011) {
+                    const to = this.#dw.uint16()
+                    this.#dw.offset = to - loadPoint
+                    return `JP ${to.toString(16)}`
+                } else if(n.rest == 0b00_1101) {
+                    const to = this.#dw.uint16()
+                    return `CALL ${to.toString(16)}`
+                } else if(n.rest == 0b01_0011) {
+                    const n = this.#dw.uint8()
+                    return `OUT (${n.toString(16)}), A`
+                } else if(n.rest == 0b01_1101) {
+                    return new DD(this.#dw).try()
+                } else if(n.rest == 0b10_1101) {
+                    const nn = this.#dw.uint8()
+                    const nnx = new BitView(nn)
+                    if(nnx.pre == 0b01 && (nnx.a3 & 0b100) == 0b000) {
+                        const toA = nnx.a3 & 0b010
+                        const reg = (nnx.a3 & 0b001) ? "R" : "A"
+                        if(toA) {
+                            return `LD A, ${reg}`
+                        } else {
+                            return `LD ${reg}, A`
+                        }
+                    } else if(nnx.pre == 0b10 && nnx.a3 == 0b110 && nnx.b3 == 0b000) {
+                        return `LDIR`
+                    }
+                } else if(n.rest == 0b11_0011) {
+                    return `DI`
+                } else if(n.rest == 0b11_1101) {
+                    return new FD(this.#dw).try()
+                } else if(n.rest == 0b00_1011) {
+                    // Bit manipulation
+                    const e = new BitView(this.#dw.uint8())
+                    const r = register(e.b3)
+                    if(e.pre != 0b00 && e.b3 == hlIndirect) {
+                        return `${bitR[e.pre]} ${e.a3} ${r}`
+                    }
+
+                    // Rotate / shift
+                    if(e.pre == 0b00 && e.a3 != 0b110) {
+                        const rsR = {
+                            [0b000]: "RCL",
+                            [0b001]: "RRC",
+                            [0b010]: "RL",
+                            [0b011]: "RR",
+                            [0b100]: "SLA",
+                            [0b101]: "SRA",
+                            // Note: no 110
+                            [0b111]: "RCL",
+                        }
+                        return `${rsR[e.a3]} ${r}`
+                    }
+                }
                 const fR = {
                     [0b000]: "NZ",
                     [0b001]: "Z",
@@ -486,16 +423,16 @@ class DecompileWalker {
                     [0b100]: "CALL",
                 }
 
-                if(jcrR[nx.b3]) {
-                    if(jcrR[nx.b3] == "RET") {
-                        return `${jcrR[nx.b3]} ${fR[nx.a3]}`
+                if(jcrR[n.b3]) {
+                    if(jcrR[n.b3] == "RET") {
+                        return `${jcrR[n.b3]} ${fR[n.a3]}`
                     } else {
                         const a = this.#dw.uint16()
-                        return `${jcrR[nx.b3]} ${fR[nx.a3]} ${a}`
+                        return `${jcrR[n.b3]} ${fR[n.a3]} ${a}`
                     }
-                } else if(nx.b3 == hlIndirect) {
+                } else if(n.b3 == hlIndirect) {
                     // 8-bit arithmetic & logic
-                    const op = opR[nx.a3]
+                    const op = opR[n.a3]
                     const a = this.#dw.uint8()
                     return `${op} ${a.toString(16)}`
                 }
