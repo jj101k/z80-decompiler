@@ -254,6 +254,16 @@ class DecompileWalker {
     #finished = false
 
     /**
+     * @type {number | null}
+     */
+    #jumpTo = null
+
+    /**
+     *
+     */
+    #lastEndPoint = 0
+
+    /**
      * @type {Map<number, string>}
      */
     #seen = new Map()
@@ -272,10 +282,25 @@ class DecompileWalker {
 
     /**
      *
+     */
+    get lastEndPoint() {
+        return this.#lastEndPoint
+    }
+
+    /**
+     *
      * @param {DataWalker} dw
      */
     constructor(dw) {
         this.#dw = dw
+    }
+
+    /**
+     *
+     * @param {number} n
+     */
+    addJumpTo(n) {
+        this.#jumpTo = n
     }
 
     /**
@@ -294,9 +319,14 @@ class DecompileWalker {
      */
     decode() {
         const startPoint = this.#dw.offset
+        this.#jumpTo = null
         const n = this.semanticDecode(new BitView(this.#dw.uint8()))
         if(n) {
+            this.#lastEndPoint = this.#dw.offset
             this.#seen.set(startPoint, n)
+            if(this.#jumpTo) {
+                this.#dw.offset = this.#jumpTo
+            }
             if(this.#seen.has(this.#dw.offset)) {
                 for(const t of this.#targets) {
                     if(!this.#seen.has(t)) {
@@ -350,7 +380,7 @@ class DecompileWalker {
                     return raOpR[n.a3]
                 } else if(n.rest == 0b01_1000) { // 0x18
                     const d = this.#dw.int8()
-                    this.#dw.offset += d - 2
+                    this.addJumpTo(this.#dw.offset + d - 2)
                     return `JR ${d}`
                 } else if(n.rest == 0b11_0010) { // 0x32
                     const s = this.#dw.uint16()
@@ -430,10 +460,10 @@ class DecompileWalker {
                     return `PUSH ${rpR[n.a2]}`
                 } else if(n.rest == 0b00_0011) { // 0xc3
                     const to = this.#dw.uint16()
-                    this.#dw.offset = to - loadPoint
+                    this.addJumpTo(to - loadPoint)
                     return `JP ${to.toString(16)}`
                 } else if(n.rest == 0b00_1001) { // 0xc9
-                    this.#dw.offset-- // TODO IMPROVE This is a hack to trigger the "seen" response
+                    this.addJumpTo(this.#dw.offset - 1) // TODO IMPROVE This is a hack to trigger the "seen" response
                     return `RET`
                 } else if(n.rest == 0b00_1011) { // 0xcb
                     // Bit manipulation
@@ -536,7 +566,9 @@ function decode(filename) {
             dw.offset = startPoint
             throw new Error(`Cannot decode value: ${dw.inspect()} after ${i} points mapped`)
         }
-        console.log(`${startPoint.toString(16).padStart(4, "0")}: ${n}`)
+        const address = startPoint.toString(16).padStart(4, "0")
+        const bytes = [...contents.subarray(startPoint, decompile.lastEndPoint)].map(n => n.toString(16).padStart(2, "0")).join(" ")
+        console.log(`${address}: ${n}`.padEnd(40, " ") + `## ${bytes}`)
         if(decompile.finished) {
             console.log(`Stop after ${i} with next offset at ${(dw.offset + loadPoint).toString(16)} (${dw.offset.toString(16)})`)
             break
