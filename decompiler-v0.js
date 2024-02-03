@@ -308,10 +308,17 @@ class DecompileWalker {
             [0b110]: "(HL)",
         }
 
+        /**
+         *
+         * @param {number} n
+         * @returns
+         */
+        const register = (n) => registerRef[n & 0b111]
+
         // Bit manipulation
         if(n == 0xcb) {
             const e = this.#dw.uint8()
-            const r = registerRef[e & 0b111]
+            const r = register(e)
             if((e & 0b111) == 0b110 && (e >> 6) != 0b00) {
                 return `${bitR[e >> 6]} ${(e >> 3) & 0b111} ${r}`
             }
@@ -358,7 +365,7 @@ class DecompileWalker {
         // 8-bit arithmetic & logic
         if((n >> 6) == 0b10) {
             const op = opR[(n >> 3) & 0b111]
-            const r = registerRef[n & 0b111]
+            const r = register(n)
 
             return `${op} ${r}`
         } else if((n >> 6) == 0b11 && (n & 0b111) == 0b110) {
@@ -367,7 +374,7 @@ class DecompileWalker {
             return `${op} ${a.toString(16)}`
         } else if((n & 0b1100_0110) == 0b0000_0100) {
             const op = (n & 0b0001_0000) ? "DEC" : "INC"
-            const r = registerRef[(n >> 3) & 0b111]
+            const r = register(n >> 3)
             return `${op} ${r}`
         }
 
@@ -392,18 +399,18 @@ class DecompileWalker {
 
         // 8-bit load group LD (grouped cases)
         if((n & 0b1100_0111) == 0b0000_0110 && (n & 0b11_1000) != 0b11_0000) {
-            const d = registerRef[(n >> 3) & 0b111]
+            const d = register(n >> 3)
             const a = this.#dw.uint8()
             return `LD ${d}, ${a.toString(16)}`
         } else if((n & 0b1100_0111) == 0b0100_0110 && (n & 0b11_0000) != 0b11_1000) {
-            const d = registerRef[(n >> 3) & 0b111]
+            const d = register(n >> 3)
             return `LD ${d}, (HL)`
         } else if((n >> 3) == 0b1110 && (n & 0b111) != 0b110) {
-            const s = registerRef[n & 0b111]
+            const s = register(n)
             return `LD (HL), ${s}`
         } else if(((n >> 6) & 0b11) == 0b01 && n != 0x76) {
-            const s = registerRef[n & 0b111]
-            const d = registerRef[(n >> 3) & 0b111]
+            const s = register(n)
+            const d = register(n >> 3)
             return `LD ${d}, ${s}`
         }
 
