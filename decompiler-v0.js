@@ -5,7 +5,53 @@ const contents = fs.readFileSync(filename)
 
 const loadPoint = 0x5e27 // From previous file
 
+const bitR = {
+    [0b01]: "BIT",
+    [0b10]: "RES",
+    [0b11]: "SET",
+}
+
+const tryFDDD = (n, o) => {
+    const r1 = (n == 0xfd) ? "IY" : "IX"
+    const nn = contents[o + 1]
+
+    if(nn == 0x36) {
+        let dv = new DataView(contents.buffer, o + 1, 2)
+        const d = dv.getInt8(0)
+        const n = dv.getUint8(1)
+        return {o: o + 3, n: `LD (IX+${d.toString(16)}), ${n.toString(16)}`}
+    }
+
+    // Bit manipulation
+    if(nn == 0xcb) {
+        const a = contents[o + 2]
+        const e = contents[o + 3]
+        if((e & 0b111) == 0b110 && (e >> 6) != 0b00) {
+            return {o: o + 4, n: `${bitR[e >> 6]} ${(e >> 3) & 0b111} (${r1} + ${a.toString(16)})`}
+        }
+    }
+
+    // 8-bit load group LD (grouped cases)
+    if((nn >> 3) == 0b1110 && (nn & 0b111) != 0b110) {
+        const r = nn & 0b111
+        let dv = new DataView(contents.buffer, o + 2, 1)
+        const d = dv.getInt8(0)
+        return {o: o + 3, n: `LD (${r1}+${d}), ${r}`}
+    } else if((nn & 0b1100_0111) == 0b01000110 && ((nn >> 3) & 0b111) != 0b110) {
+        const r = nn & 0b111
+        let dv = new DataView(contents.buffer, o + 2, 1)
+        const d = dv.getInt8(0)
+        return {o: o + 3, n: `LD ${r}, (${r1}+${d})`}
+    }
+
+    return null
+}
+
 const tryDecode = (n, o) => {
+    if(n == 0xdd || n == 0xfd) {
+        return tryFDDD(n, o)
+    }
+
     const registerRef = {
         [0b111]: "A",
         [0b000]: "B",
@@ -29,23 +75,7 @@ const tryDecode = (n, o) => {
     }
 
     // Bit manipulation
-    const bitR = {
-        [0b01]: "BIT",
-        [0b10]: "RES",
-        [0b11]: "SET",
-    }
-
-    if(n == 0xdd || n == 0xfd) {
-        const r1 = (n == 0xfd) ? "IY" : "IX"
-        const nn = contents[o + 1]
-        if(nn == 0xcb) {
-            const a = contents[o + 2]
-            const e = contents[o + 3]
-            if((e & 0b111) == 0b110 && (e >> 6) != 0b00) {
-                return {o: o + 4, n: `${bitR[e >> 6]} ${(e >> 3) & 0b111} (${r1} + ${a.toString(16)})`}
-            }
-        }
-    } else if(n == 0xcb) {
+    if(n == 0xcb) {
         const e = contents[o + 1]
         const r = registerRef[o & 0b111]
         if((e & 0b111) == 0b110 && (e >> 6) != 0b00) {
@@ -129,21 +159,7 @@ const tryDecode = (n, o) => {
     }
 
     // 8-bit load group LD (grouped cases)
-    if(n == 0xfd || n == 0xdd) {
-        const r1 = (n == 0xfd) ? "IY" : "IX"
-        const nn = contents[o + 1]
-        if((nn >> 3) == 0b1110 && (nn & 0b111) != 0b110) {
-            const r = nn & 0b111
-            let dv = new DataView(contents.buffer, o + 2, 1)
-            const d = dv.getInt8(0)
-            return {o: o + 3, n: `LD (${r1}+${d}), ${r}`}
-        } else if((nn & 0b1100_0111) == 0b01000110 && ((nn >> 3) & 0b111) != 0b110) {
-            const r = nn & 0b111
-            let dv = new DataView(contents.buffer, o + 2, 1)
-            const d = dv.getInt8(0)
-            return {o: o + 3, n: `LD ${r}, (${r1}+${d})`}
-        }
-    } else if((n & 0b1100_0111) == 0b0000_0110 && (n & 0b11_1000) != 0b11_0000) {
+    if((n & 0b1100_0111) == 0b0000_0110 && (n & 0b11_1000) != 0b11_0000) {
         const d = registerRef[(n >> 3) & 0b111]
         const a = contents[o + 1]
         return {o: o + 2, n: `LD ${d}, ${a.toString(16)}`}
@@ -184,13 +200,11 @@ const codes = {
     [0xc5]: {n: "PUSH BC"},
     [0xcd]: {a: "s", n: "CALL nn"},
     [0xd3]: {a: "c", n: "OUT (n), A"},
-    [0xdd36]: {a: "c", n: "LD (IX+d), n"},
     [0xed47]: {n: "LD I, A"},
     [0xed4f]: {n: "LD R, A"},
     [0xed57]: {n: "LD A, I"},
     [0xed5f]: {n: "LD A, R"},
     [0xedb0]: {n: "LDIR"},
-    [0xfd36]: {a: "c", n: "LD (IY+d), n"},
     [0xf3]: {n: "DI"},
     [0xf5]: {n: "PUSH AF"},
 }
