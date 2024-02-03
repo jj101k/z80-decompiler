@@ -69,6 +69,18 @@ const opR = {
 }
 
 /**
+ *
+ */
+const hlIndirect = 0b110
+
+/**
+ *
+ * @param {number} n
+ * @returns
+ */
+const isHlIndirect = (n) => (n & 0b111) == hlIndirect
+
+/**
  * @abstract
  */
 class FDDD {
@@ -105,13 +117,13 @@ class FDDD {
         if(nn == 0xcb) {
             const a = this.#dw.uint8()
             const e = this.#dw.uint8()
-            if((e & 0b111) == 0b110 && (e >> 6) != 0b00) {
+            if(isHlIndirect(e) && (e >> 6) != 0b00) {
                 return `${bitR[e >> 6]} ${(e >> 3) & 0b111} (${this.offsetRegister} + ${a.toString(16)})`
             }
         }
 
         // 8-bit arithmetic & logic
-        if((nn >> 6) == 0b10 && (nn & 0b111) == 0b110) {
+        if((nn >> 6) == 0b10 && isHlIndirect(nn)) {
             const op = opR[(nn >> 3) & 0b111]
             const d = this.#dw.int8()
 
@@ -123,11 +135,11 @@ class FDDD {
         }
 
         // 8-bit load group LD (grouped cases)
-        if((nn >> 3) == 0b1110 && (nn & 0b111) != 0b110) {
+        if((nn >> 3) == 0b1110 && !isHlIndirect(nn)) {
             const r = nn & 0b111
             const d = this.#dw.int8()
             return `LD (${this.offsetRegister}+${d}), ${r}`
-        } else if((nn & 0b1100_0111) == 0b01000110 && ((nn >> 3) & 0b111) != 0b110) {
+        } else if((nn & 0b1100_0111) == 0b01000110 && !isHlIndirect(nn >> 3)) {
             const r = nn & 0b111
             const d = this.#dw.int8()
             return `LD ${r}, (${this.offsetRegister}+${d})`
@@ -305,7 +317,7 @@ class DecompileWalker {
             [0b011]: "E",
             [0b100]: "F",
             [0b101]: "L",
-            [0b110]: "(HL)",
+            [hlIndirect]: "(HL)",
         }
 
         /**
@@ -319,7 +331,7 @@ class DecompileWalker {
         if(n == 0xcb) {
             const e = this.#dw.uint8()
             const r = register(e)
-            if((e & 0b111) == 0b110 && (e >> 6) != 0b00) {
+            if(isHlIndirect(e) && (e >> 6) != 0b00) {
                 return `${bitR[e >> 6]} ${(e >> 3) & 0b111} ${r}`
             }
         }
@@ -368,7 +380,7 @@ class DecompileWalker {
             const r = register(n)
 
             return `${op} ${r}`
-        } else if((n >> 6) == 0b11 && (n & 0b111) == 0b110) {
+        } else if((n >> 6) == 0b11 && isHlIndirect(n)) {
             const op = opR[(n >> 3) & 0b111]
             const a = this.#dw.uint8()
             return `${op} ${a.toString(16)}`
@@ -405,7 +417,7 @@ class DecompileWalker {
         } else if((n & 0b1100_0111) == 0b0100_0110 && (n & 0b11_0000) != 0b11_1000) {
             const d = register(n >> 3)
             return `LD ${d}, (HL)`
-        } else if((n >> 3) == 0b1110 && (n & 0b111) != 0b110) {
+        } else if((n >> 3) == 0b1110 && !isHlIndirect(n)) {
             const s = register(n)
             return `LD (HL), ${s}`
         } else if(((n >> 6) & 0b11) == 0b01 && n != 0x76) {
