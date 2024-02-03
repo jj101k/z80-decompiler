@@ -474,13 +474,13 @@ class DecompileWalker {
                     // Bit manipulation
                     const e = new BitView(this.#dw.uint8())
                     const r = register(e.b3)
-                    if(e.pre != 0b00 && e.b3 == hlIndirect) {
-                        return `${bitR[e.pre]} ${e.a3} ${r}`
-                    }
-
-                    // Rotate / shift
-                    if(e.pre == 0b00 && e.a3 != 0b110) {
-                        return `${rsR[e.a3]} ${r}`
+                    if(e.pre == 0b00) {
+                        // Rotate / shift
+                        if(e.a3 != 0b110) {
+                            return `${rsR[e.a3]} ${r}`
+                        }
+                    } else {
+                        return `${bitR[e.pre]} ${e.a3}, ${r}`
                     }
                 } else if(n.rest == 0b00_1101) { // 0xcd
                     const to = this.#dw.uint16()
