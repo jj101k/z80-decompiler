@@ -129,46 +129,90 @@ class DD extends FDDD {
     offsetRegister = "IX"
 }
 
-const codes = {
-    [0x00]: {n: "NOP"},
-    [0x01]: {a: "s", n: "LD BC, nn"},
-    [0x02]: {n: "LD (BC), A"},
-    [0x06]: {a: "c", n: "LD B, n"},
-    [0x0a]: {n: "LD A, (BC)"},
-    [0x11]: {a: "s", n: "LD DE, nn"},
-    [0x12]: {n: "LD (DE), A"},
-    [0x16]: {a: "c", n: "LD D, n"},
-    [0x1a]: {n: "LD A, (DE)"},
-    [0x20]: {a: "d", n: "JR NZ, d"},
-    [0x21]: {a: "s", n: "LD HL, nn"},
-    [0x31]: {a: "s", n: "LD SP, nn"},
-    [0x32]: {a: "s", n: "LD (nn), A"},
-    [0x36]: {a: "c", n: "LD (HL), n"},
-    [0x3a]: {a: "s", n: "LD A, (nn)"},
-    [0x3e]: {a: "c", n: "LD A, n"},
-    [0xc1]: {n: "POP BC"},
-    [0xc3]: {a: "s", n: "JP nn", o: 1},
-    [0xc5]: {n: "PUSH BC"},
-    [0xcd]: {a: "s", n: "CALL nn"},
-    [0xd3]: {a: "c", n: "OUT (n), A"},
-    [0xed47]: {n: "LD I, A"},
-    [0xed4f]: {n: "LD R, A"},
-    [0xed57]: {n: "LD A, I"},
-    [0xed5f]: {n: "LD A, R"},
-    [0xedb0]: {n: "LDIR"},
-    [0xf3]: {n: "DI"},
-    [0xf5]: {n: "PUSH AF"},
-}
-
-const tryCodes = {
-    [0xed]: [0xb0],
-}
-
 /**
  *
  */
 class DecompileWalker {
     #dw
+
+    /**
+     * @type {Set<number> | undefined}
+     */
+    #extendedCodes
+
+    /**
+     *
+     * @param {number} next
+     * @returns {string | null | undefined}
+     */
+    #decodeInner(next) {
+        const r = this.tryDecode(next)
+        if(r) {
+            return r
+        }
+        if(this.extendedCodes.has(next)) {
+            let then = this.#dw.uint8()
+            return this.#decodeInner((next << 8) + then)
+        }
+        const c = this.codes[next]
+        if(c) {
+            return this.handleCode(c)
+        }
+        return undefined
+    }
+
+    /**
+     *
+     */
+    codes = {
+        [0x00]: {n: "NOP"},
+        [0x01]: {a: "s", n: "LD BC, nn"},
+        [0x02]: {n: "LD (BC), A"},
+        [0x06]: {a: "c", n: "LD B, n"},
+        [0x0a]: {n: "LD A, (BC)"},
+        [0x11]: {a: "s", n: "LD DE, nn"},
+        [0x12]: {n: "LD (DE), A"},
+        [0x16]: {a: "c", n: "LD D, n"},
+        [0x1a]: {n: "LD A, (DE)"},
+        [0x20]: {a: "d", n: "JR NZ, d"},
+        [0x21]: {a: "s", n: "LD HL, nn"},
+        [0x31]: {a: "s", n: "LD SP, nn"},
+        [0x32]: {a: "s", n: "LD (nn), A"},
+        [0x36]: {a: "c", n: "LD (HL), n"},
+        [0x3a]: {a: "s", n: "LD A, (nn)"},
+        [0x3e]: {a: "c", n: "LD A, n"},
+        [0xc1]: {n: "POP BC"},
+        [0xc3]: {a: "s", n: "JP nn", o: 1},
+        [0xc5]: {n: "PUSH BC"},
+        [0xcd]: {a: "s", n: "CALL nn"},
+        [0xd3]: {a: "c", n: "OUT (n), A"},
+        [0xed47]: {n: "LD I, A"},
+        [0xed4f]: {n: "LD R, A"},
+        [0xed57]: {n: "LD A, I"},
+        [0xed5f]: {n: "LD A, R"},
+        [0xedb0]: {n: "LDIR"},
+        [0xf3]: {n: "DI"},
+        [0xf5]: {n: "PUSH AF"},
+    }
+
+    /**
+     *
+     */
+    get extendedCodes() {
+        if(!this.#extendedCodes) {
+            this.#extendedCodes = new Set()
+            for(const code of Object.keys(this.codes)) {
+                let c = (+code) >> 8
+                // Optimisation note: no compound codes start with 00.
+                while(c) {
+                    this.#extendedCodes.add(c)
+                    c >>= 8
+                }
+            }
+        }
+        return this.#extendedCodes
+    }
+
     /**
      *
      * @param {DataWalker} dw
@@ -182,28 +226,7 @@ class DecompileWalker {
      * @returns {string | null | undefined}
      */
     decode() {
-        const next = this.#dw.uint8()
-        const r = this.tryDecode(next)
-        if(r) {
-            return r
-        }
-        const c = codes[next]
-        if(c) {
-            return this.handleCode(c)
-        }
-        if(tryCodes[next]) {
-            let then = this.#dw.peekUint8()
-            if(tryCodes[next].includes(then)) {
-                then = this.#dw.uint8()
-                const c = codes[(next << 8) + then]
-                if(c) {
-                    return this.handleCode(c)
-                } else {
-                    throw new Error("internal error")
-                }
-            }
-        }
-        return undefined
+        return this.#decodeInner(this.#dw.uint8())
     }
 
     /**
