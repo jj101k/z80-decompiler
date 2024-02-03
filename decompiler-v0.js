@@ -1,9 +1,6 @@
 //@ts-check
 const fs = require("fs")
 const [filename] = process.argv.slice(2)
-const contents = fs.readFileSync(filename)
-
-const loadPoint = 0x5e27 // From previous file
 
 const bitR = {
     [0b01]: "BIT",
@@ -11,15 +8,17 @@ const bitR = {
     [0b11]: "SET",
 }
 
+const loadPoint = 0x5e27 // From previous file
+
 class DataWalker {
     #dv
     offset = 0
     /**
      *
-     * @param {number} size
+     * @param {Buffer} contents
      */
-    constructor(size) {
-        this.#dv = new DataView(contents.buffer, 0, size)
+    constructor(contents) {
+        this.#dv = new DataView(contents.buffer, 0, contents.byteLength)
     }
     /**
      *
@@ -400,17 +399,28 @@ class DecompileWalker {
     }
 }
 
-const dw = new DataWalker(contents.byteLength)
-dw.offset = 1
-const decompile = new DecompileWalker(dw)
-for(let i = 0; i < 100; i++) {
-    const startPoint = dw.offset
-    const n = decompile.decode()
-    if(!n) {
-        dw.offset = startPoint
-        throw new Error(`Cannot decode value: ${dw.inspect()}`)
+/**
+ *
+ * @param {string} filename
+ */
+function decode(filename) {
+
+    const contents = fs.readFileSync(filename)
+
+    const dw = new DataWalker(contents)
+    dw.offset = 1
+    const decompile = new DecompileWalker(dw)
+    for(let i = 0; i < 100; i++) {
+        const startPoint = dw.offset
+        const n = decompile.decode()
+        if(!n) {
+            dw.offset = startPoint
+            throw new Error(`Cannot decode value: ${dw.inspect()}`)
+        }
+        console.log(`${startPoint.toString(16).padStart(4, "0")}: ${n}`)
     }
-    console.log(`${startPoint.toString(16).padStart(4, "0")}: ${n}`)
 }
+
+decode(filename)
 
 // See DECOMPILER.md
