@@ -11,51 +11,104 @@ const bitR = {
     [0b11]: "SET",
 }
 
+class DataWalker {
+    #dv
+    offset = 0
+    /**
+     *
+     * @param {number} size
+     */
+    constructor(size) {
+        this.#dv = new DataView(contents.buffer, 0, size)
+    }
+    /**
+     *
+     * @returns
+     */
+    int8() {
+        return this.#dv.getInt8(this.offset++)
+    }
+    /**
+     *
+     * @returns
+     */
+    inspect() {
+        return this.#dv.getUint32(this.offset).toString(16).padStart(8, "0")
+    }
+    /**
+     *
+     * @returns
+     */
+    peekUint8() {
+        return this.#dv.getUint8(this.offset)
+    }
+    /**
+     *
+     * @returns
+     */
+    uint16() {
+        return this.#dv.getUint16(this.offset++, true)
+    }
+    /**
+     *
+     * @returns
+     */
+    uint8() {
+        return this.#dv.getUint8(this.offset++)
+    }
+}
+
 /**
  * @abstract
  */
 class FDDD {
+    #dw
+
     /**
      * @abstract
      * @protected
      * @type {string}
      */
     offsetRegister
+
     /**
      *
-     * @param {number} o
-     * @returns
+     * @param {DataWalker} dw
      */
-    try(o) {
-        const nn = contents[o]
+    constructor(dw) {
+        this.#dw = dw
+    }
+    /**
+     *
+     * @returns {string | undefined | null}
+     */
+    try() {
+        const nn = this.#dw.uint8()
 
         if(nn == 0x36) {
-            let dv = new DataView(contents.buffer, o, 2)
-            const d = dv.getInt8(0)
-            const n = dv.getUint8(1)
-            return {o: o + 2, n: `LD (${this.offsetRegister}+${d.toString(16)}), ${n.toString(16)}`}
+            const d = this.#dw.int8()
+            const n = this.#dw.uint8()
+            return `LD (${this.offsetRegister}+${d.toString(16)}), ${n.toString(16)}`
         }
 
         // Bit manipulation
         if(nn == 0xcb) {
-            const a = contents[o + 1]
-            const e = contents[o + 2]
+            const a = this.#dw.uint8()
+            const e = this.#dw.uint8()
             if((e & 0b111) == 0b110 && (e >> 6) != 0b00) {
-                return {o: o + 3, n: `${bitR[e >> 6]} ${(e >> 3) & 0b111} (${this.offsetRegister} + ${a.toString(16)})`}
+                return `${bitR[e >> 6]} ${(e >> 3) & 0b111} (${this.offsetRegister} + ${a.toString(16)})`
             }
         }
 
         // 8-bit load group LD (grouped cases)
         if((nn >> 3) == 0b1110 && (nn & 0b111) != 0b110) {
             const r = nn & 0b111
-            let dv = new DataView(contents.buffer, o + 1, 1)
-            const d = dv.getInt8(0)
-            return {o: o + 2, n: `LD (${this.offsetRegister}+${d}), ${r}`}
+            const d = this.#dw.int8()
+            return `LD (${this.offsetRegister}+${d}), ${r}`
         } else if((nn & 0b1100_0111) == 0b01000110 && ((nn >> 3) & 0b111) != 0b110) {
             const r = nn & 0b111
-            let dv = new DataView(contents.buffer, o + 1, 1)
-            const d = dv.getInt8(0)
-            return {o: o + 2, n: `LD ${r}, (${this.offsetRegister}+${d})`}
+            const d = this.#dw.int8()
+            return `LD ${r}, (${this.offsetRegister}+${d})`
         }
 
         return null
@@ -76,11 +129,17 @@ class DD extends FDDD {
     offsetRegister = "IX"
 }
 
-const tryDecode = (n, o) => {
+/**
+ *
+ * @param {number} n
+ * @param {DataWalker} dw
+ * @returns {string | undefined | null}
+ */
+const tryDecode = (n, dw) => {
     if(n == 0xfd) {
-        return new FD().try(o + 1)
+        return new FD(dw).try()
     } else if(n == 0xdd) {
-        return new DD().try(o + 1)
+        return new DD(dw).try()
     }
 
     const registerRef = {
@@ -107,10 +166,10 @@ const tryDecode = (n, o) => {
 
     // Bit manipulation
     if(n == 0xcb) {
-        const e = contents[o + 1]
-        const r = registerRef[o & 0b111]
+        const e = dw.uint8()
+        const r = registerRef[e & 0b111]
         if((e & 0b111) == 0b110 && (e >> 6) != 0b00) {
-            return {o: o + 2, n: `${bitR[e >> 6]} ${(e >> 3) & 0b111} ${r}`}
+            return `${bitR[e >> 6]} ${(e >> 3) & 0b111} ${r}`
         }
     }
 
@@ -123,9 +182,8 @@ const tryDecode = (n, o) => {
             [0b11]: "C",
         }
 
-        let dv = new DataView(contents.buffer, o + 1, 1)
-        const a = dv.getInt8(0)
-        return {o: o + 2, n: `JR ${fR[(n >> 3) & 0b11]} ${a}`}
+        const a = dw.int8()
+        return `JR ${fR[(n >> 3) & 0b11]} ${a}`
     } else if((n >> 6) == 0b11) {
         const fR = {
             [0b000]: "NZ",
@@ -145,11 +203,10 @@ const tryDecode = (n, o) => {
 
         if(jcrR[n & 0b111]) {
             if(jcrR[n & 0b111] == "RET") {
-                return {o: o + 1, n: `${jcrR[n & 0b111]} ${fR[(n >> 3) & 0b111]}`}
+                return `${jcrR[n & 0b111]} ${fR[(n >> 3) & 0b111]}`
             } else {
-                let dv = new DataView(contents.buffer, o + 1, 2)
-                const a = dv.getUint16(0, true)
-                return {o: o + 3, n: `${jcrR[n & 0b111]} ${fR[(n >> 3) & 0b111]} ${a}`}
+                const a = dw.uint16()
+                return `${jcrR[n & 0b111]} ${fR[(n >> 3) & 0b111]} ${a}`
             }
         }
     }
@@ -159,15 +216,15 @@ const tryDecode = (n, o) => {
         const op = opR[(n >> 3) & 0b111]
         const r = registerRef[n & 0b111]
 
-        return {o: o + 1, n: `${op} ${r}`}
+        return `${op} ${r}`
     } else if((n >> 6) == 0b11 && (n & 0b111) == 0b110) {
         const op = opR[(n >> 3) & 0b111]
-        const a = contents[o + 1]
-        return {o: o + 2, n: `${op} ${a.toString(16)}`}
+        const a = dw.uint8()
+        return `${op} ${a.toString(16)}`
     } else if((n & 0b1100_0110) == 0b0000_0100) {
         const op = (n & 0b0001_0000) ? "DEC" : "INC"
         const r = registerRef[(n >> 3) & 0b111]
-        return {o: o + 1, n: `${op} ${r}`}
+        return `${op} ${r}`
     }
 
     // 16-bit arithmetic
@@ -185,25 +242,25 @@ const tryDecode = (n, o) => {
             [0b1011]: "DEC",
         }
         if(x[n & 0b1111]) {
-            return {o: o + 1, n: `${x[n & 0b1111]} ${rp}`}
+            return `${x[n & 0b1111]} ${rp}`
         }
     }
 
     // 8-bit load group LD (grouped cases)
     if((n & 0b1100_0111) == 0b0000_0110 && (n & 0b11_1000) != 0b11_0000) {
         const d = registerRef[(n >> 3) & 0b111]
-        const a = contents[o + 1]
-        return {o: o + 2, n: `LD ${d}, ${a.toString(16)}`}
+        const a = dw.uint8()
+        return `LD ${d}, ${a.toString(16)}`
     } else if((n & 0b1100_0111) == 0b0100_0110 && (n & 0b11_0000) != 0b11_1000) {
         const d = registerRef[(n >> 3) & 0b111]
-        return {o: o + 1, n: `LD ${d}, (HL)`}
+        return `LD ${d}, (HL)`
     } else if((n >> 3) == 0b1110 && (n & 0b111) != 0b110) {
         const s = registerRef[n & 0b111]
-        return {o: o + 1, n: `LD (HL), ${s}`}
+        return `LD (HL), ${s}`
     } else if(((n >> 6) & 0b11) == 0b01 && n != 0x76) {
         const s = registerRef[n & 0b111]
         const d = registerRef[(n >> 3) & 0b111]
-        return {o: o + 1, n: `LD ${d}, ${s}`}
+        return `LD ${d}, ${s}`
     }
 
     return null
@@ -244,30 +301,30 @@ const tryCodes = {
     [0xed]: [0xb0],
 }
 
-const handleCode = (c, o) => {
+/**
+ *
+ * @param {{o: any, n: string, a: any}} c
+ * @param {DataWalker} dw
+ * @returns
+ */
+const handleCode = (c, dw) => {
     let n
     if(c.a) {
         switch(c.a) {
             case "c": {
-                const a = contents[o]
-                o ++
+                const a = dw.uint8()
                 n = c.n.replace(/n/, a.toString(16))
                 break
             }
             case "d": {
-                let dv = new DataView(contents.buffer, o, 2)
-                const a = dv.getInt8(0)
-                o ++
+                const a = dw.int8()
                 n = c.n.replace(/d/, a.toString(16))
                 break
             }
             case "s": {
-                let dv = new DataView(contents.buffer, o, 2)
-                const a = dv.getUint16(0, true)
+                const a = dw.uint16()
                 if(c.o) {
-                    o = a - loadPoint
-                } else {
-                    o += 2
+                    dw.offset = a - loadPoint
                 }
                 n = c.n.replace(/nn/, a.toString(16))
                 break
@@ -276,39 +333,61 @@ const handleCode = (c, o) => {
     } else {
         n = c.n
     }
-    return {o, n}
+    return n
 }
 
-const l = (o2, {o, n}) => {
-    console.log(`${o2.toString(16).padStart(4, "0")}: ${n}`)
-    return o
+/**
+ *
+ * @param {number} startPoint
+ * @param {string | undefined} n
+ */
+const l = (startPoint, n) => {
+    if(n) {
+        console.log(`${startPoint.toString(16).padStart(4, "0")}: ${n}`)
+        return true
+    } else {
+        return false
+    }
 }
 
-const decode = (o) => {
-    const r = tryDecode(contents[o], o)
+/**
+ *
+ * @param {DataWalker} dw
+ * @returns
+ */
+const decode = (dw) => {
+    const startPoint = dw.offset
+    const next = dw.uint8()
+    const r = tryDecode(next, dw)
     if(r) {
-        return l(o, r)
+        return l(startPoint, r)
     }
-    const c = codes[contents[o]]
+    const c = codes[next]
     if(c) {
-        return l(o, handleCode(c, o + 1))
+        return l(startPoint, handleCode(c, dw))
     }
-    if(tryCodes[contents[o]]) {
-        if(tryCodes[contents[o]].includes(contents[o+1])) {
-            const c = codes[(contents[o] << 8) + contents[o+1]]
+    if(tryCodes[next]) {
+        let then = dw.peekUint8()
+        if(tryCodes[next].includes(then)) {
+            then = dw.uint8()
+            const c = codes[(next << 8) + then]
             if(c) {
-                return l(o, handleCode(c, o + 2))
+                return l(startPoint, handleCode(c, dw))
             } else {
                 throw new Error("internal error")
             }
         }
     }
-    const bytes = [...contents.subarray(o, o + 4)].map(i => (+i).toString(16).padStart(2, "0"))
-    throw new Error(`Cannot decode value: ` + bytes.join(" "))
+    return false
 }
-let o = 1
+const dw = new DataWalker(contents.byteLength)
+dw.offset = 1
 for(let i = 0; i < 100; i++) {
-    o = decode(o)
+    const startPoint = dw.offset
+    if(decode(dw) == false) {
+        dw.offset = startPoint
+        throw new Error(`Cannot decode value: ${dw.inspect()}`)
+    }
 }
 
 // See DECOMPILER.md
