@@ -432,6 +432,9 @@ class DecompileWalker {
                     const to = this.#dw.uint16()
                     this.#dw.offset = to - loadPoint
                     return `JP ${to.toString(16)}`
+                } else if(n.rest == 0b00_1001) { // 0xc9
+                    this.#dw.offset-- // TODO IMPROVE This is a hack to trigger the "seen" response
+                    return `RET`
                 } else if(n.rest == 0b00_1011) { // 0xcb
                     // Bit manipulation
                     const e = new BitView(this.#dw.uint8())
