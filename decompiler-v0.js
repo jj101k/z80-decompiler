@@ -57,6 +57,17 @@ class DataWalker {
     }
 }
 
+const opR = {
+    [0b000]: "ADD",
+    [0b001]: "ADC",
+    [0b010]: "SUB",
+    [0b011]: "SBC",
+    [0b100]: "AND",
+    [0b101]: "XOR",
+    [0b110]: "OR",
+    [0b111]: "CP",
+}
+
 /**
  * @abstract
  */
@@ -97,6 +108,18 @@ class FDDD {
             if((e & 0b111) == 0b110 && (e >> 6) != 0b00) {
                 return `${bitR[e >> 6]} ${(e >> 3) & 0b111} (${this.offsetRegister} + ${a.toString(16)})`
             }
+        }
+
+        // 8-bit arithmetic & logic
+        if((nn >> 6) == 0b10 && (nn & 0b111) == 0b110) {
+            const op = opR[(nn >> 3) & 0b111]
+            const d = this.#dw.int8()
+
+            return `${op} (${this.offsetRegister}+${d.toString(16)})`
+        } else if((nn & 0b1100_0110) == 0b0000_0100) {
+            const op = (nn & 0b0001_0000) ? "DEC" : "INC"
+            const d = this.#dw.int8()
+            return `${op} (${this.offsetRegister}+${d.toString(16)})`
         }
 
         // 8-bit load group LD (grouped cases)
@@ -285,17 +308,6 @@ class DecompileWalker {
             [0b110]: "(HL)",
         }
 
-        const opR = {
-            [0b000]: "ADD",
-            [0b001]: "ADC",
-            [0b010]: "SUB",
-            [0b011]: "SBC",
-            [0b100]: "AND",
-            [0b101]: "XOR",
-            [0b110]: "OR",
-            [0b111]: "CP",
-        }
-
         // Bit manipulation
         if(n == 0xcb) {
             const e = this.#dw.uint8()
@@ -410,7 +422,7 @@ function decode(filename) {
     const dw = new DataWalker(contents)
     dw.offset = 1
     const decompile = new DecompileWalker(dw)
-    for(let i = 0; i < 100; i++) {
+    for(let i = 0; i < 1_000; i++) {
         const startPoint = dw.offset
         const n = decompile.decode()
         if(!n) {
