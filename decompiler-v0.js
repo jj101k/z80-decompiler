@@ -338,19 +338,19 @@ class DecompileWalker {
 
         switch(n.pre) {
             case 0b00: {
-                if(n.rest == 0b00_0000) {
+                if(n.rest == 0b00_0000) { // 0x00
                     return `NOP`
-                } else if(n.rest == 0b01_1000) {
+                } else if(n.rest == 0b01_1000) { // 0x18
                     const d = this.#dw.int8()
                     this.#dw.offset += d - 2
                     return `JR ${d}`
-                } else if(n.rest == 0b11_0110) {
-                    const a = this.#dw.uint8()
-                    return `LD (HL), ${a}`
-                } else if(n.rest == 0b11_0010) {
+                } else if(n.rest == 0b11_0010) { // 0x32
                     const s = this.#dw.uint16()
                     return `LD (${s}), A`
-                } else if(n.rest == 0b11_1010) {
+                } else if(n.rest == 0b11_0110) { // 0x36
+                    const a = this.#dw.uint8()
+                    return `LD (HL), ${a}`
+                } else if(n.rest == 0b11_1010) { // 0x3a
                     const s = this.#dw.uint16()
                     return `LD A, (${s})`
                 } else if(n.b4 == 0b0001) {
