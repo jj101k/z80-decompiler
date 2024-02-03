@@ -384,6 +384,9 @@ class DecompileWalker {
                     const d = this.#dw.int8()
                     this.addJumpTo(this.#dw.offset + d - 2)
                     return `JR ${d}`
+                } else if(n.rest == 0b10_0010) { // 0x22
+                    const a = this.#dw.uint16()
+                    return `LD (${a.toString(16)}), HL`
                 } else if(n.rest == 0b11_0010) { // 0x32
                     const s = this.#dw.uint16()
                     return `LD (${s.toString(16)}), A`
