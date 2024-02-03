@@ -460,7 +460,7 @@ function decode(filename) {
         const n = decompile.decode()
         if(!n) {
             dw.offset = startPoint
-            throw new Error(`Cannot decode value: ${dw.inspect()}`)
+            throw new Error(`Cannot decode value: ${dw.inspect()} after ${i} points mapped`)
         }
         console.log(`${startPoint.toString(16).padStart(4, "0")}: ${n}`)
     }
