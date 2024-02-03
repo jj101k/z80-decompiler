@@ -354,16 +354,16 @@ class DecompileWalker {
                     return `JR ${d}`
                 } else if(n.rest == 0b11_0010) { // 0x32
                     const s = this.#dw.uint16()
-                    return `LD (${s}), A`
+                    return `LD (${s.toString(16)}), A`
                 } else if(n.rest == 0b11_0110) { // 0x36
                     const a = this.#dw.uint8()
-                    return `LD (HL), ${a}`
+                    return `LD (HL), ${a.toString(16)}`
                 } else if(n.rest == 0b11_1010) { // 0x3a
                     const s = this.#dw.uint16()
-                    return `LD A, (${s})`
+                    return `LD A, (${s.toString(16)})`
                 } else if(n.b4 == 0b0001) {
                     const s = this.#dw.uint16()
-                    return `LD ${rpR[n.a2]}, ${s}`
+                    return `LD ${rpR[n.a2]}, ${s.toString(16)}`
                 } else if((n.a3 & 0b101) == 0b000 && n.b3 == 0b010) {
                     const idr = n.a3 ? "DE" : "BC"
                     return `LD (${idr}), A`
@@ -498,7 +498,7 @@ class DecompileWalker {
                     } else {
                         const a = this.#dw.uint16()
                         this.addTarget(a - loadPoint)
-                        return `${jcrR[n.b3]} ${fR[n.a3]} ${a}`
+                        return `${jcrR[n.b3]} ${fR[n.a3]} ${a.toString(16)}`
                     }
                 } else if(n.b3 == hlIndirect) {
                     // 8-bit arithmetic & logic
