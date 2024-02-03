@@ -53,7 +53,9 @@ class DataWalker {
      * @returns
      */
     uint16() {
-        return this.#dv.getUint16(this.offset++, true)
+        const a = this.#dv.getUint16(this.offset, true)
+        this.offset += 2
+        return a
     }
     /**
      *
