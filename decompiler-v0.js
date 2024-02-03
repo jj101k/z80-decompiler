@@ -75,10 +75,53 @@ const hlIndirect = 0b110
 
 /**
  *
- * @param {number} n
- * @returns
  */
-const isHlIndirect = (n) => (n & 0b111) == hlIndirect
+class Wn {
+    #n
+    /**
+     * **nn ****
+     */
+    get a2() {
+        return (this.#n >> 4) & 0b11
+    }
+    /**
+     * **nn n***
+     */
+    get a3() {
+        return (this.#n >> 3) & 0b111
+    }
+    /**
+     * **** *nnn
+     */
+    get b3() {
+        return this.#n & 0b111
+    }
+    /**
+     * **** nnnn
+     */
+    get b4() {
+        return this.#n & 0b1111
+    }
+    /**
+     * nnnn nnnn
+     */
+    get n() {
+        return this.#n
+    }
+    /**
+     * nn** ****
+     */
+    get pre() {
+        return this.#n >> 6
+    }
+    /**
+     *
+     * @param {number} n
+     */
+    constructor(n) {
+        this.#n = n
+    }
+}
 
 /**
  * @abstract
@@ -111,38 +154,51 @@ class FDDD {
             const d = this.#dw.int8()
             const n = this.#dw.uint8()
             return `LD (${this.offsetRegister}+${d.toString(16)}), ${n.toString(16)}`
-        }
-
-        // Bit manipulation
-        if(nn == 0xcb) {
+        } else if(nn == 0xcb) {
+            // Bit manipulation
             const a = this.#dw.uint8()
-            const e = this.#dw.uint8()
-            if(isHlIndirect(e) && (e >> 6) != 0b00) {
-                return `${bitR[e >> 6]} ${(e >> 3) & 0b111} (${this.offsetRegister} + ${a.toString(16)})`
+            const e = new Wn(this.#dw.uint8())
+            if(e.pre != 0b00 && e.b3 == hlIndirect) {
+                return `${bitR[e.pre]} ${e.a3} (${this.offsetRegister} + ${a.toString(16)})`
             }
         }
 
-        // 8-bit arithmetic & logic
-        if((nn >> 6) == 0b10 && isHlIndirect(nn)) {
-            const op = opR[(nn >> 3) & 0b111]
-            const d = this.#dw.int8()
+        const nnx = new Wn(nn)
 
-            return `${op} (${this.offsetRegister}+${d.toString(16)})`
-        } else if((nn & 0b1100_0110) == 0b0000_0100) {
-            const op = (nn & 0b0001_0000) ? "DEC" : "INC"
-            const d = this.#dw.int8()
-            return `${op} (${this.offsetRegister}+${d.toString(16)})`
-        }
+        switch(nnx.pre) {
+            case 0b00: {
+                if((nnx.b3 & 0b110) == 0b100) {
+                    const op = (nnx.b3 & 1) ? "DEC" : "INC"
+                    const d = this.#dw.int8()
+                    return `${op} (${this.offsetRegister}+${d.toString(16)})`
+                }
+                break
+            }
+            case 0b01: {
+                if(nnx.a3 == hlIndirect && nnx.b3 != hlIndirect) {
+                    const r = nnx.b3
+                    const d = this.#dw.int8()
+                    return `LD (${this.offsetRegister}+${d}), ${r}`
+                } else if(nnx.a3 != hlIndirect && nnx.b3 == hlIndirect) {
+                    const r = nnx.b3
+                    const d = this.#dw.int8()
+                    return `LD ${r}, (${this.offsetRegister}+${d})`
+                }
+                break
+            }
+            case 0b10: {
+                if(nnx.b3 == hlIndirect) {
+                    const op = opR[nnx.a3]
+                    const d = this.#dw.int8()
 
-        // 8-bit load group LD (grouped cases)
-        if((nn >> 3) == 0b1110 && !isHlIndirect(nn)) {
-            const r = nn & 0b111
-            const d = this.#dw.int8()
-            return `LD (${this.offsetRegister}+${d}), ${r}`
-        } else if((nn & 0b1100_0111) == 0b01000110 && !isHlIndirect(nn >> 3)) {
-            const r = nn & 0b111
-            const d = this.#dw.int8()
-            return `LD ${r}, (${this.offsetRegister}+${d})`
+                    return `${op} (${this.offsetRegister}+${d.toString(16)})`
+                }
+                break
+            }
+            case 0b11: {
+                // Nothing here (yet)
+                break
+            }
         }
 
         return null
@@ -305,11 +361,7 @@ class DecompileWalker {
      * @returns {string | undefined | null}
      */
     semanticDecode(n) {
-        if(n == 0xfd) {
-            return new FD(this.#dw).try()
-        } else if(n == 0xdd) {
-            return new DD(this.#dw).try()
-        }
+        const nx = new Wn(n)
 
         const registerRef = {
             [0b111]: "A",
@@ -327,18 +379,22 @@ class DecompileWalker {
          * @param {number} n
          * @returns
          */
-        const register = (n) => registerRef[n & 0b111]
+        const register = (n) => registerRef[n]
 
-        // Bit manipulation
-        if(n == 0xcb) {
-            const e = this.#dw.uint8()
-            const r = register(e)
-            if(isHlIndirect(e) && (e >> 6) != 0b00) {
-                return `${bitR[e >> 6]} ${(e >> 3) & 0b111} ${r}`
+        if(n == 0xfd) {
+            return new FD(this.#dw).try()
+        } else if(n == 0xdd) {
+            return new DD(this.#dw).try()
+        } else if(n == 0xcb) {
+            // Bit manipulation
+            const e = new Wn(this.#dw.uint8())
+            const r = register(e.b3)
+            if(e.pre != 0b00 && e.b3 == hlIndirect) {
+                return `${bitR[e.pre]} ${e.a3} ${r}`
             }
 
             // Rotate / shift
-            if((e >> 6) == 0b00 && ((e >> 3) & 0b111) != 0b110) {
+            if(e.pre == 0b00 && e.a3 != 0b110) {
                 const rsR = {
                     [0b000]: "RCL",
                     [0b001]: "RRC",
@@ -349,98 +405,102 @@ class DecompileWalker {
                     // Note: no 110
                     [0b111]: "RCL",
                 }
-                return `${rsR[(e >> 3) & 0b111]} ${r}`
+                return `${rsR[e.a3]} ${r}`
             }
         }
 
-        // Jump/Call/Return group
-        if((n & 0b1110_0111) == 0b0010_0000) {
-            const fR = {
-                [0b00]: "NZ",
-                [0b01]: "Z",
-                [0b10]: "NC",
-                [0b11]: "C",
-            }
+        switch(nx.pre) {
+            case 0b00: {
+                if((nx.a3 & 0b100) == 0b100 && nx.b3 == 0b000) {
+                    const fR = {
+                        [0b100]: "NZ",
+                        [0b101]: "Z",
+                        [0b110]: "NC",
+                        [0b111]: "C",
+                    }
 
-            const a = this.#dw.int8()
-            return `JR ${fR[(n >> 3) & 0b11]} ${a}`
-        } else if((n >> 6) == 0b11) {
-            const fR = {
-                [0b000]: "NZ",
-                [0b001]: "Z",
-                [0b010]: "NC",
-                [0b011]: "C",
-                [0b100]: "NP",
-                [0b101]: "P",
-                [0b110]: "NS",
-                [0b111]: "S",
-            }
-            const jcrR = {
-                [0b000]: "RET",
-                [0b010]: "JP",
-                [0b100]: "CALL",
-            }
-
-            if(jcrR[n & 0b111]) {
-                if(jcrR[n & 0b111] == "RET") {
-                    return `${jcrR[n & 0b111]} ${fR[(n >> 3) & 0b111]}`
-                } else {
-                    const a = this.#dw.uint16()
-                    return `${jcrR[n & 0b111]} ${fR[(n >> 3) & 0b111]} ${a}`
+                    const a = this.#dw.int8()
+                    return `JR ${fR[nx.a3]} ${a}`
+                } else if((nx.b3 & 0b110) == 0b100) {
+                    const op = (nx.b3 & 1) ? "DEC" : "INC"
+                    const r = register(nx.a3)
+                    return `${op} ${r}`
+                } else if((nx.b3 & 0b101) == 0b001) {
+                    // 16-bit arithmetic
+                    const rpR = {
+                        [0b00]: "BC",
+                        [0b01]: "DE",
+                        [0b10]: "HL",
+                        [0b11]: "SP",
+                    }
+                    const rp = rpR[nx.a2]
+                    const x = {
+                        [0b1001]: "ADD HL,",
+                        [0b0011]: "INC",
+                        [0b1011]: "DEC",
+                    }
+                    if(x[nx.b4]) {
+                        return `${x[nx.b4]} ${rp}`
+                    }
+                } else if(nx.a3 != hlIndirect && nx.b3 == hlIndirect) {
+                    const d = register(nx.a3)
+                    const a = this.#dw.uint8()
+                    return `LD ${d}, ${a.toString(16)}`
                 }
+                break
             }
-        }
-
-        // 8-bit arithmetic & logic
-        if((n >> 6) == 0b10) {
-            const op = opR[(n >> 3) & 0b111]
-            const r = register(n)
-
-            return `${op} ${r}`
-        } else if((n >> 6) == 0b11 && isHlIndirect(n)) {
-            const op = opR[(n >> 3) & 0b111]
-            const a = this.#dw.uint8()
-            return `${op} ${a.toString(16)}`
-        } else if((n & 0b1100_0110) == 0b0000_0100) {
-            const op = (n & 0b0001_0000) ? "DEC" : "INC"
-            const r = register(n >> 3)
-            return `${op} ${r}`
-        }
-
-        // 16-bit arithmetic
-        if((n & 0b1100_0101) == 0b0000_0001) {
-            const rpR = {
-                [0b00]: "BC",
-                [0b01]: "DE",
-                [0b10]: "HL",
-                [0b11]: "SP",
+            case 0b01: {
+                if(nx.a3 != hlIndirect && nx.b3 == hlIndirect) {
+                    const d = register(nx.a3)
+                    return `LD ${d}, (HL)`
+                } else if(nx.a3 == hlIndirect && nx.b3 != hlIndirect) {
+                    const s = register(nx.b3)
+                    return `LD (HL), ${s}`
+                } else if(!(nx.a3 == hlIndirect && nx.b3 == hlIndirect)) {
+                    const s = register(nx.b3)
+                    const d = register(nx.a3)
+                    return `LD ${d}, ${s}`
+                }
+                break
             }
-            const rp = rpR[(n >> 4) & 0b11]
-            const x = {
-                [0b1001]: "ADD HL,",
-                [0b0011]: "INC",
-                [0b1011]: "DEC",
-            }
-            if(x[n & 0b1111]) {
-                return `${x[n & 0b1111]} ${rp}`
-            }
-        }
+            case 0b10: {
+                const op = opR[nx.a3]
+                const r = register(nx.b3)
 
-        // 8-bit load group LD (grouped cases)
-        if((n & 0b1100_0111) == 0b0000_0110 && (n & 0b11_1000) != 0b11_0000) {
-            const d = register(n >> 3)
-            const a = this.#dw.uint8()
-            return `LD ${d}, ${a.toString(16)}`
-        } else if((n & 0b1100_0111) == 0b0100_0110 && (n & 0b11_0000) != 0b11_1000) {
-            const d = register(n >> 3)
-            return `LD ${d}, (HL)`
-        } else if((n >> 3) == 0b1110 && !isHlIndirect(n)) {
-            const s = register(n)
-            return `LD (HL), ${s}`
-        } else if(((n >> 6) & 0b11) == 0b01 && n != 0x76) {
-            const s = register(n)
-            const d = register(n >> 3)
-            return `LD ${d}, ${s}`
+                return `${op} ${r}`
+            }
+            case 0b11: {
+                const fR = {
+                    [0b000]: "NZ",
+                    [0b001]: "Z",
+                    [0b010]: "NC",
+                    [0b011]: "C",
+                    [0b100]: "NP",
+                    [0b101]: "P",
+                    [0b110]: "NS",
+                    [0b111]: "S",
+                }
+                const jcrR = {
+                    [0b000]: "RET",
+                    [0b010]: "JP",
+                    [0b100]: "CALL",
+                }
+
+                if(jcrR[nx.b3]) {
+                    if(jcrR[nx.b3] == "RET") {
+                        return `${jcrR[nx.b3]} ${fR[nx.a3]}`
+                    } else {
+                        const a = this.#dw.uint16()
+                        return `${jcrR[nx.b3]} ${fR[nx.a3]} ${a}`
+                    }
+                } else if(nx.b3 == hlIndirect) {
+                    // 8-bit arithmetic & logic
+                    const op = opR[nx.a3]
+                    const a = this.#dw.uint8()
+                    return `${op} ${a.toString(16)}`
+                }
+                break
+            }
         }
 
         return null
