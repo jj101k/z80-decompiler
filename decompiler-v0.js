@@ -382,8 +382,8 @@ class DecompileWalker {
                     return raOpR[n.a3]
                 } else if(n.rest == 0b01_1000) { // 0x18
                     const d = this.#dw.int8()
-                    this.addJumpTo(this.#dw.offset + d - 2)
-                    return `JR ${d}`
+                    this.addJumpTo(this.#dw.offset + d)
+                    return `JR $+${d + 2}`
                 } else if(n.rest == 0b10_0010) { // 0x22
                     const a = this.#dw.uint16()
                     return `LD (${a.toString(16)}), HL`
@@ -414,8 +414,8 @@ class DecompileWalker {
                     }
 
                     const a = this.#dw.int8()
-                    this.addTarget(this.#dw.offset - 2 + a)
-                    return `JR ${fR[n.a3]} ${a}`
+                    this.addTarget(this.#dw.offset + a)
+                    return `JR ${fR[n.a3]} $+${a + 2}`
                 } else if((n.b3 & 0b110) == 0b100) {
                     const op = (n.b3 & 1) ? "DEC" : "INC"
                     const r = register(n.a3)
