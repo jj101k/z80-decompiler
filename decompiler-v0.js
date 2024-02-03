@@ -380,13 +380,13 @@ class DecompileWalker {
                 } else if((n.b3 & 0b101) == 0b001) {
                     // 16-bit arithmetic
                     const rp = rpR[n.a2]
-                    const x = {
+                    const arithmeticOpR = {
                         [0b1001]: "ADD HL,",
                         [0b0011]: "INC",
                         [0b1011]: "DEC",
                     }
-                    if(x[n.b4]) {
-                        return `${x[n.b4]} ${rp}`
+                    if(arithmeticOpR[n.b4]) {
+                        return `${arithmeticOpR[n.b4]} ${rp}`
                     }
                 } else if(n.a3 != hlIndirect && n.b3 == hlIndirect) {
                     const d = register(n.a3)
