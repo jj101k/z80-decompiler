@@ -279,6 +279,10 @@ class DecompileWalker {
             case 0b00: {
                 if(n.rest == 0b00_0000) {
                     return `NOP`
+                } else if(n.rest == 0b01_1000) {
+                    const d = this.#dw.int8()
+                    this.#dw.offset += d - 2
+                    return `JR ${d}`
                 } else if(n.rest == 0b11_0110) {
                     const a = this.#dw.uint8()
                     return `LD (HL), ${a}`
