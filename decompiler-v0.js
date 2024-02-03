@@ -380,6 +380,10 @@ class DecompileWalker {
                         [0b11]: "RRA",
                     }
                     return raOpR[n.a3]
+                } else if(n.rest == 0b01_0000) { // 0x10
+                    const d = this.#dw.int8()
+                    this.addTarget(this.#dw.offset + d)
+                    return `DJNZ $+${d + 2}`
                 } else if(n.rest == 0b01_1000) { // 0x18
                     const d = this.#dw.int8()
                     this.addJumpTo(this.#dw.offset + d)
