@@ -285,6 +285,7 @@ class MapReader {
             let [type] = new Uint8Array(this.data, i, 1)
             switch(type) {
                 case 0x10:
+                    // 10 <dd dd> <ll ll> [<..>*]
                     let dv = new DataView(this.data, i + 1, 4)
                     let delay = dv.getUint16(0, true)
                     let length = dv.getUint16(2, true)
@@ -295,6 +296,7 @@ class MapReader {
                     i += 1 + 4 + length
                     break
                 case 0x30:
+                    // 30 <ll> [<..>*]
                     let [len] = new Uint8Array(this.data, i + 1, 1)
                     let text = String.fromCharCode.apply(
                         null,
