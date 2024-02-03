@@ -136,6 +136,17 @@ class BitView {
     }
 }
 
+const rsR = {
+    [0b000]: "RCL",
+    [0b001]: "RRC",
+    [0b010]: "RL",
+    [0b011]: "RR",
+    [0b100]: "SLA",
+    [0b101]: "SRA",
+    // Note: no 110
+    [0b111]: "SRL",
+}
+
 /**
  * @abstract
  */
@@ -198,12 +209,15 @@ class FDDD {
                 break
             }
             case 0b11: {
-                if(nnx.rest == 0b00_1011) {
+                if(nnx.rest == 0b00_1011) { // 0xcb
                     // Bit manipulation
                     const a = this.#dw.uint8()
                     const e = new BitView(this.#dw.uint8())
                     if(e.pre != 0b00 && e.b3 == hlIndirect) {
                         return `${bitR[e.pre]} ${e.a3} (${this.offsetRegister} + ${a.toString(16)})`
+                    } else if(e.pre == 0b00 && e.a3 != 0b110) {
+                        // Rotate / shift
+                        return `${rsR[e.a3]} (${this.offsetRegister} + ${a.toString(16)})`
                     }
                 }
                 break
@@ -388,7 +402,7 @@ class DecompileWalker {
                     return `DI`
                 } else if(n.rest == 0b11_1101) {
                     return new FD(this.#dw).try()
-                } else if(n.rest == 0b00_1011) {
+                } else if(n.rest == 0b00_1011) { // 0xcb
                     // Bit manipulation
                     const e = new BitView(this.#dw.uint8())
                     const r = register(e.b3)
@@ -398,16 +412,6 @@ class DecompileWalker {
 
                     // Rotate / shift
                     if(e.pre == 0b00 && e.a3 != 0b110) {
-                        const rsR = {
-                            [0b000]: "RCL",
-                            [0b001]: "RRC",
-                            [0b010]: "RL",
-                            [0b011]: "RR",
-                            [0b100]: "SLA",
-                            [0b101]: "SRA",
-                            // Note: no 110
-                            [0b111]: "RCL",
-                        }
                         return `${rsR[e.a3]} ${r}`
                     }
                 }
