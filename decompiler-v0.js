@@ -180,7 +180,7 @@ class DecompileWalker {
      * @returns {string | null | undefined}
      */
     #decodeInner(next) {
-        const r = this.tryDecode(next)
+        const r = this.semanticDecode(next)
         if(r) {
             return r
         }
@@ -188,6 +188,7 @@ class DecompileWalker {
             let then = this.#dw.uint8()
             return this.#decodeInner((next << 8) + then)
         }
+        // This is based on a flat map
         const c = this.codes[next]
         if(c) {
             return this.handleCode(c)
@@ -298,11 +299,12 @@ class DecompileWalker {
     }
 
     /**
+     * This decodes based on rules
      *
      * @param {number} n
      * @returns {string | undefined | null}
      */
-    tryDecode(n) {
+    semanticDecode(n) {
         if(n == 0xfd) {
             return new FD(this.#dw).try()
         } else if(n == 0xdd) {
@@ -333,6 +335,21 @@ class DecompileWalker {
             const r = register(e)
             if(isHlIndirect(e) && (e >> 6) != 0b00) {
                 return `${bitR[e >> 6]} ${(e >> 3) & 0b111} ${r}`
+            }
+
+            // Rotate / shift
+            if((e >> 6) == 0b00 && ((e >> 3) & 0b111) != 0b110) {
+                const rsR = {
+                    [0b000]: "RCL",
+                    [0b001]: "RRC",
+                    [0b010]: "RL",
+                    [0b011]: "RR",
+                    [0b100]: "SLA",
+                    [0b101]: "SRA",
+                    // Note: no 110
+                    [0b111]: "RCL",
+                }
+                return `${rsR[(e >> 3) & 0b111]} ${r}`
             }
         }
 
