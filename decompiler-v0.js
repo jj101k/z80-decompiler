@@ -332,7 +332,7 @@ class DecompileWalker {
             if(this.#seen.has(this.#dw.offset)) {
                 for(const t of this.#targets) {
                     if(!this.#seen.has(t)) {
-                        console.log(`-- jumping to previously seen offset ${t.toString(16)}`)
+                        console.log(`-- jumping to previously optional offset ${t.toString(16)}`)
                         this.#dw.offset = t
                         return n
                     }
