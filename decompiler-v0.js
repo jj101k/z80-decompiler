@@ -463,6 +463,7 @@ function decode(filename) {
     const dw = new DataWalker(contents)
     dw.offset = 1
     const decompile = new DecompileWalker(dw)
+    const seen = new Map()
     for(let i = 0; i < 1_000; i++) {
         const startPoint = dw.offset
         const n = decompile.decode()
@@ -470,7 +471,12 @@ function decode(filename) {
             dw.offset = startPoint
             throw new Error(`Cannot decode value: ${dw.inspect()} after ${i} points mapped`)
         }
+        seen.set(startPoint, n)
         console.log(`${startPoint.toString(16).padStart(4, "0")}: ${n}`)
+        if(seen.has(dw.offset)) {
+            console.log(`Stop after ${i}: fixed loop to ${(dw.offset + loadPoint).toString(16)} (${dw.offset.toString(16)})`)
+            break
+        }
     }
 }
 
