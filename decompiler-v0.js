@@ -433,7 +433,7 @@ class DecompileWalker {
                     return `OUT (${n.toString(16)}), A`
                 } else if(n.rest == 0b01_1101) {
                     return new DD(this.#dw).try()
-                } else if(n.rest == 0b10_1101) {
+                } else if(n.rest == 0b10_1101) { // 0xed
                     const nn = this.#dw.uint8()
                     const nnx = new BitView(nn)
                     if(nnx.pre == 0b01 && (nnx.a3 & 0b100) == 0b000) {
@@ -444,8 +444,12 @@ class DecompileWalker {
                         } else {
                             return `LD ${reg}, A`
                         }
-                    } else if(nnx.pre == 0b10 && nnx.a3 == 0b110 && nnx.b3 == 0b000) {
-                        return `LDIR`
+                    } else if(nnx.pre == 0b10) {
+                        if(nnx.rest == 0b11_0000) { // 0xedb0
+                            return `LDIR`
+                        } else if(nnx.rest == 0b11_1000) { // 0xedb8
+                            return `LDDR`
+                        }
                     }
                 } else if(n.rest == 0b11_0011) {
                     return `DI`
