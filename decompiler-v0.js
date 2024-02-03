@@ -338,33 +338,18 @@ const handleCode = (c, dw) => {
 
 /**
  *
- * @param {number} startPoint
- * @param {string | undefined} n
- */
-const l = (startPoint, n) => {
-    if(n) {
-        console.log(`${startPoint.toString(16).padStart(4, "0")}: ${n}`)
-        return true
-    } else {
-        return false
-    }
-}
-
-/**
- *
  * @param {DataWalker} dw
- * @returns
+ * @returns {string | null | undefined}
  */
 const decode = (dw) => {
-    const startPoint = dw.offset
     const next = dw.uint8()
     const r = tryDecode(next, dw)
     if(r) {
-        return l(startPoint, r)
+        return r
     }
     const c = codes[next]
     if(c) {
-        return l(startPoint, handleCode(c, dw))
+        return handleCode(c, dw)
     }
     if(tryCodes[next]) {
         let then = dw.peekUint8()
@@ -372,22 +357,24 @@ const decode = (dw) => {
             then = dw.uint8()
             const c = codes[(next << 8) + then]
             if(c) {
-                return l(startPoint, handleCode(c, dw))
+                return handleCode(c, dw)
             } else {
                 throw new Error("internal error")
             }
         }
     }
-    return false
+    return undefined
 }
 const dw = new DataWalker(contents.byteLength)
 dw.offset = 1
 for(let i = 0; i < 100; i++) {
     const startPoint = dw.offset
-    if(decode(dw) == false) {
+    const n = decode(dw)
+    if(!n) {
         dw.offset = startPoint
         throw new Error(`Cannot decode value: ${dw.inspect()}`)
     }
+    console.log(`${startPoint.toString(16).padStart(4, "0")}: ${n}`)
 }
 
 // See DECOMPILER.md
