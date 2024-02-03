@@ -370,6 +370,18 @@ class DecompileWalker {
 
         switch(n.pre) {
             case 0b00: {
+                /**
+                 *
+                 * @param {number} n
+                 * @returns
+                 */
+                const rel = (n) => {
+                    if(n >= 0) {
+                        return `+${n}`
+                    } else {
+                        return `${n}`
+                    }
+                }
                 if(n.rest == 0b00_0000) { // 0x00
                     return `NOP`
                 } else if((n.a3 & 0b100) == 0b000 && n.b3 == 0b111) {
@@ -383,11 +395,11 @@ class DecompileWalker {
                 } else if(n.rest == 0b01_0000) { // 0x10
                     const d = this.#dw.int8()
                     this.addTarget(this.#dw.offset + d)
-                    return `DJNZ $+${d + 2}`
+                    return `DJNZ $${rel(d + 2)}`
                 } else if(n.rest == 0b01_1000) { // 0x18
                     const d = this.#dw.int8()
                     this.addJumpTo(this.#dw.offset + d)
-                    return `JR $+${d + 2}`
+                    return `JR $${rel(d + 2)}`
                 } else if(n.rest == 0b10_0010) { // 0x22
                     const a = this.#dw.uint16()
                     return `LD (${a.toString(16)}), HL`
@@ -417,9 +429,9 @@ class DecompileWalker {
                         [0b111]: "C",
                     }
 
-                    const a = this.#dw.int8()
-                    this.addTarget(this.#dw.offset + a)
-                    return `JR ${fR[n.a3]} $+${a + 2}`
+                    const d = this.#dw.int8()
+                    this.addTarget(this.#dw.offset + d)
+                    return `JR ${fR[n.a3]} $${rel(d + 2)}`
                 } else if((n.b3 & 0b110) == 0b100) {
                     const op = (n.b3 & 1) ? "DEC" : "INC"
                     const r = register(n.a3)
