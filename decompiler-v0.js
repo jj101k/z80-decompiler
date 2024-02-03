@@ -424,22 +424,34 @@ class DecompileWalker {
                 return `${op} ${r}`
             }
             case 0b11: {
-                if(n.b4 == 0b0001) {
+                if(n.b4 == 0b0001) { // 0xc1
                     return `POP ${rpR[n.a2]}`
                 } else if(n.b4 == 0b0101) {
                     return `PUSH ${rpR[n.a2]}`
-                } else if(n.rest == 0b00_0011) {
+                } else if(n.rest == 0b00_0011) { // 0xc3
                     const to = this.#dw.uint16()
                     this.#dw.offset = to - loadPoint
                     return `JP ${to.toString(16)}`
-                } else if(n.rest == 0b00_1101) {
+                } else if(n.rest == 0b00_1011) { // 0xcb
+                    // Bit manipulation
+                    const e = new BitView(this.#dw.uint8())
+                    const r = register(e.b3)
+                    if(e.pre != 0b00 && e.b3 == hlIndirect) {
+                        return `${bitR[e.pre]} ${e.a3} ${r}`
+                    }
+
+                    // Rotate / shift
+                    if(e.pre == 0b00 && e.a3 != 0b110) {
+                        return `${rsR[e.a3]} ${r}`
+                    }
+                } else if(n.rest == 0b00_1101) { // 0xcd
                     const to = this.#dw.uint16()
                     this.addTarget(to - loadPoint)
                     return `CALL ${to.toString(16)}`
-                } else if(n.rest == 0b01_0011) {
+                } else if(n.rest == 0b01_0011) { // 0xd3
                     const n = this.#dw.uint8()
                     return `OUT (${n.toString(16)}), A`
-                } else if(n.rest == 0b01_1101) {
+                } else if(n.rest == 0b01_1101) { // 0xdd
                     return new DD(this.#dw).try()
                 } else if(n.rest == 0b10_1101) { // 0xed
                     const nn = this.#dw.uint8()
@@ -459,22 +471,10 @@ class DecompileWalker {
                             return `LDDR`
                         }
                     }
-                } else if(n.rest == 0b11_0011) {
+                } else if(n.rest == 0b11_0011) { // 0xf3
                     return `DI`
-                } else if(n.rest == 0b11_1101) {
+                } else if(n.rest == 0b11_1101) { // 0xfd
                     return new FD(this.#dw).try()
-                } else if(n.rest == 0b00_1011) { // 0xcb
-                    // Bit manipulation
-                    const e = new BitView(this.#dw.uint8())
-                    const r = register(e.b3)
-                    if(e.pre != 0b00 && e.b3 == hlIndirect) {
-                        return `${bitR[e.pre]} ${e.a3} ${r}`
-                    }
-
-                    // Rotate / shift
-                    if(e.pre == 0b00 && e.a3 != 0b110) {
-                        return `${rsR[e.a3]} ${r}`
-                    }
                 }
                 const fR = {
                     [0b000]: "NZ",
