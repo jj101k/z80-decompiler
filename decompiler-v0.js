@@ -129,143 +129,6 @@ class DD extends FDDD {
     offsetRegister = "IX"
 }
 
-/**
- *
- * @param {number} n
- * @param {DataWalker} dw
- * @returns {string | undefined | null}
- */
-const tryDecode = (n, dw) => {
-    if(n == 0xfd) {
-        return new FD(dw).try()
-    } else if(n == 0xdd) {
-        return new DD(dw).try()
-    }
-
-    const registerRef = {
-        [0b111]: "A",
-        [0b000]: "B",
-        [0b001]: "C",
-        [0b010]: "D",
-        [0b011]: "E",
-        [0b100]: "F",
-        [0b101]: "L",
-        [0b110]: "(HL)",
-    }
-
-    const opR = {
-        [0b000]: "ADD",
-        [0b001]: "ADC",
-        [0b010]: "SUB",
-        [0b011]: "SBC",
-        [0b100]: "AND",
-        [0b101]: "XOR",
-        [0b110]: "OR",
-        [0b111]: "CP",
-    }
-
-    // Bit manipulation
-    if(n == 0xcb) {
-        const e = dw.uint8()
-        const r = registerRef[e & 0b111]
-        if((e & 0b111) == 0b110 && (e >> 6) != 0b00) {
-            return `${bitR[e >> 6]} ${(e >> 3) & 0b111} ${r}`
-        }
-    }
-
-    // Jump/Call/Return group
-    if((n & 0b1110_0111) == 0b0010_0000) {
-        const fR = {
-            [0b00]: "NZ",
-            [0b01]: "Z",
-            [0b10]: "NC",
-            [0b11]: "C",
-        }
-
-        const a = dw.int8()
-        return `JR ${fR[(n >> 3) & 0b11]} ${a}`
-    } else if((n >> 6) == 0b11) {
-        const fR = {
-            [0b000]: "NZ",
-            [0b001]: "Z",
-            [0b010]: "NC",
-            [0b011]: "C",
-            [0b100]: "NP",
-            [0b101]: "P",
-            [0b110]: "NS",
-            [0b111]: "S",
-        }
-        const jcrR = {
-            [0b000]: "RET",
-            [0b010]: "JP",
-            [0b100]: "CALL",
-        }
-
-        if(jcrR[n & 0b111]) {
-            if(jcrR[n & 0b111] == "RET") {
-                return `${jcrR[n & 0b111]} ${fR[(n >> 3) & 0b111]}`
-            } else {
-                const a = dw.uint16()
-                return `${jcrR[n & 0b111]} ${fR[(n >> 3) & 0b111]} ${a}`
-            }
-        }
-    }
-
-    // 8-bit arithmetic & logic
-    if((n >> 6) == 0b10) {
-        const op = opR[(n >> 3) & 0b111]
-        const r = registerRef[n & 0b111]
-
-        return `${op} ${r}`
-    } else if((n >> 6) == 0b11 && (n & 0b111) == 0b110) {
-        const op = opR[(n >> 3) & 0b111]
-        const a = dw.uint8()
-        return `${op} ${a.toString(16)}`
-    } else if((n & 0b1100_0110) == 0b0000_0100) {
-        const op = (n & 0b0001_0000) ? "DEC" : "INC"
-        const r = registerRef[(n >> 3) & 0b111]
-        return `${op} ${r}`
-    }
-
-    // 16-bit arithmetic
-    if((n & 0b1100_0101) == 0b0000_0001) {
-        const rpR = {
-            [0b00]: "BC",
-            [0b01]: "DE",
-            [0b10]: "HL",
-            [0b11]: "SP",
-        }
-        const rp = rpR[(n >> 4) & 0b11]
-        const x = {
-            [0b1001]: "ADD HL,",
-            [0b0011]: "INC",
-            [0b1011]: "DEC",
-        }
-        if(x[n & 0b1111]) {
-            return `${x[n & 0b1111]} ${rp}`
-        }
-    }
-
-    // 8-bit load group LD (grouped cases)
-    if((n & 0b1100_0111) == 0b0000_0110 && (n & 0b11_1000) != 0b11_0000) {
-        const d = registerRef[(n >> 3) & 0b111]
-        const a = dw.uint8()
-        return `LD ${d}, ${a.toString(16)}`
-    } else if((n & 0b1100_0111) == 0b0100_0110 && (n & 0b11_0000) != 0b11_1000) {
-        const d = registerRef[(n >> 3) & 0b111]
-        return `LD ${d}, (HL)`
-    } else if((n >> 3) == 0b1110 && (n & 0b111) != 0b110) {
-        const s = registerRef[n & 0b111]
-        return `LD (HL), ${s}`
-    } else if(((n >> 6) & 0b11) == 0b01 && n != 0x76) {
-        const s = registerRef[n & 0b111]
-        const d = registerRef[(n >> 3) & 0b111]
-        return `LD ${d}, ${s}`
-    }
-
-    return null
-}
-
 const codes = {
     [0x00]: {n: "NOP"},
     [0x01]: {a: "s", n: "LD BC, nn"},
@@ -303,73 +166,223 @@ const tryCodes = {
 
 /**
  *
- * @param {{o: any, n: string, a: any}} c
- * @param {DataWalker} dw
- * @returns
  */
-const handleCode = (c, dw) => {
-    let n
-    if(c.a) {
-        switch(c.a) {
-            case "c": {
-                const a = dw.uint8()
-                n = c.n.replace(/n/, a.toString(16))
-                break
-            }
-            case "d": {
-                const a = dw.int8()
-                n = c.n.replace(/d/, a.toString(16))
-                break
-            }
-            case "s": {
-                const a = dw.uint16()
-                if(c.o) {
-                    dw.offset = a - loadPoint
+class DecompileWalker {
+    #dw
+    /**
+     *
+     * @param {DataWalker} dw
+     */
+    constructor(dw) {
+        this.#dw = dw
+    }
+
+    /**
+     *
+     * @returns {string | null | undefined}
+     */
+    decode() {
+        const next = this.#dw.uint8()
+        const r = this.tryDecode(next)
+        if(r) {
+            return r
+        }
+        const c = codes[next]
+        if(c) {
+            return this.handleCode(c)
+        }
+        if(tryCodes[next]) {
+            let then = this.#dw.peekUint8()
+            if(tryCodes[next].includes(then)) {
+                then = this.#dw.uint8()
+                const c = codes[(next << 8) + then]
+                if(c) {
+                    return this.handleCode(c)
+                } else {
+                    throw new Error("internal error")
                 }
-                n = c.n.replace(/nn/, a.toString(16))
-                break
             }
         }
-    } else {
-        n = c.n
+        return undefined
     }
-    return n
+
+    /**
+     *
+     * @param {{o: any, n: string, a: any}} c
+     * @returns
+     */
+    handleCode(c) {
+        let n
+        if(c.a) {
+            switch(c.a) {
+                case "c": {
+                    const a = this.#dw.uint8()
+                    n = c.n.replace(/n/, a.toString(16))
+                    break
+                }
+                case "d": {
+                    const a = this.#dw.int8()
+                    n = c.n.replace(/d/, a.toString(16))
+                    break
+                }
+                case "s": {
+                    const a = this.#dw.uint16()
+                    if(c.o) {
+                        this.#dw.offset = a - loadPoint
+                    }
+                    n = c.n.replace(/nn/, a.toString(16))
+                    break
+                }
+            }
+        } else {
+            n = c.n
+        }
+        return n
+    }
+
+    /**
+     *
+     * @param {number} n
+     * @returns {string | undefined | null}
+     */
+    tryDecode(n) {
+        if(n == 0xfd) {
+            return new FD(this.#dw).try()
+        } else if(n == 0xdd) {
+            return new DD(this.#dw).try()
+        }
+
+        const registerRef = {
+            [0b111]: "A",
+            [0b000]: "B",
+            [0b001]: "C",
+            [0b010]: "D",
+            [0b011]: "E",
+            [0b100]: "F",
+            [0b101]: "L",
+            [0b110]: "(HL)",
+        }
+
+        const opR = {
+            [0b000]: "ADD",
+            [0b001]: "ADC",
+            [0b010]: "SUB",
+            [0b011]: "SBC",
+            [0b100]: "AND",
+            [0b101]: "XOR",
+            [0b110]: "OR",
+            [0b111]: "CP",
+        }
+
+        // Bit manipulation
+        if(n == 0xcb) {
+            const e = this.#dw.uint8()
+            const r = registerRef[e & 0b111]
+            if((e & 0b111) == 0b110 && (e >> 6) != 0b00) {
+                return `${bitR[e >> 6]} ${(e >> 3) & 0b111} ${r}`
+            }
+        }
+
+        // Jump/Call/Return group
+        if((n & 0b1110_0111) == 0b0010_0000) {
+            const fR = {
+                [0b00]: "NZ",
+                [0b01]: "Z",
+                [0b10]: "NC",
+                [0b11]: "C",
+            }
+
+            const a = this.#dw.int8()
+            return `JR ${fR[(n >> 3) & 0b11]} ${a}`
+        } else if((n >> 6) == 0b11) {
+            const fR = {
+                [0b000]: "NZ",
+                [0b001]: "Z",
+                [0b010]: "NC",
+                [0b011]: "C",
+                [0b100]: "NP",
+                [0b101]: "P",
+                [0b110]: "NS",
+                [0b111]: "S",
+            }
+            const jcrR = {
+                [0b000]: "RET",
+                [0b010]: "JP",
+                [0b100]: "CALL",
+            }
+
+            if(jcrR[n & 0b111]) {
+                if(jcrR[n & 0b111] == "RET") {
+                    return `${jcrR[n & 0b111]} ${fR[(n >> 3) & 0b111]}`
+                } else {
+                    const a = this.#dw.uint16()
+                    return `${jcrR[n & 0b111]} ${fR[(n >> 3) & 0b111]} ${a}`
+                }
+            }
+        }
+
+        // 8-bit arithmetic & logic
+        if((n >> 6) == 0b10) {
+            const op = opR[(n >> 3) & 0b111]
+            const r = registerRef[n & 0b111]
+
+            return `${op} ${r}`
+        } else if((n >> 6) == 0b11 && (n & 0b111) == 0b110) {
+            const op = opR[(n >> 3) & 0b111]
+            const a = this.#dw.uint8()
+            return `${op} ${a.toString(16)}`
+        } else if((n & 0b1100_0110) == 0b0000_0100) {
+            const op = (n & 0b0001_0000) ? "DEC" : "INC"
+            const r = registerRef[(n >> 3) & 0b111]
+            return `${op} ${r}`
+        }
+
+        // 16-bit arithmetic
+        if((n & 0b1100_0101) == 0b0000_0001) {
+            const rpR = {
+                [0b00]: "BC",
+                [0b01]: "DE",
+                [0b10]: "HL",
+                [0b11]: "SP",
+            }
+            const rp = rpR[(n >> 4) & 0b11]
+            const x = {
+                [0b1001]: "ADD HL,",
+                [0b0011]: "INC",
+                [0b1011]: "DEC",
+            }
+            if(x[n & 0b1111]) {
+                return `${x[n & 0b1111]} ${rp}`
+            }
+        }
+
+        // 8-bit load group LD (grouped cases)
+        if((n & 0b1100_0111) == 0b0000_0110 && (n & 0b11_1000) != 0b11_0000) {
+            const d = registerRef[(n >> 3) & 0b111]
+            const a = this.#dw.uint8()
+            return `LD ${d}, ${a.toString(16)}`
+        } else if((n & 0b1100_0111) == 0b0100_0110 && (n & 0b11_0000) != 0b11_1000) {
+            const d = registerRef[(n >> 3) & 0b111]
+            return `LD ${d}, (HL)`
+        } else if((n >> 3) == 0b1110 && (n & 0b111) != 0b110) {
+            const s = registerRef[n & 0b111]
+            return `LD (HL), ${s}`
+        } else if(((n >> 6) & 0b11) == 0b01 && n != 0x76) {
+            const s = registerRef[n & 0b111]
+            const d = registerRef[(n >> 3) & 0b111]
+            return `LD ${d}, ${s}`
+        }
+
+        return null
+    }
 }
 
-/**
- *
- * @param {DataWalker} dw
- * @returns {string | null | undefined}
- */
-const decode = (dw) => {
-    const next = dw.uint8()
-    const r = tryDecode(next, dw)
-    if(r) {
-        return r
-    }
-    const c = codes[next]
-    if(c) {
-        return handleCode(c, dw)
-    }
-    if(tryCodes[next]) {
-        let then = dw.peekUint8()
-        if(tryCodes[next].includes(then)) {
-            then = dw.uint8()
-            const c = codes[(next << 8) + then]
-            if(c) {
-                return handleCode(c, dw)
-            } else {
-                throw new Error("internal error")
-            }
-        }
-    }
-    return undefined
-}
 const dw = new DataWalker(contents.byteLength)
 dw.offset = 1
+const decompile = new DecompileWalker(dw)
 for(let i = 0; i < 100; i++) {
     const startPoint = dw.offset
-    const n = decode(dw)
+    const n = decompile.decode()
     if(!n) {
         dw.offset = startPoint
         throw new Error(`Cannot decode value: ${dw.inspect()}`)
