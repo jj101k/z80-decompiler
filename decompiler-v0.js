@@ -250,6 +250,28 @@ class DecompileWalker {
 
     /**
      *
+     */
+    #finished = false
+
+    /**
+     * @type {Map<number, string>}
+     */
+    #seen = new Map()
+
+    /**
+     * @type {Set<number>}
+     */
+    #targets = new Set()
+
+    /**
+     *
+     */
+    get finished() {
+        return this.#finished
+    }
+
+    /**
+     *
      * @param {DataWalker} dw
      */
     constructor(dw) {
@@ -258,10 +280,35 @@ class DecompileWalker {
 
     /**
      *
+     * @param {number} n
+     */
+    addTarget(n) {
+        if(!this.#seen.has(n)) {
+            this.#targets.add(n)
+        }
+    }
+
+    /**
+     *
      * @returns {string | null | undefined}
      */
     decode() {
-        return this.semanticDecode(new BitView(this.#dw.uint8()))
+        const startPoint = this.#dw.offset
+        const n = this.semanticDecode(new BitView(this.#dw.uint8()))
+        if(n) {
+            this.#seen.set(startPoint, n)
+            if(this.#seen.has(this.#dw.offset)) {
+                for(const t of this.#targets) {
+                    if(!this.#seen.has(t)) {
+                        console.log(`-- jumping to previously seen offset ${t.toString(16)}`)
+                        this.#dw.offset = t
+                        return n
+                    }
+                }
+                this.#finished = true
+            }
+        }
+        return n
     }
 
     /**
@@ -324,6 +371,7 @@ class DecompileWalker {
                     }
 
                     const a = this.#dw.int8()
+                    this.addTarget(this.#dw.offset - 2 + a)
                     return `JR ${fR[n.a3]} ${a}`
                 } else if((n.b3 & 0b110) == 0b100) {
                     const op = (n.b3 & 1) ? "DEC" : "INC"
@@ -378,6 +426,7 @@ class DecompileWalker {
                     return `JP ${to.toString(16)}`
                 } else if(n.rest == 0b00_1101) {
                     const to = this.#dw.uint16()
+                    this.addTarget(to - loadPoint)
                     return `CALL ${to.toString(16)}`
                 } else if(n.rest == 0b01_0011) {
                     const n = this.#dw.uint8()
@@ -436,6 +485,7 @@ class DecompileWalker {
                         return `${jcrR[n.b3]} ${fR[n.a3]}`
                     } else {
                         const a = this.#dw.uint16()
+                        this.addTarget(a - loadPoint)
                         return `${jcrR[n.b3]} ${fR[n.a3]} ${a}`
                     }
                 } else if(n.b3 == hlIndirect) {
@@ -463,7 +513,7 @@ function decode(filename) {
     const dw = new DataWalker(contents)
     dw.offset = 1
     const decompile = new DecompileWalker(dw)
-    const seen = new Map()
+
     for(let i = 0; i < 1_000; i++) {
         const startPoint = dw.offset
         const n = decompile.decode()
@@ -471,10 +521,9 @@ function decode(filename) {
             dw.offset = startPoint
             throw new Error(`Cannot decode value: ${dw.inspect()} after ${i} points mapped`)
         }
-        seen.set(startPoint, n)
         console.log(`${startPoint.toString(16).padStart(4, "0")}: ${n}`)
-        if(seen.has(dw.offset)) {
-            console.log(`Stop after ${i}: fixed loop to ${(dw.offset + loadPoint).toString(16)} (${dw.offset.toString(16)})`)
+        if(decompile.finished) {
+            console.log(`Stop after ${i} with next offset at ${(dw.offset + loadPoint).toString(16)} (${dw.offset.toString(16)})`)
             break
         }
     }
