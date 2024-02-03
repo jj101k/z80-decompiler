@@ -340,6 +340,14 @@ class DecompileWalker {
             case 0b00: {
                 if(n.rest == 0b00_0000) { // 0x00
                     return `NOP`
+                } else if((n.a3 & 0b100) == 0b000 && n.b3 == 0b111) {
+                    const raOpR = {
+                        [0b00]: "RLCA",
+                        [0b01]: "RRCA",
+                        [0b10]: "RLA",
+                        [0b11]: "RRA",
+                    }
+                    return raOpR[n.a3]
                 } else if(n.rest == 0b01_1000) { // 0x18
                     const d = this.#dw.int8()
                     this.#dw.offset += d - 2
