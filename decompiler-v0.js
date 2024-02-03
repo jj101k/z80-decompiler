@@ -11,45 +11,76 @@ const bitR = {
     [0b11]: "SET",
 }
 
-const tryFDDD = (n, o) => {
-    const r1 = (n == 0xfd) ? "IY" : "IX"
-    const nn = contents[o + 1]
+/**
+ * @abstract
+ */
+class FDDD {
+    /**
+     * @abstract
+     * @protected
+     * @type {string}
+     */
+    offsetRegister
+    /**
+     *
+     * @param {number} o
+     * @returns
+     */
+    try(o) {
+        const nn = contents[o]
 
-    if(nn == 0x36) {
-        let dv = new DataView(contents.buffer, o + 1, 2)
-        const d = dv.getInt8(0)
-        const n = dv.getUint8(1)
-        return {o: o + 3, n: `LD (IX+${d.toString(16)}), ${n.toString(16)}`}
-    }
-
-    // Bit manipulation
-    if(nn == 0xcb) {
-        const a = contents[o + 2]
-        const e = contents[o + 3]
-        if((e & 0b111) == 0b110 && (e >> 6) != 0b00) {
-            return {o: o + 4, n: `${bitR[e >> 6]} ${(e >> 3) & 0b111} (${r1} + ${a.toString(16)})`}
+        if(nn == 0x36) {
+            let dv = new DataView(contents.buffer, o, 2)
+            const d = dv.getInt8(0)
+            const n = dv.getUint8(1)
+            return {o: o + 2, n: `LD (${this.offsetRegister}+${d.toString(16)}), ${n.toString(16)}`}
         }
-    }
 
-    // 8-bit load group LD (grouped cases)
-    if((nn >> 3) == 0b1110 && (nn & 0b111) != 0b110) {
-        const r = nn & 0b111
-        let dv = new DataView(contents.buffer, o + 2, 1)
-        const d = dv.getInt8(0)
-        return {o: o + 3, n: `LD (${r1}+${d}), ${r}`}
-    } else if((nn & 0b1100_0111) == 0b01000110 && ((nn >> 3) & 0b111) != 0b110) {
-        const r = nn & 0b111
-        let dv = new DataView(contents.buffer, o + 2, 1)
-        const d = dv.getInt8(0)
-        return {o: o + 3, n: `LD ${r}, (${r1}+${d})`}
-    }
+        // Bit manipulation
+        if(nn == 0xcb) {
+            const a = contents[o + 1]
+            const e = contents[o + 2]
+            if((e & 0b111) == 0b110 && (e >> 6) != 0b00) {
+                return {o: o + 3, n: `${bitR[e >> 6]} ${(e >> 3) & 0b111} (${this.offsetRegister} + ${a.toString(16)})`}
+            }
+        }
 
-    return null
+        // 8-bit load group LD (grouped cases)
+        if((nn >> 3) == 0b1110 && (nn & 0b111) != 0b110) {
+            const r = nn & 0b111
+            let dv = new DataView(contents.buffer, o + 1, 1)
+            const d = dv.getInt8(0)
+            return {o: o + 2, n: `LD (${this.offsetRegister}+${d}), ${r}`}
+        } else if((nn & 0b1100_0111) == 0b01000110 && ((nn >> 3) & 0b111) != 0b110) {
+            const r = nn & 0b111
+            let dv = new DataView(contents.buffer, o + 1, 1)
+            const d = dv.getInt8(0)
+            return {o: o + 2, n: `LD ${r}, (${this.offsetRegister}+${d})`}
+        }
+
+        return null
+    }
+}
+
+/**
+ *
+ */
+class FD extends FDDD {
+    offsetRegister = "IY"
+}
+
+/**
+ *
+ */
+class DD extends FDDD {
+    offsetRegister = "IX"
 }
 
 const tryDecode = (n, o) => {
-    if(n == 0xdd || n == 0xfd) {
-        return tryFDDD(n, o)
+    if(n == 0xfd) {
+        return new FD().try(o + 1)
+    } else if(n == 0xdd) {
+        return new DD().try(o + 1)
     }
 
     const registerRef = {
