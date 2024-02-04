@@ -17,6 +17,49 @@ const rpR = {
 
 const loadPoint = 0x5e27 // From previous file
 
+/**
+ *
+ * @param {number} l
+ * @param {number[]} ns
+ * @returns
+ */
+const data = (l, ...ns) => {
+    const lo = l * 2 / 8
+    return ns.map(n => n.toString(16).padStart(lo, "0")).join(" ")
+}
+
+/**
+ *
+ * @param {number[]} ns
+ * @returns
+ */
+const u8 = (...ns) => data(8, ...ns)
+
+/**
+ *
+ * @param {number[]} ns
+ * @returns
+ */
+const u16 = (...ns) => data(16, ...ns)
+/**
+ * @param {number} n
+ * @returns
+ */
+const addr = (n) => data(16, n)
+
+/**
+ *
+ * @param {number} n
+ * @returns
+ */
+const rel = (n) => {
+    if(n >= 0) {
+        return `+${n}`
+    } else {
+        return `${n}`
+    }
+}
+
 class DataWalker {
     #dv
     offset = 0
@@ -39,7 +82,23 @@ class DataWalker {
      * @returns
      */
     inspect() {
-        return this.#dv.getUint32(this.offset).toString(16).padStart(8, "0")
+        return this.inspectAt(this.offset, 4)
+    }
+    /**
+     *
+     * @param {number} offset
+     * @param {number} length
+     * @returns
+     */
+    inspectAt(offset, length) {
+        /**
+         * @type {number[]}
+         */
+        const values = []
+        for(let i = 0; i < length; i++) {
+            values.push(this.#dv.getUint8(offset + i))
+        }
+        return u8(...values)
     }
     /**
      *
@@ -181,14 +240,14 @@ class FDDD {
                 if(nnx.a3 == hlIndirect && nnx.b3 == hlIndirect) { // 0x*d36
                     const d = this.#dw.int8()
                     const n = this.#dw.uint8()
-                    return `LD (${this.offsetRegister}+${d.toString(16)}), ${n.toString(16)}`
+                    return `LD (${this.offsetRegister}${rel(d)}), ${u8(n)}`
                 } else if(nnx.a3 == hlIndirect && (nnx.b3 & 0b110) == 0b100) { // 0x*d34-5
                     const op = (nnx.b3 & 1) ? "DEC" : "INC"
                     const d = this.#dw.int8()
-                    return `${op} (${this.offsetRegister}+${d.toString(16)})`
+                    return `${op} (${this.offsetRegister}${rel(d)})`
                 } else if(nnx.rest == 0b10_0001) { // 0x*d21
                     const s = this.#dw.uint16()
-                    return `LD IX, ${s.toString(16)}`
+                    return `LD IX, ${u16(s)}`
                 }
                 break
             }
@@ -196,11 +255,11 @@ class FDDD {
                 if(nnx.a3 == hlIndirect && nnx.b3 != hlIndirect) {
                     const r = nnx.b3
                     const d = this.#dw.int8()
-                    return `LD (${this.offsetRegister}+${d}), ${r}`
+                    return `LD (${this.offsetRegister}${rel(d)}), ${r}`
                 } else if(nnx.a3 != hlIndirect && nnx.b3 == hlIndirect) {
                     const r = nnx.b3
                     const d = this.#dw.int8()
-                    return `LD ${r}, (${this.offsetRegister}+${d})`
+                    return `LD ${r}, (${this.offsetRegister}${rel(d)})`
                 }
                 break
             }
@@ -209,7 +268,7 @@ class FDDD {
                     const op = opR[nnx.a3]
                     const d = this.#dw.int8()
 
-                    return `${op} (${this.offsetRegister}+${d.toString(16)})`
+                    return `${op} (${this.offsetRegister}${rel(d)}})`
                 }
                 break
             }
@@ -219,10 +278,10 @@ class FDDD {
                     const a = this.#dw.uint8()
                     const e = new BitView(this.#dw.uint8())
                     if(e.pre != 0b00 && e.b3 == hlIndirect) {
-                        return `${bitR[e.pre]} ${e.a3} (${this.offsetRegister} + ${a.toString(16)})`
+                        return `${bitR[e.pre]} ${e.a3} (${this.offsetRegister}${rel(a)}})`
                     } else if(e.pre == 0b00 && e.a3 != 0b110) {
                         // Rotate / shift
-                        return `${rsR[e.a3]} (${this.offsetRegister} + ${a.toString(16)})`
+                        return `${rsR[e.a3]} (${this.offsetRegister}${rel(a)}})`
                     }
                 }
                 break
@@ -334,7 +393,7 @@ class DecompileWalker {
             if(this.#seen.has(this.#dw.offset)) {
                 for(const t of this.#targets) {
                     if(!this.#seen.has(t)) {
-                        console.log(`-- jumping to previously optional offset ${t.toString(16)}`)
+                        console.log(`-- jumping to previously optional offset ${addr(t)}`)
                         this.#dw.offset = t
                         return n
                     }
@@ -372,18 +431,6 @@ class DecompileWalker {
 
         switch(n.pre) {
             case 0b00: {
-                /**
-                 *
-                 * @param {number} n
-                 * @returns
-                 */
-                const rel = (n) => {
-                    if(n >= 0) {
-                        return `+${n}`
-                    } else {
-                        return `${n}`
-                    }
-                }
                 if(n.rest == 0b00_0000) { // 0x00
                     return `NOP`
                 } else if((n.a3 & 0b100) == 0b000 && n.b3 == 0b111) {
@@ -404,19 +451,19 @@ class DecompileWalker {
                     return `JR $${rel(d + 2)}`
                 } else if(n.rest == 0b10_0010) { // 0x22
                     const a = this.#dw.uint16()
-                    return `LD (${a.toString(16)}), HL`
+                    return `LD (${addr(a)}), HL`
                 } else if(n.rest == 0b11_0010) { // 0x32
                     const s = this.#dw.uint16()
-                    return `LD (${s.toString(16)}), A`
+                    return `LD (${addr(s)}), A`
                 } else if(n.rest == 0b11_0110) { // 0x36
                     const a = this.#dw.uint8()
-                    return `LD (HL), ${a.toString(16)}`
+                    return `LD (HL), ${u8(a)}`
                 } else if(n.rest == 0b11_1010) { // 0x3a
                     const s = this.#dw.uint16()
-                    return `LD A, (${s.toString(16)})`
+                    return `LD A, (${addr(s)})`
                 } else if(n.b4 == 0b0001) {
                     const s = this.#dw.uint16()
-                    return `LD ${rpR[n.a2]}, ${s.toString(16)}`
+                    return `LD ${rpR[n.a2]}, ${u16(s)}`
                 } else if((n.a3 & 0b101) == 0b000 && n.b3 == 0b010) {
                     const idr = n.a3 ? "DE" : "BC"
                     return `LD (${idr}), A`
@@ -452,7 +499,7 @@ class DecompileWalker {
                 } else if(n.a3 != hlIndirect && n.b3 == hlIndirect) {
                     const d = register(n.a3)
                     const a = this.#dw.uint8()
-                    return `LD ${d}, ${a.toString(16)}`
+                    return `LD ${d}, ${u8(a)}`
                 }
                 break
             }
@@ -484,7 +531,7 @@ class DecompileWalker {
                 } else if(n.rest == 0b00_0011) { // 0xc3
                     const to = this.#dw.uint16()
                     this.addJumpTo(to - loadPoint)
-                    return `JP ${to.toString(16)}`
+                    return `JP ${addr(to)}`
                 } else if(n.rest == 0b00_1001) { // 0xc9
                     this.addJumpTo(this.#dw.offset - 1) // TODO IMPROVE This is a hack to trigger the "seen" response
                     return `RET`
@@ -503,10 +550,10 @@ class DecompileWalker {
                 } else if(n.rest == 0b00_1101) { // 0xcd
                     const to = this.#dw.uint16()
                     this.addTarget(to - loadPoint)
-                    return `CALL ${to.toString(16)}`
+                    return `CALL ${addr(to)}`
                 } else if(n.rest == 0b01_0011) { // 0xd3
                     const n = this.#dw.uint8()
-                    return `OUT (${n.toString(16)}), A`
+                    return `OUT (${addr(n)}), A`
                 } else if(n.rest == 0b01_1101) { // 0xdd
                     return new DD(this.#dw).try()
                 } else if(n.rest == 0b10_1101) { // 0xed
@@ -554,13 +601,13 @@ class DecompileWalker {
                     } else {
                         const a = this.#dw.uint16()
                         this.addTarget(a - loadPoint)
-                        return `${jcrR[n.b3]} ${fR[n.a3]} ${a.toString(16)}`
+                        return `${jcrR[n.b3]} ${fR[n.a3]} ${addr(a)}`
                     }
                 } else if(n.b3 == hlIndirect) {
                     // 8-bit arithmetic & logic
                     const op = opR[n.a3]
                     const a = this.#dw.uint8()
-                    return `${op} ${a.toString(16)}`
+                    return `${op} ${u8(a)}`
                 }
                 break
             }
@@ -590,13 +637,12 @@ function decode(filename) {
             dw.offset = startPoint
             throw new Error(`Cannot decode value: ${dw.inspect()} after ${i} points mapped (${bytesParsed}B)`)
         }
-        const address = startPoint.toString(16).padStart(4, "0")
         const byteLength = decompile.lastEndPoint - startPoint
         bytesParsed += byteLength
-        const bytes = [...contents.subarray(startPoint, decompile.lastEndPoint)].map(n => n.toString(16).padStart(2, "0")).join(" ")
-        console.log(`${address}: ${n}`.padEnd(40, " ") + `## ${bytes}`)
+        const bytes = dw.inspectAt(startPoint, decompile.lastEndPoint - startPoint)
+        console.log(`${addr(startPoint)}: ${n}`.padEnd(40, " ") + `## ${bytes}`)
         if(decompile.finished) {
-            console.log(`Stop after ${i} with next offset at ${(dw.offset + loadPoint).toString(16)} (${dw.offset.toString(16)})`)
+            console.log(`Stop after ${i} with next offset at ${addr(dw.offset + loadPoint)} (${addr(dw.offset)})`)
             break
         }
     }
