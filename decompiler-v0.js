@@ -182,7 +182,7 @@ class FDDD {
                     const d = this.#dw.int8()
                     const n = this.#dw.uint8()
                     return `LD (${this.offsetRegister}+${d.toString(16)}), ${n.toString(16)}`
-                } else if((nnx.b3 & 0b110) == 0b100) {
+                } else if(nnx.a3 == hlIndirect && (nnx.b3 & 0b110) == 0b100) { // 0x*d34-5
                     const op = (nnx.b3 & 1) ? "DEC" : "INC"
                     const d = this.#dw.int8()
                     return `${op} (${this.offsetRegister}+${d.toString(16)})`
