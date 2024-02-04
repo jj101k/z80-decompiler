@@ -581,15 +581,18 @@ function decode(filename) {
     const dw = new DataWalker(contents)
     dw.offset = 1
     const decompile = new DecompileWalker(dw)
+    let bytesParsed = 0
 
     for(let i = 0; i < 1_000; i++) {
         const startPoint = dw.offset
         const n = decompile.decode()
         if(!n) {
             dw.offset = startPoint
-            throw new Error(`Cannot decode value: ${dw.inspect()} after ${i} points mapped`)
+            throw new Error(`Cannot decode value: ${dw.inspect()} after ${i} points mapped (${bytesParsed}B)`)
         }
         const address = startPoint.toString(16).padStart(4, "0")
+        const byteLength = decompile.lastEndPoint - startPoint
+        bytesParsed += byteLength
         const bytes = [...contents.subarray(startPoint, decompile.lastEndPoint)].map(n => n.toString(16).padStart(2, "0")).join(" ")
         console.log(`${address}: ${n}`.padEnd(40, " ") + `## ${bytes}`)
         if(decompile.finished) {
