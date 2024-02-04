@@ -186,6 +186,9 @@ class FDDD {
                     const op = (nnx.b3 & 1) ? "DEC" : "INC"
                     const d = this.#dw.int8()
                     return `${op} (${this.offsetRegister}+${d.toString(16)})`
+                } else if(nnx.rest == 0b10_0001) { // 0x*d21
+                    const s = this.#dw.uint16()
+                    return `LD IX, ${s.toString(16)}`
                 }
                 break
             }
