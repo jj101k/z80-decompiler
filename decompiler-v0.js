@@ -178,7 +178,7 @@ class FDDD {
 
         switch(nnx.pre) {
             case 0b00: {
-                if(nnx.a3 == hlIndirect && nnx.b3 == hlIndirect) {
+                if(nnx.a3 == hlIndirect && nnx.b3 == hlIndirect) { // 0x*d36
                     const d = this.#dw.int8()
                     const n = this.#dw.uint8()
                     return `LD (${this.offsetRegister}+${d.toString(16)}), ${n.toString(16)}`
