@@ -126,7 +126,7 @@ class DataWalker {
     }
 }
 
-const opR = {
+const arOpR = {
     [0b000]: "ADD",
     [0b001]: "ADC",
     [0b010]: "SUB",
@@ -283,7 +283,7 @@ class FDDD {
             }
             case 0b10: {
                 if(nnx.b3 == hlIndirect) {
-                    const op = opR[nnx.a3]
+                    const op = arOpR[nnx.a3]
                     const d = this.#dw.int8()
 
                     return `${op} (${this.offsetRegister}${rel(d)}})`
@@ -553,7 +553,7 @@ class DecompileWalker {
                 break
             }
             case 0b10: { // 0x8-0xb
-                const op = opR[n.a3]
+                const op = arOpR[n.a3]
                 const r = register(n.b3)
 
                 return `${op} ${r}`
@@ -640,7 +640,7 @@ class DecompileWalker {
                     }
                 } else if(n.b3 == hlIndirect) {
                     // 8-bit arithmetic & logic
-                    const op = opR[n.a3]
+                    const op = arOpR[n.a3]
                     const a = this.#dw.uint8()
                     return `${op} ${u8(a)}`
                 }
