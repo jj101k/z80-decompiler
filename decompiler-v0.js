@@ -305,6 +305,7 @@ class DecompileWalker {
      * @param {number} n
      */
     addJumpTo(n) {
+        this.addTarget(n)
         this.#jumpTo = n
     }
 
@@ -313,9 +314,7 @@ class DecompileWalker {
      * @param {number} n
      */
     addTarget(n) {
-        if(!this.#seen.has(n)) {
-            this.#targets.add(n)
-        }
+        this.#targets.add(n)
     }
 
     /**
