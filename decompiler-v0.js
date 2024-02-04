@@ -430,7 +430,7 @@ class DecompileWalker {
         const register = (n) => registerRef[n]
 
         switch(n.pre) {
-            case 0b00: {
+            case 0b00: { // 0x0-0x3
                 if(n.rest == 0b00_0000) { // 0x00
                     return `NOP`
                 } else if((n.a3 & 0b100) == 0b000 && n.b3 == 0b111) {
@@ -452,7 +452,16 @@ class DecompileWalker {
                 } else if(n.rest == 0b10_0010) { // 0x22
                     const a = this.#dw.uint16()
                     return `LD (${addr(a)}), HL`
-                } else if(n.rest == 0b11_0010) { // 0x32
+                } else if((n.a3 & 0b100) == 0b100 && n.b3 == 0b111) {
+                    // General-purpose AF
+                    const opR = {
+                        [0b100]: "DAA", // 0x27
+                        [0b101]: "CPL", // 0x2F
+                        [0b110]: "CCF", // 0x3F
+                        [0b111]: "SCF", // 0x37
+                    }
+                    return opR[n.a3]
+                }if(n.rest == 0b11_0010) { // 0x32
                     const s = this.#dw.uint16()
                     return `LD (${addr(s)}), A`
                 } else if(n.rest == 0b11_0110) { // 0x36
@@ -503,7 +512,7 @@ class DecompileWalker {
                 }
                 break
             }
-            case 0b01: {
+            case 0b01: { // 0x4-0x7
                 if(n.a3 != hlIndirect && n.b3 == hlIndirect) {
                     const d = register(n.a3)
                     return `LD ${d}, (HL)`
@@ -517,13 +526,13 @@ class DecompileWalker {
                 }
                 break
             }
-            case 0b10: {
+            case 0b10: { // 0x8-0xb
                 const op = opR[n.a3]
                 const r = register(n.b3)
 
                 return `${op} ${r}`
             }
-            case 0b11: {
+            case 0b11: { // 0xc-0xf
                 if(n.b4 == 0b0001) { // 0xc1
                     return `POP ${rpR[n.a2]}`
                 } else if(n.b4 == 0b0101) {
