@@ -8,10 +8,11 @@ const bitR = {
     [0b11]: "SET",
 }
 
+const hlR = 0b10
 const rpR = {
     [0b00]: "BC",
     [0b01]: "DE",
-    [0b10]: "HL",
+    [hlR]: "HL",
     [0b11]: "SP",
 }
 
@@ -209,6 +210,19 @@ const rsR = {
 }
 
 /**
+ *
+ * @param {BitView} nx
+ * @param {string} reg
+ */
+const addHlIxIy = (nx, reg) => {
+    if(nx.b4 == 0b1001) {
+        const r = nx.a2 == hlR ? reg : rpR[nx.a2]
+        return `ADD ${r}`
+    }
+    return undefined
+}
+
+/**
  * @abstract
  */
 class FDDD {
@@ -237,6 +251,10 @@ class FDDD {
 
         switch(nnx.pre) {
             case 0b00: {
+                const r = addHlIxIy(nnx, this.offsetRegister)
+                if(r) {
+                    return r
+                }
                 if(nnx.a3 == hlIndirect && nnx.b3 == hlIndirect) { // 0x*d36
                     const d = this.#dw.int8()
                     const n = this.#dw.uint8()
@@ -431,6 +449,10 @@ class DecompileWalker {
 
         switch(n.pre) {
             case 0b00: { // 0x0-0x3
+                const r = addHlIxIy(n, "HL")
+                if(r) {
+                    return r
+                }
                 if(n.rest == 0b00_0000) { // 0x00
                     return `NOP`
                 } else if((n.a3 & 0b100) == 0b000 && n.b3 == 0b111) {
