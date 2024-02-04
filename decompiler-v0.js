@@ -449,9 +449,13 @@ class DecompileWalker {
                     const d = this.#dw.int8()
                     this.addJumpTo(this.#dw.offset + d)
                     return `JR $${rel(d + 2)}`
-                } else if(n.rest == 0b10_0010) { // 0x22
+                } else if((n.a3 & 0b110) == 0b100 && n.b3 == 0b010) {
                     const a = this.#dw.uint16()
-                    return `LD (${addr(a)}), HL`
+                    if(n.a2 & 0b1) {
+                        return `LD HL, (${addr(a)})` // 0x2a
+                    } else {
+                        return `LD (${addr(a)}), HL` // 0x22
+                    }
                 } else if((n.a3 & 0b100) == 0b100 && n.b3 == 0b111) {
                     // General-purpose AF
                     const opR = {
@@ -461,7 +465,7 @@ class DecompileWalker {
                         [0b111]: "SCF", // 0x37
                     }
                     return opR[n.a3]
-                }if(n.rest == 0b11_0010) { // 0x32
+                } else if(n.rest == 0b11_0010) { // 0x32
                     const s = this.#dw.uint16()
                     return `LD (${addr(s)}), A`
                 } else if(n.rest == 0b11_0110) { // 0x36
