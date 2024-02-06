@@ -19,24 +19,31 @@ function decode(filename) {
     const decompile = new DecompileWalker(dw, loadPoint)
     let bytesParsed = 0
 
-    for(let i = 0; i < 1_000; i++) {
-        const startPoint = dw.offset
-        const n = decompile.decode()
-        if(!n) {
-            dw.offset = startPoint
-            for(const l of decompile.dump()) {
-                console.log(l)
+    try {
+        for(let i = 0; i < 1_000; i++) {
+            const startPoint = dw.offset
+            const n = decompile.decode()
+            if(!n) {
+                for(const l of decompile.dump()) {
+                    console.log(l)
+                }
+                dw.offset = startPoint
+                throw new Error(`Cannot decode value at offset ${decompile.addr(startPoint)} after ${i} points (${bytesParsed} bytes) mapped: ${decompile.u8(...dw.inspect())}`)
             }
-            throw new Error(`Cannot decode value at offset ${decompile.addr(startPoint)} after ${i} points (${bytesParsed} bytes) mapped: ${decompile.u8(...dw.inspect())}`)
+            const byteLength = decompile.lastEndPoint - startPoint
+            bytesParsed += byteLength
+            if(decompile.finished) {
+                for(const l of decompile.dump()) {
+                    console.log(l)
+                }
+                console.log(`Stop after ${i} with next offset at ${decompile.addr(dw.offset + loadPoint)} (${decompile.addr(dw.offset)})`)
+                break
+            }
         }
-        const byteLength = decompile.lastEndPoint - startPoint
-        bytesParsed += byteLength
-        if(decompile.finished) {
-            for(const l of decompile.dump()) {
-                console.log(l)
-            }
-            console.log(`Stop after ${i} with next offset at ${decompile.addr(dw.offset + loadPoint)} (${decompile.addr(dw.offset)})`)
-            break
+    } catch (e) {
+        console.error(e)
+        for(const l of decompile.dump()) {
+            console.log(l)
         }
     }
 }
