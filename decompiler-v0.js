@@ -24,13 +24,17 @@ function decode(filename) {
         const n = decompile.decode()
         if(!n) {
             dw.offset = startPoint
-            throw new Error(`Cannot decode value: ${decompile.u8(...dw.inspect())} after ${i} points mapped (${bytesParsed}B)`)
+            for(const l of decompile.dump()) {
+                console.log(l)
+            }
+            throw new Error(`Cannot decode value at offset ${decompile.addr(startPoint)} after ${i} points mapped (${bytesParsed}B): ${decompile.u8(...dw.inspect())}`)
         }
         const byteLength = decompile.lastEndPoint - startPoint
         bytesParsed += byteLength
-        const bytes = decompile.u8(...dw.inspectAt(startPoint, decompile.lastEndPoint - startPoint))
-        console.log(`${decompile.addr(startPoint)}: ${n}`.padEnd(40, " ") + `## ${bytes}`)
         if(decompile.finished) {
+            for(const l of decompile.dump()) {
+                console.log(l)
+            }
             console.log(`Stop after ${i} with next offset at ${decompile.addr(dw.offset + loadPoint)} (${decompile.addr(dw.offset)})`)
             break
         }
