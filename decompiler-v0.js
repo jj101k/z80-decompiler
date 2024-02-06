@@ -27,7 +27,7 @@ function decode(filename) {
             for(const l of decompile.dump()) {
                 console.log(l)
             }
-            throw new Error(`Cannot decode value at offset ${decompile.addr(startPoint)} after ${i} points mapped (${bytesParsed}B): ${decompile.u8(...dw.inspect())}`)
+            throw new Error(`Cannot decode value at offset ${decompile.addr(startPoint)} after ${i} points (${bytesParsed} bytes) mapped: ${decompile.u8(...dw.inspect())}`)
         }
         const byteLength = decompile.lastEndPoint - startPoint
         bytesParsed += byteLength
