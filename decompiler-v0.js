@@ -1,4 +1,3 @@
-//@ts-check
 const fs = require("fs")
 const [filename] = process.argv.slice(2)
 
