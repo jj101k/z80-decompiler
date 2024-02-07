@@ -58,7 +58,7 @@ class MapInstance {
         const sprite_indices_alt = new DataView(wdv.buffer(this.tileCount * 2))
         this.spriteContents = wdv.buffer(32 * this.spriteCount)
         /** @type {string} */
-        let s = String.fromCharCode.apply(null, strings_hunk)
+        let s = String.fromCharCode.apply(null, new Uint8Array(strings_hunk))
         let sd = s.split(/[|]/)
         sd.shift()
         this.indices = sd.slice(0, 162)
