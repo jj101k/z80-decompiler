@@ -1,77 +1,62 @@
 "use strict"
+/**
+ *
+ */
 class MapInstance {
-    constructor() {
-        /** @type {?ArrayBuffer} */
-        this._chunk = null
-        /** @type {?number} */
-        this.deathFrameCount = null
-        /** @type {?number} */
-        this.rotationFrameCount = null
-        /** @type {?number} */
-        this.spriteCount = null
-        /** @type {?number} */
-        this.stringsHunkLength = null
-        /** @type {?number} */
-        this.stringsHunkStart = null
-        /** @type {?number} */
-        this.tileCount = null
+    /**
+     * @type {?ArrayBuffer}
+     */
+    _chunk = null
+    /**
+     * @type {?number}
+     */
+    deathFrameCount = null
+    /**
+     * @type {?number}
+     */
+    rotationFrameCount = null
+    /**
+     * @type {?number}
+     */
+    spriteCount = null
+    /**
+     * @type {?number}
+     */
+    stringsHunkLength = null
+    /**
+     * @type {?number}
+     */
+    stringsHunkStart = null
+    /**
+     * @type {?number}
+     */
+    tileCount = null
+
+    /**
+     *
+     */
+    get chunk() {
+        return this._chunk
     }
+
     set chunk(v) {
         this._chunk = v
-        let o = this.stringsHunkStart
-        let rotation_frames = new Uint8Array(
-            v,
-            o,
-            this.rotationFrameCount * 8
-        )
-        o += rotation_frames.byteLength
-        let death_frames = new Uint8Array(
-            v,
-            o,
-            this.deathFrameCount * 4
-        )
-        o += death_frames.byteLength
-        let strings_hunk = new Uint8Array(
-            v,
-            o,
-            this.stringsHunkLength
-        )
-        o = 0x1d7e
-        let units = new Uint8Array(
-            v,
-            o,
-            20 * 40
-        )
-        o += units.length
+        const wdv = new WalkableDataView(new DataView(v, v.byteLength))
+        wdv.seek(this.stringsHunkStart)
+        const rotation_frames = wdv.buffer(this.rotationFrameCount * 8)
+        const death_frames = wdv.buffer(this.deathFrameCount * 4)
+        const strings_hunk = wdv.buffer(this.stringsHunkLength)
+        wdv.seek(0x1d7e)
+        const units = wdv.buffer(20 * 40)
         this.unitData = units
         this.units = []
         for(let i = 0; i < 20; i++) {
             this.units.push(new MapUnit(this, i))
         }
-        this.map = new Uint8Array(
-            v,
-            o,
-            80 * 50
-        )
-        o += this.map.byteLength
-        let sprite_indices_main = new Uint8Array(
-            v,
-            o,
-            this.tileCount * 2
-        )
-        o += sprite_indices_main.byteLength
-        let sprite_indices_alt = new Uint8Array(
-            v,
-            o,
-            this.tileCount * 2
-        )
-        o += sprite_indices_alt.byteLength
-        this.spriteContents = new Uint8Array(
-            v,
-            o,
-            32 * this.spriteCount
-        )
-        o += this.spriteContents.byteLength
+        this.map = wdv.buffer(80 * 50)
+        const sprite_indices_main = new DataView(wdv.buffer(this.tileCount * 2))
+        const sprite_indices_alt = new DataView(wdv.buffer(this.tileCount * 2))
+        this.spriteContents = wdv.buffer(32 * this.spriteCount)
         /** @type {string} */
         let s = String.fromCharCode.apply(null, strings_hunk)
         let sd = s.split(/[|]/)
@@ -85,30 +70,29 @@ class MapInstance {
         for(let i = 0; i < this.tileCount; i++) {
             sprite_for[i] = new MapSprite(
                 this,
-                sprite_indices_main[i * 2 + 0],
-                sprite_indices_main[i * 2 + 1],
+                sprite_indices_main.getUint8(i * 2 + 0),
+                sprite_indices_main.getUint8(i * 2 + 1),
             )
             alt_sprite_for[i] = new MapSprite(
                 this,
-                sprite_indices_alt[i * 2 + 0],
-                sprite_indices_alt[i * 2 + 1],
+                sprite_indices_alt.getUint8(i * 2 + 0),
+                sprite_indices_alt.getUint8(i * 2 + 1),
             )
         }
         this.spriteFor = sprite_for
         this.altSpriteFor = alt_sprite_for
     }
-    get chunk() {
-        return this._chunk
-    }
+    /**
+     *
+     */
     get tiles() {
-        let tiles = []
-        for(let i = 0; i < this.indices.length; i++) {
-            tiles.push(new MapTile(this, i))
-        }
-        return tiles
+        return this.indices.map((_, i) => new MapTile(this, i))
     }
+    /**
+     *
+     */
     get tileSpriteData() {
-        let tile_sprite_data = []
+        const tile_sprite_data = []
         for(let i = 0; i < this.spriteCount; i++) {
             tile_sprite_data.push(
                 this.spriteContents.slice(i * 32, (i + 1) * 32)
@@ -158,6 +142,13 @@ class WalkableDataView {
         } finally {
             this.#offset += length
         }
+    }
+    /**
+     *
+     * @param {number} pos
+     */
+    seek(pos) {
+        this.#offset = pos
     }
     /**
      *
@@ -358,15 +349,17 @@ class MapReader {
                 )
             }
         } else {
-            for(let i = 0; i < 50; i++) {
-                let row = map_instance.map.slice(80 * i, 80 * (i + 1))
-                row.forEach((n, x) => {
+            const w = 80
+            const h = 50
+            for(let y = 0; y < h; y++) {
+                const dv = new DataView(map_instance.map, w * y, w)
+                for(let x = 0; x < w; x++) {
                     ctx.putImageData(
-                        sprite_for[n].colouredImageData(ctx),
+                        sprite_for[dv.getUint8(x)].colouredImageData(ctx),
                         x * 16 * window.devicePixelRatio,
-                        i * 16 * window.devicePixelRatio
+                        y * 16 * window.devicePixelRatio
                     )
-                })
+                }
             }
         }
         let df = document.createDocumentFragment()
@@ -447,6 +440,13 @@ class MapReader {
 }
 class MapSprite {
     /**
+     * @type {?ImageData}
+     */
+    cachedImageData = null
+    colour
+    map
+    sprite
+    /**
      *
      * @param {MapInstance} map
      * @param {number} colour
@@ -481,7 +481,7 @@ class MapSprite {
             // 64 = Deployment?
             // 128 = ?
             const colours = this.colours
-            const id = this.imageData
+            const id = new DataView(this.imageData)
             function bit(n, j) {
                 return (n >> (7-j)) & 1
             }
@@ -495,8 +495,8 @@ class MapSprite {
             const S = 8 // The size of a mini-sprite
             for(let i = 0; i < 2; i++) {
                 for(let r = 0; r < S; r++) {
-                    const ao = id[r + i * S * 2]
-                    const bo = id[r + i * S * 2 + S]
+                    const ao = id.getUint8(r + i * S * 2)
+                    const bo = id.getUint8(r + i * S * 2 + S)
                     for(let j = 0; j < S; j++) {
                         const a = (bit(ao, j) ? colours.fg : colours.bg).concat([255])
                         const b = (bit(bo, j) ? colours.fg : colours.bg).concat([255])
@@ -562,25 +562,25 @@ class MapUnit {
         this.n = n
     }
     get actionPoints() {
-        return this.data[27] // Possibly including 28
+        return this.data.getUint8(27) // Possibly including 28
     }
     get agility() {
-        return this.data[21]
+        return this.data.getUint8(21)
     }
     get closeCombat() {
-        return this.data[19]
+        return this.data.getUint8(19)
     }
     get constitution() {
-        return this.data[7] // and 8
+        return this.data.getUint8(7) // and 8
     }
     get data() {
-        return this.map.unitData.slice(
+        return new DataView(this.map.unitData.slice(
             this.n * 40,
             (this.n + 1) * 40
-        )
+        ))
     }
     get deathSprite() {
-        return this.data[3]
+        return this.data.getUint8(3)
     }
     get dump() {
         return [
@@ -597,18 +597,18 @@ class MapUnit {
         ].map(k => `${k} = ${this[k]}`).join("; ") + `; ${this.data}`
     }
     get morale() {
-        return this.data[11] // and 12
+        return this.data.getUint8(11) // and 12
     }
     get stamina() {
-        return this.data[9] // and 10
+        return this.data.getUint8(9) // and 10
     }
     get strength() {
-        return this.data[20]
+        return this.data.getUint8(20)
     }
     get weaponEntity() {
-        return this.data[35]
+        return this.data.getUint8(35)
     }
     get weaponSkill() {
-        return this.data[18]
+        return this.data.getUint8(18)
     }
 }
