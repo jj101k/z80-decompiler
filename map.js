@@ -122,7 +122,7 @@ class MapInstance {
  */
 class MapReader {
     /**
-     * @type {?ArrayBuffer[]}
+     * @type {?{data: ArrayBuffer}[]}
      */
     tapeChunks = null
     /**
@@ -159,11 +159,11 @@ class MapReader {
                         input.type = "radio"
                         input.name = "chunk"
                         input.value = "" + i
-                        input.onclick = () => this.analyseChunk(chunk)
+                        input.onclick = () => this.analyseChunk(chunk.data)
                         let label = document.createElement("label")
                         label.appendChild(input)
                         label.appendChild(
-                            document.createTextNode(` chunk ${i} (${chunk.byteLength})`)
+                            document.createTextNode(` chunk ${i} (${chunk.data.byteLength})`)
                         )
                         selections_element.appendChild(label)
                     })
@@ -188,7 +188,7 @@ class MapReader {
      */
     analyse() {
         this.parse()
-        this.analyseChunk(this.tapeChunks[0])
+        this.analyseChunk(this.tapeChunks[0].data)
     }
     /**
      * Analyses a specific TAP chunk. This can't be a whole TZX file, just an
@@ -285,7 +285,7 @@ class MapReader {
      */
     parse() {
         this.tapeChunks = []
-        let i = 10;
+        let i = 10
         while(i < this.data.byteLength - 1) {
             let [type] = new Uint8Array(this.data, i, 1)
             switch(type) {
@@ -296,7 +296,7 @@ class MapReader {
                     let length = dv.getUint16(2, true)
                     console.log(`Normal hunk with delay ${delay} and length ${length} at offset ${i + 1 + 4}`)
                     this.tapeChunks.push(
-                        this.data.slice(i + 1 + 4, i + 1 + 4 + length)
+                        {data: this.data.slice(i + 1 + 4, i + 1 + 4 + length)},
                     )
                     i += 1 + 4 + length
                     break
