@@ -268,7 +268,8 @@ class MapReader {
                         selections_element.removeChild(selections_element.firstChild)
                     }
                     this.parse()
-                    this.tapeChunks.forEach((chunk, i) => {
+                    let i = 0
+                    for(const chunk of this.tapeChunks) {
                         const input = document.createElement("input")
                         input.type = "radio"
                         input.name = "chunk"
@@ -280,7 +281,8 @@ class MapReader {
                             document.createTextNode(` chunk ${i} (${chunk.data.byteLength})`)
                         )
                         selections_element.appendChild(label)
-                    })
+                        i++
+                    }
                 }
                 reader.readAsArrayBuffer(files[0])
             }
@@ -366,7 +368,8 @@ class MapReader {
         let header = document.createElement("h2")
         header.appendChild(document.createTextNode("Tiles"))
         df.appendChild(header)
-        map_instance.tiles.forEach((tile, n) => {
+        let n = 0
+        for(const tile of map_instance.tiles) {
             const line = document.createElement("div")
             line.appendChild(document.createTextNode(tile.dump))
             if(sprite_for[n]) {
@@ -384,7 +387,8 @@ class MapReader {
                 )
             }
             df.appendChild(line)
-        })
+            n++
+        }
         header = document.createElement("h2")
         header.appendChild(document.createTextNode("Units"))
         df.appendChild(header)
