@@ -58,15 +58,15 @@ class MapInstance {
         const sprite_indices_alt = new DataView(wdv.buffer(this.tileCount * 2))
         this.spriteContents = wdv.buffer(32 * this.spriteCount)
         /** @type {string} */
-        let s = String.fromCharCode.apply(null, new Uint8Array(strings_hunk))
-        let sd = s.split(/[|]/)
+        const s = String.fromCharCode.apply(null, new Uint8Array(strings_hunk))
+        const sd = s.split(/[|]/)
         sd.shift()
         this.indices = sd.slice(0, 162)
         this.strings = sd.slice(162, sd.length+1)
         /** @type {{[x: number]: MapSprite}} */
-        let sprite_for = {}
+        const sprite_for = {}
         /** @type {{[x: number]: MapSprite}} */
-        let alt_sprite_for = {}
+        const alt_sprite_for = {}
         for(let i = 0; i < this.tileCount; i++) {
             sprite_for[i] = new MapSprite(
                 this,
@@ -258,10 +258,10 @@ class MapReader {
         /** @type {ArrayBuffer} */
         this.data = null
         if(selections_ref) {
-            let selections_element = document.querySelector(selections_ref)
+            const selections_element = document.querySelector(selections_ref)
             this.in.onchange = () => {
-                let files = this.in.files
-                let reader = new FileReader()
+                const files = this.in.files
+                const reader = new FileReader()
                 reader.onload = e => {
                     this.data = reader.result
                     while(selections_element.firstChild) {
@@ -269,12 +269,12 @@ class MapReader {
                     }
                     this.parse()
                     this.tapeChunks.forEach((chunk, i) => {
-                        let input = document.createElement("input")
+                        const input = document.createElement("input")
                         input.type = "radio"
                         input.name = "chunk"
                         input.value = "" + i
                         input.onclick = () => this.analyseChunk(chunk.data)
-                        let label = document.createElement("label")
+                        const label = document.createElement("label")
                         label.appendChild(input)
                         label.appendChild(
                             document.createTextNode(` chunk ${i} (${chunk.data.byteLength})`)
@@ -286,8 +286,8 @@ class MapReader {
             }
         } else {
             this.in.onchange = () => {
-                let files = this.in.files
-                let reader = new FileReader()
+                const files = this.in.files
+                const reader = new FileReader()
                 reader.onload = e => {
                     this.data = reader.result
                     this.analyse()
@@ -311,7 +311,7 @@ class MapReader {
      * @param {ArrayBuffer} chunk
      */
     analyseChunk(chunk) {
-        let map_instance = new MapInstance()
+        const map_instance = new MapInstance()
         map_instance.tileCount = 0xa0 // 160
         map_instance.stringsHunkStart = 0xcff //0xd00 //0xe51
         map_instance.rotationFrameCount = 4 // 11
@@ -323,7 +323,7 @@ class MapReader {
         this.mapOut.width = this.mapOut.clientWidth * window.devicePixelRatio
         this.mapOut.height = this.mapOut.clientHeight * window.devicePixelRatio
         const ctx = this.mapOut.getContext("2d")
-        let sprite_for = this.altMap ?
+        const sprite_for = this.altMap ?
             map_instance.altSpriteFor :
             map_instance.spriteFor
         ctx.fillStyle = "white"
@@ -362,21 +362,21 @@ class MapReader {
                 }
             }
         }
-        let df = document.createDocumentFragment()
+        const df = document.createDocumentFragment()
         let header = document.createElement("h2")
         header.appendChild(document.createTextNode("Tiles"))
         df.appendChild(header)
         map_instance.tiles.forEach((tile, n) => {
-            let line = document.createElement("div")
+            const line = document.createElement("div")
             line.appendChild(document.createTextNode(tile.dump))
             if(sprite_for[n]) {
-                let canvas = document.createElement("canvas")
+                const canvas = document.createElement("canvas")
                 canvas.width = 16 * window.devicePixelRatio
                 canvas.height = 16 * window.devicePixelRatio
                 canvas.style.height = "16px"
                 canvas.style.width = "16px"
                 line.appendChild(canvas)
-                let ctx = canvas.getContext("2d")
+                const ctx = canvas.getContext("2d")
                 ctx.putImageData(
                     sprite_for[n].colouredImageData(ctx),
                     0,
@@ -389,7 +389,7 @@ class MapReader {
         header.appendChild(document.createTextNode("Units"))
         df.appendChild(header)
         map_instance.units.forEach(unit => {
-            let line = document.createElement("div")
+            const line = document.createElement("div")
             line.appendChild(document.createTextNode(unit.dump))
             df.appendChild(line)
         })
