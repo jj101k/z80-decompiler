@@ -1,5 +1,7 @@
 const fs = require("fs")
-const [filename] = process.argv.slice(2)
+const [filename, loadPoint, startOffset] = process.argv.slice(2)
+
+console.log(`Reading ${filename}`)
 
 const DataWalker = require("./lib/DataWalker")
 const DecompileWalker = require("./lib/DecompileWalker")
@@ -9,13 +11,15 @@ const loadPoint = 0x5e27 // From previous file
 /**
  *
  * @param {string} filename
+ * @param {number} loadPoint
+ * @param {number} startOffset
  */
-function decode(filename) {
+function decode(filename, loadPoint, startOffset) {
 
     const contents = fs.readFileSync(filename)
 
     const dw = new DataWalker(contents)
-    dw.offset = 1
+    dw.offset = startOffset
     const decompile = new DecompileWalker(dw, loadPoint)
     let bytesParsed = 0
 
@@ -48,6 +52,6 @@ function decode(filename) {
     }
 }
 
-decode(filename)
+decode(filename, +loadPoint, startOffset ? +startOffset : 1)
 
 // See DECOMPILER.md
