@@ -36,7 +36,7 @@ class MapInstance {
             o,
             this.stringsHunkLength
         )
-        o = 0x1d7f
+        o = 0x1d7e
         let units = new Uint8Array(
             v,
             o,
@@ -117,52 +117,127 @@ class MapInstance {
         return tile_sprite_data
     }
 }
+
+/**
+ *
+ */
+class WalkableDataView {
+    #dataview
+    /**
+     *
+     */
+    #offset = 0
+
+    /**
+     *
+     */
+    get eob() {
+        return this.#offset >= this.#dataview.byteLength
+    }
+    /**
+     *
+     */
+    get offset() {
+        return this.#offset
+    }
+    /**
+     *
+     * @param {DataView} dataview
+     */
+    constructor(dataview) {
+        this.#dataview = dataview
+    }
+    /**
+     *
+     * @param {number} length
+     * @returns
+     */
+    buffer(length) {
+        try {
+            return this.#dataview.buffer.slice(this.#offset, this.#offset + length)
+        } finally {
+            this.#offset += length
+        }
+    }
+    /**
+     *
+     * @param {number} length
+     */
+    skip(length) {
+        this.#offset += length
+    }
+    /**
+     *
+     * @param {number} length
+     * @returns
+     */
+    text(length) {
+        return String.fromCharCode.apply(
+            null,
+            new Uint8Array(this.buffer(length), 0, length)
+        )
+    }
+    /**
+     *
+     * @returns
+     */
+    uint16() {
+        try {
+            return this.#dataview.getUint16(this.#offset, true)
+        } finally {
+            this.#offset += 2
+        }
+    }
+    /**
+     *
+     * @returns
+     */
+    uint8() {
+        try {
+            return this.#dataview.getUint8(this.#offset)
+        } finally {
+            this.#offset += 1
+        }
+    }
+}
+
 /**
  *
  */
 class MapReader {
     /**
      * @private
-     * @param {number} i
+     * @param {WalkableDataView} wdv
      * @param {number} length
      * @returns
      */
-    decodeTapHeader(i, length) {
-        const bdv = new DataView(this.data, i + 1 + 5, length - 1)
+    decodeTapHeader(wdv, length) {
         const contentType = {
             program: 0,
             number: 1,
             string: 2,
             memory: 3,
         }
-        const type = bdv.getUint8(0)
-        const filename = String.fromCharCode.apply(
-            null,
-            new Uint8Array(this.data, i + 1 + 5 + 1, 10)
-        )
-        const innerLength = bdv.getInt16(11, true)
+        const type = wdv.uint8()
+        const filename = wdv.text(10)
+        const innerLength = wdv.uint16()
         switch (type) {
             case contentType.program: {
-                const autoStart = bdv.getUint16(13, true).toString(16).padStart(4, "0")
-                const programLength = bdv.getUint16(15, true)
+                const autoStart = wdv.uint16().toString(16).padStart(4, "0")
+                const programLength = wdv.uint16()
                 return { type, filename, innerLength, autoStart, programLength }
             }
             case contentType.number: {
-                const varname = String.fromCharCode.apply(
-                    null,
-                    new Uint8Array(this.data, i + 1 + 5 + 13, 2)
-                )
+                const varname = wdv.text(4)
                 return { type, filename, innerLength, varname }
             }
             case contentType.string: {
-                const varname = String.fromCharCode.apply(
-                    null,
-                    new Uint8Array(this.data, i + 1 + 5 + 13, 2)
-                )
+                const varname = wdv.text(4)
                 return { type, filename, innerLength, varname }
             }
             case contentType.memory: {
-                const startAddress = bdv.getUint16(13, true).toString(16).padStart(4, "0")
+                const startAddress = wdv.uint16().toString(16).padStart(4, "0")
+                wdv.skip(2)
                 return { type, filename, innerLength, startAddress }
             }
         }
@@ -247,7 +322,7 @@ class MapReader {
     analyseChunk(chunk) {
         let map_instance = new MapInstance()
         map_instance.tileCount = 0xa0 // 160
-        map_instance.stringsHunkStart = 0xd00 //0xe51
+        map_instance.stringsHunkStart = 0xcff //0xd00 //0xe51
         map_instance.rotationFrameCount = 4 // 11
         map_instance.deathFrameCount = 3
         map_instance.stringsHunkLength = 0x3f3 // 0x3aa // 0x182 + 0x226
@@ -333,44 +408,36 @@ class MapReader {
      */
     parse() {
         this.tapeChunks = []
-        let i = 10
         let lastHeader
-        while(i < this.data.byteLength - 1) {
-            const [type] = new Uint8Array(this.data, i, 1)
+        const wdv = new WalkableDataView(new DataView(this.data, 0, this.data.byteLength))
+        wdv.skip(10)
+        while(!wdv.eob) {
+            const type = wdv.uint8()
             switch(type) {
                 case 0x10:
                     // 10 <dd dd> <ll ll> [<..>*]
-                    const dv = new DataView(this.data, i + 1, 5)
-                    const delay = dv.getUint16(0, true)
-                    const length = dv.getUint16(2, true)
-                    const flag = dv.getUint8(4)
-                    console.log(`Normal hunk with delay ${delay} and length ${length} at offset ${i + 1 + 4}, flag=${flag}`)
+                    const delay = wdv.uint16()
+                    const length = wdv.uint16()
+                    const flag = wdv.uint8()
+                    console.log(`Normal hunk with delay ${delay} and length ${length} at offset ${wdv.offset}, flag=${flag}`)
 
                     if(flag == 0) {
                         // .bas decode
-                        lastHeader = this.decodeTapHeader(i, length)
+                        lastHeader = this.decodeTapHeader(wdv, length - 2)
                         console.log("Header block", lastHeader)
                     } else if(flag == 0xff) {
-                        this.tapeChunks.push(
-                            {header: lastHeader, data: this.data.slice(i + 1 + 4, i + 1 + 4 + length)},
-                        )
+                        this.tapeChunks.push({header: lastHeader, data: wdv.buffer(length - 2)})
                     } else {
                         console.warn(`Assuming that block flag ${flag} is application-driven`)
-                        this.tapeChunks.push(
-                            {data: this.data.slice(i + 1 + 4, i + 1 + 4 + length)},
-                        )
+                        this.tapeChunks.push({data: wdv.buffer(length - 2)})
                     }
-                    i += 1 + 4 + length
+                    wdv.skip(1) // checksum
                     break
                 case 0x30:
                     // 30 <ll> [<..>*]
-                    let [len] = new Uint8Array(this.data, i + 1, 1)
-                    let text = String.fromCharCode.apply(
-                        null,
-                        new Uint8Array(this.data, i + 1 + 1, len)
-                    )
+                    const len = wdv.uint8()
+                    const text = wdv.text(len)
                     console.log(`Text hunk: ${text}`)
-                    i += 1 + 1 + len
                     break
                 default:
                     throw new Error(`Cannot parse hunk ${type}`)
