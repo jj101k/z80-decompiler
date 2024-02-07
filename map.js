@@ -117,7 +117,14 @@ class MapInstance {
         return tile_sprite_data
     }
 }
+/**
+ *
+ */
 class MapReader {
+    /**
+     * @type {?ArrayBuffer[]}
+     */
+    tapeChunks = null
     /**
      * Builds the object
      *
@@ -174,8 +181,6 @@ class MapReader {
                 reader.readAsArrayBuffer(files[0])
             }
         }
-        /** @type {?ArrayBuffer[]} */
-        this.tapeChunks = null
     }
     /**
      * Analyses the first hunk in the file, whatever it is. Suitable for
