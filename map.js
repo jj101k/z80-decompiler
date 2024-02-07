@@ -122,7 +122,55 @@ class MapInstance {
  */
 class MapReader {
     /**
-     * @type {?{data: ArrayBuffer}[]}
+     * @private
+     * @param {number} i
+     * @param {number} length
+     * @returns
+     */
+    decodeTapHeader(i, length) {
+        const bdv = new DataView(this.data, i + 1 + 5, length - 1)
+        const contentType = {
+            program: 0,
+            number: 1,
+            string: 2,
+            memory: 3,
+        }
+        const type = bdv.getUint8(0)
+        const filename = String.fromCharCode.apply(
+            null,
+            new Uint8Array(this.data, i + 1 + 5 + 1, 10)
+        )
+        const innerLength = bdv.getInt16(11, true)
+        switch (type) {
+            case contentType.program: {
+                const autoStart = bdv.getUint16(13, true).toString(16).padStart(4, "0")
+                const programLength = bdv.getUint16(15, true)
+                return { type, filename, innerLength, autoStart, programLength }
+            }
+            case contentType.number: {
+                const varname = String.fromCharCode.apply(
+                    null,
+                    new Uint8Array(this.data, i + 1 + 5 + 13, 2)
+                )
+                return { type, filename, innerLength, varname }
+            }
+            case contentType.string: {
+                const varname = String.fromCharCode.apply(
+                    null,
+                    new Uint8Array(this.data, i + 1 + 5 + 13, 2)
+                )
+                return { type, filename, innerLength, varname }
+            }
+            case contentType.memory: {
+                const startAddress = bdv.getUint16(13, true).toString(16).padStart(4, "0")
+                return { type, filename, innerLength, startAddress }
+            }
+        }
+        throw new Error(`Invalid content type: ${type}`)
+    }
+
+    /**
+     * @type {?{header?: ReturnType<MapReader["decodeTapHeader"]>, data: ArrayBuffer}[]}
      */
     tapeChunks = null
     /**
@@ -286,18 +334,32 @@ class MapReader {
     parse() {
         this.tapeChunks = []
         let i = 10
+        let lastHeader
         while(i < this.data.byteLength - 1) {
-            let [type] = new Uint8Array(this.data, i, 1)
+            const [type] = new Uint8Array(this.data, i, 1)
             switch(type) {
                 case 0x10:
                     // 10 <dd dd> <ll ll> [<..>*]
-                    let dv = new DataView(this.data, i + 1, 4)
-                    let delay = dv.getUint16(0, true)
-                    let length = dv.getUint16(2, true)
-                    console.log(`Normal hunk with delay ${delay} and length ${length} at offset ${i + 1 + 4}`)
-                    this.tapeChunks.push(
-                        {data: this.data.slice(i + 1 + 4, i + 1 + 4 + length)},
-                    )
+                    const dv = new DataView(this.data, i + 1, 5)
+                    const delay = dv.getUint16(0, true)
+                    const length = dv.getUint16(2, true)
+                    const flag = dv.getUint8(4)
+                    console.log(`Normal hunk with delay ${delay} and length ${length} at offset ${i + 1 + 4}, flag=${flag}`)
+
+                    if(flag == 0) {
+                        // .bas decode
+                        lastHeader = this.decodeTapHeader(i, length)
+                        console.log("Header block", lastHeader)
+                    } else if(flag == 0xff) {
+                        this.tapeChunks.push(
+                            {header: lastHeader, data: this.data.slice(i + 1 + 4, i + 1 + 4 + length)},
+                        )
+                    } else {
+                        console.warn(`Assuming that block flag ${flag} is application-driven`)
+                        this.tapeChunks.push(
+                            {data: this.data.slice(i + 1 + 4, i + 1 + 4 + length)},
+                        )
+                    }
                     i += 1 + 4 + length
                     break
                 case 0x30:
