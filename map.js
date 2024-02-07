@@ -105,6 +105,16 @@ class MapInstance {
 /**
  *
  */
+const contentType = {
+    program: 0,
+    number: 1,
+    string: 2,
+    memory: 3,
+}
+
+/**
+ *
+ */
 class WalkableDataView {
     #dataview
     /**
@@ -199,22 +209,15 @@ class MapReader {
     /**
      * @private
      * @param {WalkableDataView} wdv
-     * @param {number} length
      * @returns
      */
-    decodeTapHeader(wdv, length) {
-        const contentType = {
-            program: 0,
-            number: 1,
-            string: 2,
-            memory: 3,
-        }
+    decodeTapHeader(wdv) {
         const type = wdv.uint8()
         const filename = wdv.text(10)
         const innerLength = wdv.uint16()
         switch (type) {
             case contentType.program: {
-                const autoStart = wdv.uint16().toString(16).padStart(4, "0")
+                const autoStart = wdv.uint16()
                 const programLength = wdv.uint16()
                 return { type, filename, innerLength, autoStart, programLength }
             }
@@ -227,7 +230,7 @@ class MapReader {
                 return { type, filename, innerLength, varname }
             }
             case contentType.memory: {
-                const startAddress = wdv.uint16().toString(16).padStart(4, "0")
+                const startAddress = wdv.uint16()
                 wdv.skip(2)
                 return { type, filename, innerLength, startAddress }
             }
@@ -236,9 +239,52 @@ class MapReader {
     }
 
     /**
-     * @type {?{header?: ReturnType<MapReader["decodeTapHeader"]>, data: ArrayBuffer}[]}
+     * @type {?{header?: ReturnType<MapReader["decodeTapHeader"]>, data:
+     * ArrayBuffer, delay: number, length: number, offset: number}[]}
      */
     tapeChunks = null
+
+    /**
+     *
+     * @param {MapReader["tapeChunks"][0]["header"]} header
+     */
+    debugHeader(header) {
+        if(!header) {
+            return null
+        }
+        const filename = header.filename
+        /**
+         * @type {string}
+         */
+        let rest
+        switch(header.type) {
+            case contentType.memory: {
+                rest = `load=0x${header.startAddress.toString(16).padStart(4, "0")}`
+                break
+            }
+            case contentType.number: {
+                rest = header.varname
+                break
+            }
+            case contentType.program: {
+                rest = `start=0x${header.autoStart.toString(16).padStart(4, "0")}; length=${header.programLength}`
+                break
+            }
+            case contentType.string: {
+                rest = header.varname
+                break
+            }
+        }
+
+        const typeLabels = {
+            [contentType.memory]: "Memory",
+            [contentType.number]: "Number",
+            [contentType.program]: "Program",
+            [contentType.string]: "String",
+        }
+
+        return `${typeLabels[header.type]}=${filename} (${header.innerLength}): ${rest}`
+    }
     /**
      * Builds the object
      *
@@ -276,9 +322,12 @@ class MapReader {
                         input.value = "" + i
                         input.onclick = () => this.analyseChunk(chunk.data)
                         const label = document.createElement("label")
+                        label.style.display = "inline-block"
+                        label.style.whiteSpace = "nowrap"
                         label.appendChild(input)
+                        const labelContent = this.debugHeader(chunk.header) ?? `chunk ${i} (${chunk.data.byteLength})`
                         label.appendChild(
-                            document.createTextNode(` chunk ${i} (${chunk.data.byteLength})`)
+                            document.createTextNode(` ${labelContent}; d=${chunk.delay}; @${chunk.offset}`)
                         )
                         selections_element.appendChild(label)
                         i++
@@ -416,17 +465,17 @@ class MapReader {
                     const delay = wdv.uint16()
                     const length = wdv.uint16()
                     const flag = wdv.uint8()
-                    console.log(`Normal hunk with delay ${delay} and length ${length} at offset ${wdv.offset}, flag=${flag}`)
 
                     if(flag == 0) {
                         // .bas decode
-                        lastHeader = this.decodeTapHeader(wdv, length - 2)
-                        console.log("Header block", lastHeader)
+                        lastHeader = this.decodeTapHeader(wdv)
                     } else if(flag == 0xff) {
-                        this.tapeChunks.push({header: lastHeader, data: wdv.buffer(length - 2)})
+                        const offset = wdv.offset
+                        this.tapeChunks.push({header: lastHeader, data: wdv.buffer(length - 2), delay, length, offset})
                     } else {
                         console.warn(`Assuming that block flag ${flag} is application-driven`)
-                        this.tapeChunks.push({data: wdv.buffer(length - 2)})
+                        const offset = wdv.offset
+                        this.tapeChunks.push({data: wdv.buffer(length - 2), delay, length, offset})
                     }
                     wdv.skip(1) // checksum
                     break
