@@ -19,7 +19,7 @@ function decode(filename, loadPoint, startOffset) {
 
     const dw = new DataWalker(contents)
     dw.offset = startOffset
-    const decompile = new DecompileWalker(dw, loadPoint)
+    const decompile = new DecompileWalker(dw, loadPoint - startOffset)
     let bytesParsed = 0
 
     try {
