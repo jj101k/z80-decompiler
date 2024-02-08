@@ -6,7 +6,6 @@ console.log(`Reading ${filename}`)
 const DataWalker = require("./lib/DataWalker")
 const DecompileWalker = require("./lib/DecompileWalker")
 
-
 /**
  *
  * @param {string} filename
@@ -23,7 +22,7 @@ function decode(filename, loadPoint, startOffset) {
     let bytesParsed = 0
 
     try {
-        for(let i = 0; i < 1_000; i++) {
+        for(let i = 0; i < 10_000; i++) {
             const startPoint = dw.offset
             const n = decompile.decode()
             if(!n) {
@@ -36,7 +35,7 @@ function decode(filename, loadPoint, startOffset) {
                 for(const l of decompile.dump()) {
                     console.log(l)
                 }
-                console.log(`Stop after ${i} with next offset at ${decompile.addr(dw.offset + loadPoint)} (${decompile.addr(dw.offset)})`)
+                console.log(`Stop after ${i} - nothing left to examine`)
                 break
             }
         }
