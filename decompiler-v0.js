@@ -6,7 +6,6 @@ console.log(`Reading ${filename}`)
 const DataWalker = require("./lib/DataWalker")
 const DecompileWalker = require("./lib/DecompileWalker")
 
-const loadPoint = 0x5e27 // From previous file
 
 /**
  *
