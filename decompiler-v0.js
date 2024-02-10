@@ -16,9 +16,8 @@ function decode(filename, loadPoint, startOffset) {
 
     const contents = fs.readFileSync(filename)
 
-    const dw = new DataWalker(contents)
-    dw.offset = startOffset
-    const decompile = new DecompileWalker(dw, loadPoint - startOffset)
+    const dw = new DataWalker(contents.subarray(startOffset))
+    const decompile = new DecompileWalker(dw, loadPoint)
     let bytesParsed = 0
 
     try {
