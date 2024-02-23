@@ -3,7 +3,7 @@ import { DataWalker } from "./lib/DataWalker.mjs"
 import { DecompileWalker } from "./lib/DecompileWalker.mjs"
 import fs from "fs"
 
-const opts = getopts(process.argv, {
+const opts = getopts(process.argv.slice(2), {
     boolean: ["h"],
     number: ["l", "s"],
     alias: {
