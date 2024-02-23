@@ -46,7 +46,13 @@ console.warn(`Reading ${filename}`)
  * @param {number} startOffset
  */
 function decode(filename, loadPoint, startOffset) {
-
+    if(!filename.match(/[.]tap$/)) {
+        console.warn(`WARNING: this is only for .tap files, not: ${filename}`)
+    }
+    const size = fs.statSync(filename).size
+    if(size > 65536) {
+        console.warn(`WARNING: this is designed for a 16-bit address space, but ${filename} is larger (${size})`)
+    }
     const contents = fs.readFileSync(filename)
 
     const dw = new DataWalker(contents.subarray(startOffset))
