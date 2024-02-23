@@ -59,11 +59,29 @@ function decode(filename, loadPoint, startOffset) {
     const decompile = new DecompileWalker(dw, loadPoint)
     let bytesParsed = 0
 
+    /**
+     *
+     */
+    const traceLength = 10
+    /**
+     * @type {number[]}
+     */
+    const trace = []
+
     try {
         for (let i = 0; i < 10_000; i++) {
             const startPoint = dw.offset
+
+            if(i >= traceLength) {
+                trace.shift()
+            }
+            trace.push(startPoint)
             const n = decompile.decode()
             if (!n) {
+                console.warn(`Last ${traceLength} PC values:`)
+                for(const o of trace) {
+                    console.warn(decompile.addr(o + loadPoint))
+                }
                 dw.offset = startPoint
                 throw new Error(`Cannot decode value at offset ${decompile.addr(startPoint + loadPoint)} after ${i} points (${bytesParsed} bytes) mapped: ${decompile.u8(...dw.inspect())}`)
             }
