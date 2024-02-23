@@ -1,3 +1,4 @@
 .DS_Store
 *.tzx
 node_modules
+package-lock.json

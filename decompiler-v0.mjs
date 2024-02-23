@@ -1,10 +1,43 @@
+import getopts from "getopts"
 import { DataWalker } from "./lib/DataWalker.mjs"
 import { DecompileWalker } from "./lib/DecompileWalker.mjs"
 import fs from "fs"
 
-const [filename, loadPoint, startOffset] = process.argv.slice(2)
+const opts = getopts(process.argv, {
+    boolean: ["h"],
+    number: ["l", "s"],
+    alias: {
+        "load-point": ["l"],
+        "start-point": ["s"],
+        "help": ["h"],
+    }
+})
 
-console.log(`Reading ${filename}`)
+const usage = () => `Usage: ${process.argv[1]} [-h|--help] [-l|--load-point <number>] [-s|--start-point <number>] <filename>`
+
+if(opts.h) {
+    console.log(usage())
+    process.exit(0)
+}
+
+const [filename] = opts._
+
+if(!filename) {
+    console.error(usage())
+    process.exit(1)
+}
+
+/**
+ * @type {number | null}
+ */
+const loadPoint = opts.l
+
+/**
+ * @type {number | null}
+ */
+const startOffset = opts.s
+
+console.warn(`Reading ${filename}`)
 
 /**
  *
