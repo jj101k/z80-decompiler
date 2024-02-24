@@ -9,8 +9,8 @@ import { combineOptions } from "./combineOptions.mjs"
  * @type {import("getopts".Options)}
  */
 const optionConfig = {
-    boolean: ["h", "v"],
-    string: ["w", "e", "l", "s"],
+    boolean: ["help", "include-version"],
+    string: ["write-file", "entry-point", "load-point", "start-point"],
     alias: {
         "entry-point": ["e"],
         "help": ["h"],
@@ -20,7 +20,7 @@ const optionConfig = {
         "write-file": ["w"],
     },
     default: {
-        s: 1,
+        "start-point": 1,
     }
 }
 const opts = getopts(process.argv.slice(2), optionConfig)

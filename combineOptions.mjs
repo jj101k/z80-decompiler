@@ -1,6 +1,6 @@
 /**
- * @typedef {{hint?: string, alias?: string[], default?: string, many?: boolean,
- * required?: boolean}} f
+ * @typedef {{alias: string[], default?: string, hint: string | undefined, many: boolean,
+ * required: boolean}} f
  */
 /**
  *
@@ -15,14 +15,20 @@ export const combineOptions = (optionConfig, {requiredKeys, manyKeys, numbers}) 
     const options = {}
 
     /**
+     * @type {Record<string, string[]>}
+     */
+    const aliases = {}
+    /**
      * @type {Record<string, string>}
      */
-    const invAlias = {}
+    const canonicalNameOf = {}
     for (const [long, short] of Object.entries(optionConfig.alias)) {
         const shortA = Array.isArray(short) ? short : [short]
         for (const s of shortA) {
-            invAlias[s] = long
+            canonicalNameOf[s] = long
         }
+        canonicalNameOf[long] = long
+        aliases[long] = shortA
     }
 
     /**
@@ -31,23 +37,26 @@ export const combineOptions = (optionConfig, {requiredKeys, manyKeys, numbers}) 
      * @param {string | undefined} [hint]
      */
     const addOption = (k, hint) => {
+        if(!canonicalNameOf[k]) {
+            canonicalNameOf[k] = k
+            aliases[k] = []
+        }
+        const canonicalName = canonicalNameOf[k]
+        const allNames = [canonicalName, ...aliases[k]]
         /**
          * @type {f}
          */
-        const c = {}
-        if (hint) c.hint = hint
-        if (k in optionConfig.default) {
-            c.default = optionConfig.default[k]
+        const c = {
+            alias: aliases[canonicalName],
+            hint: numbers.includes(canonicalName) ? "number" : hint,
+            many: manyKeys.includes(canonicalName),
+            required: requiredKeys.includes(canonicalName),
         }
-        if (invAlias[k]) {
-            const short = optionConfig.alias[invAlias[k]]
-            const shortA = Array.isArray(short) ? short : [short]
-            c.alias = shortA
+        for(const n of allNames) {
+            if (n in optionConfig.default) {
+                c.default = optionConfig.default[n]
+            }
         }
-        const canonicalName = invAlias[k] ?? k
-
-        c.required = requiredKeys.includes(canonicalName)
-        c.many = manyKeys.includes(canonicalName)
 
         options[canonicalName] = c
     }
@@ -55,8 +64,7 @@ export const combineOptions = (optionConfig, {requiredKeys, manyKeys, numbers}) 
         addOption(k)
     }
     for (const k of optionConfig.string) {
-        const canonicalName = invAlias[k] ?? k
-        addOption(k, numbers.includes(canonicalName) ? "number" : "string")
+        addOption(k, "string")
     }
 
     return Object.entries(options).sort(([a, ac], [b, bc]) => (+!!ac.required - +!!bc.required) || a.localeCompare(b)).map(([s, config]) => {
