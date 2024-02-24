@@ -20,7 +20,7 @@ const opts = getopts(process.argv.slice(2), {
 
 const usage = () => `Usage: ${process.argv[1]} [-h|--help] [-v|--include-version] [-e|--entry-point <number> [-e <number>] ...] [-l|--load-point <number>] [-s|--start-point <number>] [-w|--write-file <filename>|<directory>] <filename>`
 
-if(opts.h) {
+if(opts.help) {
     console.log(usage())
     process.exit(0)
 }
@@ -44,33 +44,34 @@ if(!filename) {
  * @type {number[]}
  */
 const entryPoints = []
-if(opts.e) {
-    if(opts.e instanceof Array) {
-        entryPoints.push(...opts.e)
+const entryPointIn = opts["entry-point"]
+if(entryPointIn) {
+    if(entryPointIn instanceof Array) {
+        entryPoints.push(...entryPointIn)
     } else {
-        entryPoints.push(opts.e)
+        entryPoints.push(entryPointIn)
     }
 }
 
 /**
- * @type {number | null}
+ * @type {number | undefined}
  */
-const loadPoint = opts.l
+const loadPoint = opts["load-point"]
 
 /**
- * @type {number | null}
+ * @type {number}
  */
-const startOffset = opts.s
+const startOffset = opts["start-offset"]
 
 /**
  * @type {string | undefined}
  */
-const writeFilenameSpec = opts.w
+const writeFilenameSpec = opts["write-file"]
 
 /**
  * @type {boolean}
  */
-const includeVersion = opts.v ?? false
+const includeVersion = opts["include-version"] ?? false
 
 /**
  *
