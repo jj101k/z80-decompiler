@@ -15,6 +15,9 @@ const opts = getopts(process.argv.slice(2), {
         "load-point": ["l"],
         "start-point": ["s"],
         "write-file": ["w"],
+    },
+    default: {
+        s: 1,
     }
 })
 
@@ -194,6 +197,6 @@ function decode(filename, loadPoint, startOffset) {
     }
 }
 
-decode(filename, +loadPoint, startOffset ? +startOffset : 1)
+decode(filename, +loadPoint, +startOffset)
 
 // See DECOMPILER.md
