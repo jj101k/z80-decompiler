@@ -1,14 +1,10 @@
-import getopts from "getopts"
 import { DataWalker } from "./lib/DataWalker.mjs"
 import { DecompileWalker } from "./lib/DecompileWalker.mjs"
 import fs from "fs"
 import path from "path"
-import { combineOptions } from "./combineOptions.mjs"
+import { OptHandler } from "./OptHandler.mjs"
 
-/**
- * @type {import("getopts".Options)}
- */
-const optionConfig = {
+const optHandler = new OptHandler({
     boolean: ["help", "include-version"],
     string: ["write-file", "entry-point", "load-point", "start-point"],
     alias: {
@@ -22,16 +18,14 @@ const optionConfig = {
     default: {
         "start-point": 1,
     }
-}
-const opts = getopts(process.argv.slice(2), optionConfig)
-
-const extendedOptions = {
+}, {
     requiredKeys: ["load-point"],
     manyKeys: ["entry-point"],
     numbers: ["entry-point", "load-point", "start-point"],
-}
+})
+const opts = optHandler.fromArgv(process.argv)
 
-const usage = () => `Usage: ${process.argv[1]} ${combineOptions(optionConfig, extendedOptions)} <filename>`
+const usage = () => `Usage: ${process.argv[1]} ${optHandler.helpMessage} <filename>`
 
 if(opts.help) {
     console.log(usage())
