@@ -5,15 +5,16 @@ import fs from "fs"
 
 const opts = getopts(process.argv.slice(2), {
     boolean: ["h"],
-    number: ["l", "s"],
+    number: ["e", "l", "s"],
     alias: {
+        "entry-point": ["e"],
         "load-point": ["l"],
         "start-point": ["s"],
         "help": ["h"],
     }
 })
 
-const usage = () => `Usage: ${process.argv[1]} [-h|--help] [-l|--load-point <number>] [-s|--start-point <number>] <filename>`
+const usage = () => `Usage: ${process.argv[1]} [-h|--help] [-e|--entry-point <number> [-e <number>] ...] [-l|--load-point <number>] [-s|--start-point <number>] <filename>`
 
 if(opts.h) {
     console.log(usage())
@@ -30,6 +31,15 @@ const [filename] = opts._
 if(!filename) {
     console.error(usage())
     process.exit(1)
+}
+
+const entryPoints = []
+if(opts.e) {
+    if(opts.e instanceof Array) {
+        entryPoints.push(...opts.e)
+    } else {
+        entryPoints.push(opts.e)
+    }
 }
 
 /**
@@ -62,6 +72,10 @@ function decode(filename, loadPoint, startOffset) {
 
     const dw = new DataWalker(contents.subarray(startOffset))
     const decompile = new DecompileWalker(dw, loadPoint)
+
+    for(const entryPoint of entryPoints) {
+        decompile.addTarget(entryPoint, "fn")
+    }
     let bytesParsed = 0
 
     /**
