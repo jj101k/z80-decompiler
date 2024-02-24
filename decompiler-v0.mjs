@@ -2,6 +2,7 @@ import getopts from "getopts"
 import { DataWalker } from "./lib/DataWalker.mjs"
 import { DecompileWalker } from "./lib/DecompileWalker.mjs"
 import fs from "fs"
+import path from "path"
 
 const opts = getopts(process.argv.slice(2), {
     boolean: ["h"],
@@ -16,7 +17,7 @@ const opts = getopts(process.argv.slice(2), {
     }
 })
 
-const usage = () => `Usage: ${process.argv[1]} [-h|--help] [-e|--entry-point <number> [-e <number>] ...] [-l|--load-point <number>] [-s|--start-point <number>] [-w|--write-file <filename>] <filename>`
+const usage = () => `Usage: ${process.argv[1]} [-h|--help] [-e|--entry-point <number> [-e <number>] ...] [-l|--load-point <number>] [-s|--start-point <number>] [-w|--write-file <filename>|<directory>] <filename>`
 
 if(opts.h) {
     console.log(usage())
@@ -28,6 +29,9 @@ if(opts._.length > 1) {
     process.exit(2)
 }
 
+/**
+ * @type {string | undefined}
+ */
 const [filename] = opts._
 
 if(!filename) {
@@ -57,9 +61,24 @@ const startOffset = opts.s
 /**
  * @type {string | undefined}
  */
-const writeFilename = opts.w
+const writeFilenameSpec = opts.w
+
+/**
+ * @type {string | undefined}
+ */
+let writeFilename
+if(writeFilenameSpec) {
+    if(writeFilenameSpec.endsWith("/") || (fs.existsSync(writeFilenameSpec) && fs.statSync(writeFilenameSpec).isDirectory())) {
+        writeFilename = path.resolve(writeFilenameSpec, filename.replace(/.*\//, "").replace(/[.]tap$/, ".txt"))
+    } else {
+        writeFilename = writeFilenameSpec
+    }
+}
 
 console.warn(`Reading ${filename}`)
+if(writeFilename) {
+    console.log(`Writing ${writeFilename}`)
+}
 
 /**
  *
