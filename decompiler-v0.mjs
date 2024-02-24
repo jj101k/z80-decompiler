@@ -22,18 +22,17 @@ const optHandler = new OptHandler({
     requiredKeys: ["load-point"],
     manyKeys: ["entry-point"],
     numbers: ["entry-point", "load-point", "start-point"],
-})
+    positional: ["filename"],
+}, process.argv[1])
 const opts = optHandler.fromArgv(process.argv)
 
-const usage = () => `Usage: ${process.argv[1]} ${optHandler.helpMessage} <filename>`
-
 if(opts.help) {
-    console.log(usage())
+    console.log(optHandler.helpMessage)
     process.exit(0)
 }
 
 if(opts._.length > 1) {
-    console.error(usage())
+    console.error(optHandler.helpMessage)
     process.exit(2)
 }
 
@@ -43,7 +42,7 @@ if(opts._.length > 1) {
 const [filename] = opts._
 
 if(!filename) {
-    console.error(usage())
+    console.error(optHandler.helpMessage)
     process.exit(1)
 }
 

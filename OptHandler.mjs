@@ -14,6 +14,11 @@ export class OptHandler {
     #optionConfig
 
     /**
+     * @readonly
+     */
+    name
+
+    /**
      *
      */
     get helpMessage() {
@@ -22,7 +27,7 @@ export class OptHandler {
          * required: boolean}} f
          */
 
-        const {numbers, manyKeys, requiredKeys} = this.#extendedOptions
+        const {numbers, manyKeys, requiredKeys, positional, positionalOptional, positionalVar} = this.#extendedOptions
         const optionConfig = this.#optionConfig
 
         /**
@@ -83,7 +88,7 @@ export class OptHandler {
             addOption(k, "string")
         }
 
-        return Object.entries(options).sort(([a, ac], [b, bc]) => (+!!ac.required - +!!bc.required) || a.localeCompare(b)).map(([s, config]) => {
+        const argComponents = Object.entries(options).sort(([a, ac], [b, bc]) => (+!!ac.required - +!!bc.required) || a.localeCompare(b)).map(([s, config]) => {
             /**
              * @type {string}
              */
@@ -108,17 +113,30 @@ export class OptHandler {
             } else {
                 return config.many ? `[${o}]...` : `[${o}]`
             }
-        }).join(" ")
+        })
+        const components = [
+            this.name,
+            ...argComponents,
+            ...(positional ?? []).map(p => `<${p}>`),
+            ...(positionalOptional ?? []).map(p => `[<${p}>]`),
+        ]
+        if(positionalVar) {
+            components.push(`[<${positionalVar}>]...`)
+        }
+        return `Usage: ${components.join(" ")}`
     }
 
     /**
      *
      * @param {import("getopts").Options} optionConfig
-     * @param {{requiredKeys: string[], manyKeys: string[], numbers: string[]}} extendedOptions
+     * @param {{requiredKeys: string[], manyKeys: string[], numbers: string[],
+     * positional?: string[], positionalOptional?: string[], positionalVar?: string}} extendedOptions
+     * @param {string} name
      */
-    constructor(optionConfig, extendedOptions) {
+    constructor(optionConfig, extendedOptions, name) {
         this.#extendedOptions = extendedOptions
         this.#optionConfig = optionConfig
+        this.name = name
     }
     /**
      *
