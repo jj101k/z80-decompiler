@@ -39,6 +39,9 @@ if(!filename) {
     process.exit(1)
 }
 
+/**
+ * @type {number[]}
+ */
 const entryPoints = []
 if(opts.e) {
     if(opts.e instanceof Array) {
