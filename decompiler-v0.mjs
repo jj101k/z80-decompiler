@@ -5,19 +5,20 @@ import fs from "fs"
 import path from "path"
 
 const opts = getopts(process.argv.slice(2), {
-    boolean: ["h"],
+    boolean: ["h", "v"],
     number: ["e", "l", "s"],
     string: ["w"],
     alias: {
         "entry-point": ["e"],
         "help": ["h"],
+        "include-version": ["v"],
         "load-point": ["l"],
         "start-point": ["s"],
         "write-file": ["w"],
     }
 })
 
-const usage = () => `Usage: ${process.argv[1]} [-h|--help] [-e|--entry-point <number> [-e <number>] ...] [-l|--load-point <number>] [-s|--start-point <number>] [-w|--write-file <filename>|<directory>] <filename>`
+const usage = () => `Usage: ${process.argv[1]} [-h|--help] [-v|--include-version] [-e|--entry-point <number> [-e <number>] ...] [-l|--load-point <number>] [-s|--start-point <number>] [-w|--write-file <filename>|<directory>] <filename>`
 
 if(opts.h) {
     console.log(usage())
@@ -67,12 +68,30 @@ const startOffset = opts.s
 const writeFilenameSpec = opts.w
 
 /**
+ * @type {boolean}
+ */
+const includeVersion = opts.v ?? false
+
+/**
+ *
+ */
+const decompilerVersion = 2
+
+/**
  * @type {string | undefined}
  */
 let writeFilename
 if(writeFilenameSpec) {
     if(writeFilenameSpec.endsWith("/") || (fs.existsSync(writeFilenameSpec) && fs.statSync(writeFilenameSpec).isDirectory())) {
-        writeFilename = path.resolve(writeFilenameSpec, filename.replace(/.*\//, "").replace(/[.]tap$/, ".txt"))
+        const fileInBaseRoot = path.basename(filename).replace(/[.]tap$/, "")
+        let fileOutBase
+
+        if(includeVersion) {
+            fileOutBase = fileInBaseRoot + ".v" + decompilerVersion + ".txt"
+        } else {
+            fileOutBase = fileInBaseRoot + ".txt"
+        }
+        writeFilename = path.resolve(writeFilenameSpec, fileOutBase)
     } else {
         writeFilename = writeFilenameSpec
     }
@@ -120,6 +139,9 @@ function decode(filename, loadPoint, startOffset) {
      *
      */
     const writeToConsole = () => {
+        if(includeVersion) {
+            console.log("; v" + decompilerVersion)
+        }
         for (const l of decompile.dump()) {
             console.log(l)
         }
