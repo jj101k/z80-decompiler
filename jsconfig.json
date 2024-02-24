@@ -3,6 +3,7 @@
         "checkJs": true,
         "target": "ES2022",
         "module": "NodeNext",
-        "moduleResolution": "NodeNext"
+        "moduleResolution": "NodeNext",
+        "strictNullChecks": true
     }
 }
