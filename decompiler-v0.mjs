@@ -3,6 +3,7 @@ import { DecompileWalker } from "./lib/DecompileWalker.mjs"
 import fs from "fs"
 import path from "path"
 import { OptHandler } from "./OptHandler.mjs"
+import { OptExit } from "./OptExit.mjs"
 
 const optHandler = new OptHandler({
     boolean: ["help", "include-version"],
@@ -23,28 +24,23 @@ const optHandler = new OptHandler({
     manyKeys: ["entry-point"],
     numbers: ["entry-point", "load-point", "start-point"],
     positional: ["filename"],
+    help: "help",
 }, process.argv[1])
-const opts = optHandler.fromArgv(process.argv)
 
-if(opts.help) {
-    console.log(optHandler.helpMessage)
-    process.exit(0)
-}
-
-if(opts._.length > 1) {
-    console.error(optHandler.helpMessage)
-    process.exit(2)
+let opts
+try {
+    opts = optHandler.fromArgv(process.argv)
+} catch(e) {
+    if(e instanceof OptExit) {
+        e.outputAndExit()
+    }
+    throw e
 }
 
 /**
  * @type {string | undefined}
  */
 const [filename] = opts._
-
-if(!filename) {
-    console.error(optHandler.helpMessage)
-    process.exit(1)
-}
 
 /**
  * @type {number[]}

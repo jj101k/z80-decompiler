@@ -1,4 +1,6 @@
 import getopts from "getopts"
+import { OptHelpExit } from "./OptHelpExit.mjs"
+import { OptError } from "./OptError.mjs"
 
 /**
  *
@@ -130,7 +132,8 @@ export class OptHandler {
      *
      * @param {import("getopts").Options} optionConfig
      * @param {{requiredKeys: string[], manyKeys: string[], numbers: string[],
-     * positional?: string[], positionalOptional?: string[], positionalVar?: string}} extendedOptions
+     * positional?: string[], positionalOptional?: string[], positionalVar?:
+     * string, help?: string}} extendedOptions
      * @param {string} name
      */
     constructor(optionConfig, extendedOptions, name) {
@@ -144,6 +147,22 @@ export class OptHandler {
      * @returns
      */
     fromArgv(argv) {
-        return getopts(argv.slice(2), this.#optionConfig)
+        const opts = getopts(argv.slice(2), this.#optionConfig)
+        const helpOption = this.#extendedOptions.help
+        if(helpOption && opts[helpOption]) {
+            throw new OptHelpExit(this.helpMessage)
+        }
+        const positionalMin = (this.#extendedOptions.positional?.length ?? 0)
+        const positionalMax = this.#extendedOptions.positionalVar ? Infinity :
+            (positionalMin + (this.#extendedOptions.positionalOptional?.length ?? 0))
+
+        if(opts._.length < positionalMin) {
+            throw new OptError(`Too few arguments.\n${this.helpMessage}`, 1)
+        }
+        if(opts._.length > positionalMax) {
+            throw new OptError(`Too many arguments.\n${this.helpMessage}`, 2)
+        }
+
+        return opts
     }
 }
