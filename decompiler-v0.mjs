@@ -20,6 +20,11 @@ if(opts.h) {
     process.exit(0)
 }
 
+if(opts._.length > 1) {
+    console.error(usage())
+    process.exit(2)
+}
+
 const [filename] = opts._
 
 if(!filename) {
