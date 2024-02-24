@@ -84,7 +84,7 @@ const writeFilenameSpec = opts["write-file"]
 /**
  * @type {boolean}
  */
-const includeVersion = opts["include-version"] ?? false
+const includeVersion = opts["include-version"]
 
 /**
  *
