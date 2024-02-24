@@ -56,7 +56,7 @@ if(entryPointIn) {
 }
 
 /**
- * @type {number | undefined}
+ * @type {number}
  */
 const loadPoint = opts["load-point"]
 
