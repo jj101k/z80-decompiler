@@ -23,14 +23,4 @@ export class OptWrapper<T> {
      */
     constructor(public readonly alias: string[], public readonly type: "boolean" | "number" | "string", public readonly required: boolean, public readonly def?: T) {
     }
-
-    /**
-     *
-     * @param name
-     * @param o
-     * @returns
-     */
-    get(name: string, o: Record<string, any>): T {
-        return o[name]
-    }
 }

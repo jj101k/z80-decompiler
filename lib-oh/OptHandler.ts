@@ -186,7 +186,7 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
      * @param args
      * @returns
      */
-    fromProgramArgs(args: string[]): { [k in keyof T]: ReturnType<T[k]["get"]> } & { [k in keyof P]: ReturnType<P[k]["get"]> } {
+    fromProgramArgs(args: string[]): { [k in keyof T]: T[k]["initialValue"] } & { [k in keyof P]: P[k]["initialValue"] } {
         const canonicalNameOf: Record<string, string> = {}
         const knownShortOpts: Record<string, OptWrapper<any>> = {}
         for (const [k, v] of Object.entries(this.options)) {
@@ -283,10 +283,7 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
             }
         }
 
-        return Object.fromEntries([
-            ...Object.entries(this.options).map(([k, o]) => [k, o.get(k, opts)]),
-            ...Object.entries(this.positional).map(([k, o]) => [k, o.get(k, opts)]),
-        ])
+        return opts
     }
 
     /**
