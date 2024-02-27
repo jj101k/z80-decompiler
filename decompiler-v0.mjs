@@ -3,18 +3,19 @@ import { DecompileWalker } from "./lib/DecompileWalker.mjs"
 import fs from "fs"
 import path from "path"
 import { OptHandler } from "./lib-oh/OptHandler.js"
+import { OptWrappers } from "./lib-oh/OptWrappers.js"
 
 const optHandler = new OptHandler({
     options: {
-        entryPoint: OptHandler.om(["e"], "number"),
-        help: OptHandler.os(["h"], "boolean"),
-        includeVersion: OptHandler.os(["v"], "boolean"),
-        loadPoint: OptHandler.rs(["l"], "number"),
-        startPoint: OptHandler.os(["s"], "number", 1),
-        writeFile: OptHandler.os(["w"], "string"),
+        entryPoint: OptWrappers.opt("number[]", "e"),
+        help: OptWrappers.opt("boolean", "h"),
+        includeVersion: OptWrappers.opt("boolean", "v"),
+        loadPoint: OptWrappers.req("number", "l"),
+        startPoint: OptWrappers.optDefault("number", 1, "s"),
+        writeFile: OptWrappers.opt("string", "w"),
     },
     positional: {
-        filename: OptHandler.rs([], "string"),
+        filename: OptWrappers.req("string"),
     },
     help: "help",
 }, process.argv[1])

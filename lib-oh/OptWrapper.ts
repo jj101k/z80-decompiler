@@ -1,3 +1,5 @@
+import { TypeHintExplicit, TypeHintImplicit } from "./TypeHint"
+
 /**
  *
  */
@@ -21,6 +23,6 @@ export class OptWrapper<T> {
      * @param required
      * @param def
      */
-    constructor(public readonly alias: string[], public readonly type: "boolean" | "number" | "string", public readonly required: boolean, public readonly def?: T) {
+    constructor(public readonly alias: string[], public readonly type: TypeHintExplicit | TypeHintImplicit, public readonly required: boolean, public readonly def?: T) {
     }
 }
