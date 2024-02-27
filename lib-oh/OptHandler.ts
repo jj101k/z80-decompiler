@@ -7,6 +7,7 @@ import { AbortProcessingSymbol } from "./AbortProcessingSymbol"
 import { LiteralArgument } from "./LiteralArgument"
 import { OptWrapperMany } from "./OptWrapperMany"
 import { OptWrapper } from "./OptWrapper"
+import { NodeProcessLike } from "./NodeProcessLike"
 
 /**
  *
@@ -195,7 +196,7 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
      * @param process
      * @returns
      */
-    fromArgvOrExit(process: NodeJS.Process) {
+    fromArgvOrExit(process: NodeProcessLike) {
         try {
             return this.fromArgv(process.argv)
         } catch (e) {

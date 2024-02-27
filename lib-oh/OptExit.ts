@@ -1,3 +1,5 @@
+import { NodeProcessLike } from "./NodeProcessLike"
+
 /**
  *
  */
@@ -28,7 +30,7 @@ export abstract class OptExit {
      *
      * @param process
      */
-    outputAndExit(process: NodeJS.Process) {
+    outputAndExit(process: NodeProcessLike) {
         this.output()
         process.exit(this.exitCode)
     }
