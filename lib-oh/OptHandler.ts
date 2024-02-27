@@ -48,6 +48,15 @@ export class OptHandler<T extends Record<string, F<any>>> {
     }
 
     /**
+     *
+     * @param k
+     * @returns
+     */
+    private toCliArg(k: string): string {
+        return k.replace(/(?<=.)([\p{Lu}]+[\d_\p{Ll}]*)/gu, (a, $1) => `-${$1.toLowerCase()}`)
+    }
+
+    /**
      * @readonly
      */
     name
@@ -60,14 +69,11 @@ export class OptHandler<T extends Record<string, F<any>>> {
 
         const argComponents = Object.entries(this.options).sort(([a, ac], [b, bc]) => (+!!ac.required - +!!bc.required) || a.localeCompare(b)).map(([s, config]) => {
             let o: string
-            if (config.alias) {
-                o = [
-                    ...config.alias.map(a => `-${a}`),
-                    `--${s}`
-                ].join("|")
-            } else {
-                o = `-${s}`
-            }
+            const cliArg = this.toCliArg(s)
+            o = [
+                ...config.alias.map(a => `-${a}`),
+                `--${cliArg}`
+            ].join("|")
             if (config.type != "boolean") {
                 if (config.def) {
                     o += ` <${config.type} = ${config.def}>`
@@ -148,13 +154,18 @@ export class OptHandler<T extends Record<string, F<any>>> {
         const positional: string[] = []
         const mArgs = args.slice()
 
+        const cNames = Object.fromEntries(
+            Object.keys(this.options).map(k => [this.toCliArg(k), k])
+        )
+
         let arg: string | undefined
         while((arg = mArgs.shift()) !== undefined) {
             const parsed = this.parseArg(arg)
             if(parsed instanceof LongOption) {
                 // Long opt.
                 const {name, value} = parsed
-                const opt = this.options[name]
+                const cName = cNames[name]
+                const opt = this.options[cName]
                 if(!opt) {
                     throw new OptError(`Error: Unrecognised long option ${parsed.key}`, 5)
                 }
@@ -162,15 +173,15 @@ export class OptHandler<T extends Record<string, F<any>>> {
                     if(value !== null) {
                         throw new OptError(`Error: Argument supplied for boolean option ${parsed.key}`, 6)
                     }
-                    opts[name] = true
+                    opts[cName] = true
                 } else if(value !== null) {
-                    opts[name] = value
+                    opts[cName] = value
                 } else {
                     const value = mArgs.shift()
                     if(value === undefined) {
                         throw new OptError(`Error: Option ${parsed.key} required an argument`, 7)
                     }
-                    opts[name] = value
+                    opts[cName] = value
                 }
             } else if(parsed instanceof ShortOptions) {
                 // Short opts.
@@ -180,19 +191,19 @@ export class OptHandler<T extends Record<string, F<any>>> {
                     if(!opt) {
                         throw new OptError(`Error: Unrecognised short option ${parsed.prevOption} in ${parsed.literalArgument}`, 3)
                     }
-                    const name = canonicalNameOf[optionCode]
+                    const cName = canonicalNameOf[optionCode]
                     if(opt.type == "boolean") {
-                        opts[name] = true
+                        opts[cName] = true
                     } else {
                         const value = parsed.rest
                         if(value.length) {
-                            opts[name] = value
+                            opts[cName] = value
                         } else {
                             const value = mArgs.shift()
                             if(value === undefined) {
                                 throw new OptError(`Error: Option ${parsed.prevOption} required an argument`, 7)
                             }
-                            opts[name] = value
+                            opts[cName] = value
                         }
                         break
                     }
