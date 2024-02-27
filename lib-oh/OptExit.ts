@@ -25,8 +25,10 @@ export abstract class OptExit {
 
     /**
      * Outputs the message, then exits
+     *
+     * @param process
      */
-    outputAndExit() {
+    outputAndExit(process: NodeJS.Process) {
         this.output()
         process.exit(this.exitCode)
     }

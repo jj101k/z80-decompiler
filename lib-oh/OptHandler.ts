@@ -187,15 +187,20 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
     }
 
     /**
+     * This directly uses process.argv and process.exit to respond to --help as
+     * well as invalid args.
      *
+     * If you want more fine-grained control, use fromArgv and catch the exception.
+     *
+     * @param process
      * @returns
      */
-    fromArgvOrExit() {
+    fromArgvOrExit(process: NodeJS.Process) {
         try {
             return this.fromArgv(process.argv)
         } catch (e) {
             if (e instanceof OptExit) {
-                e.outputAndExit()
+                e.outputAndExit(process)
             }
             throw e
         }

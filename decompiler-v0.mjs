@@ -20,7 +20,7 @@ const optHandler = new OptHandler({
     help: "help",
 }, process.argv[1])
 
-const opts = optHandler.fromArgvOrExit()
+const opts = optHandler.fromArgvOrExit(process)
 
 const filename = opts.filename
 
