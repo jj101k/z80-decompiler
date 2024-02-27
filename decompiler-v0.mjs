@@ -12,6 +12,8 @@ const optHandler = new OptHandler({
     startPoint: OptHandler.os(["s"], "number", 1),
     writeFile: OptHandler.os(["w"], "string"),
 }, {
+    filename: OptHandler.rs([], "string"),
+}, {
     positional: ["filename"],
     help: "help",
 }, process.argv[1])
@@ -20,10 +22,7 @@ const opts = optHandler.fromArgvOrExit()
 
 console.log(opts)
 
-/**
- * @type {string | undefined}
- */
-const [filename] = opts._
+const filename = opts.filename
 
 const entryPoints = opts.entryPoint
 const loadPoint = opts.loadPoint
