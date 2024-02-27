@@ -26,6 +26,31 @@ export class OptHandler<T extends Record<string, F<any>>> {
 
     /**
      *
+     * @param key
+     * @param opt
+     * @param getExplicitValue
+     * @param value
+     * @returns
+     */
+    private getArgValue(key: string, opt: F<any>, getExplicitValue: () => string | undefined, value?: string) {
+        if(opt.type == "boolean") {
+            if(value !== undefined) {
+                throw new OptError(`Error: Argument supplied for boolean option ${key}`, 6)
+            }
+            return true
+        } else if(value !== undefined) {
+            return value
+        } else {
+            const value = getExplicitValue()
+            if(value === undefined) {
+                throw new OptError(`Error: Option ${key} required an argument`, 7)
+            }
+            return value
+        }
+    }
+
+    /**
+     *
      * @param arg
      * @returns
      */
@@ -33,7 +58,7 @@ export class OptHandler<T extends Record<string, F<any>>> {
         let md: RegExpMatchArray | null
         if(md = arg.match(/^--([\w-]+)(=(.*))?/)) {
             // Long opt.
-            const [name, value] = [md[1], md[2] ?? null]
+            const [name, value] = [md[1], md[2] ?? undefined]
             return new LongOption(name, value, arg)
         } else if(md = arg.match(/^-(\w.*)/)) {
             // Short opts.
@@ -150,13 +175,28 @@ export class OptHandler<T extends Record<string, F<any>>> {
             }
         }
 
-        const opts: Record<string, any> = {}
+        const opts = Object.fromEntries(
+            Object.entries(this.options).map(([k, o]) => [k, o.many ? [] : (o.def ?? undefined)])
+        )
         const positional: string[] = []
         const mArgs = args.slice()
 
         const cNames = Object.fromEntries(
             Object.keys(this.options).map(k => [this.toCliArg(k), k])
         )
+
+        /**
+         *
+         * @param name
+         * @param value
+         */
+        const addArg = (name: string, value: any) => {
+            if(Array.isArray(opts[name])) {
+                opts[name].push(value)
+            } else {
+                opts[name] = value
+            }
+        }
 
         let arg: string | undefined
         while((arg = mArgs.shift()) !== undefined) {
@@ -168,20 +208,7 @@ export class OptHandler<T extends Record<string, F<any>>> {
                 if(!opt) {
                     throw new OptError(`Error: Unrecognised long option ${parsed.key}`, 5)
                 }
-                if(opt.type == "boolean") {
-                    if(parsed.value !== null) {
-                        throw new OptError(`Error: Argument supplied for boolean option ${parsed.key}`, 6)
-                    }
-                    opts[cName] = true
-                } else if(parsed.value !== null) {
-                    opts[cName] = parsed.value
-                } else {
-                    const value = mArgs.shift()
-                    if(value === undefined) {
-                        throw new OptError(`Error: Option ${parsed.key} required an argument`, 7)
-                    }
-                    opts[cName] = value
-                }
+                addArg(cName, this.getArgValue(parsed.key, opt, () => mArgs.shift(), parsed.value))
             } else if(parsed instanceof ShortOptions) {
                 // Short opts.
                 let optionCode: string | undefined
@@ -191,21 +218,7 @@ export class OptHandler<T extends Record<string, F<any>>> {
                         throw new OptError(`Error: Unrecognised short option ${parsed.prevOption} in ${parsed.literalArgument}`, 3)
                     }
                     const cName = canonicalNameOf[optionCode]
-                    if(opt.type == "boolean") {
-                        opts[cName] = true
-                    } else {
-                        const value = parsed.rest
-                        if(value.length) {
-                            opts[cName] = value
-                        } else {
-                            const value = mArgs.shift()
-                            if(value === undefined) {
-                                throw new OptError(`Error: Option ${parsed.prevOption} required an argument`, 7)
-                            }
-                            opts[cName] = value
-                        }
-                        break
-                    }
+                    addArg(cName, this.getArgValue(parsed.prevOption!, opt, () => parsed.rest.length ? parsed.rest : mArgs.shift()))
                 }
             } else if(parsed instanceof AbortProcessingSymbol) {
                 // Stop processing
@@ -234,25 +247,12 @@ export class OptHandler<T extends Record<string, F<any>>> {
         return Object.fromEntries([
             ...Object.entries(this.options).map(([k, o]) => {
                 const v = o(k, opts)
-                if(o.many) {
-                    if(Array.isArray(v)) {
-                        if(o.type == "number") {
-                            return [k, v.map(vi => +vi)]
-                        } else {
-                            // string is native.
-                            return [k, v]
-                        }
+                if(Array.isArray(v)) {
+                    if(o.type == "number") {
+                        return [k, v.map(vi => +vi)]
                     } else {
-                        if(v === undefined) {
-                            return [k, []]
-                        } else {
-                            if(o.type == "number") {
-                                return [k, [+v]]
-                            } else {
-                                // string is native
-                                return [k, [v]]
-                            }
-                        }
+                        // string is native.
+                        return [k, v]
                     }
                 } else {
                     if(o.type == "number") {
