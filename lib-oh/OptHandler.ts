@@ -5,16 +5,13 @@ import { LongOption } from "./LongOption"
 import { ShortOptions } from "./ShortOptions"
 import { AbortProcessingSymbol } from "./AbortProcessingSymbol"
 import { LiteralArgument } from "./LiteralArgument"
+import { OptWrapperMany } from "./OptWrapperMany"
+import { OptWrapper } from "./OptWrapper"
 
 /**
  *
  */
-export type F<T> = ((name: string, o: Record<string, any>) => T) & {alias: string[], def?: any, many: boolean, required: boolean, type: string}
-
-/**
- *
- */
-export class OptHandler<T extends Record<string, F<any>>> {
+export class OptHandler<T extends Record<string, OptWrapper<any>>> {
     /**
      *
      */
@@ -32,7 +29,7 @@ export class OptHandler<T extends Record<string, F<any>>> {
      * @param value
      * @returns
      */
-    private getArgValue(key: string, opt: F<any>, getExplicitValue: () => string | undefined, value?: string) {
+    private getArgValue(key: string, opt: OptWrapper<any>, getExplicitValue: () => string | undefined, value?: string) {
         /**
          *
          * @returns
@@ -154,7 +151,7 @@ export class OptHandler<T extends Record<string, F<any>>> {
      * @param argv
      * @returns
      */
-    fromArgv(argv: string[]): {[k in keyof T]: ReturnType<T[k]>} {
+    fromArgv(argv: string[]): {[k in keyof T]: ReturnType<T[k]["get"]>} {
         return this.fromProgramArgs(argv.slice(2))
     }
 
@@ -178,9 +175,9 @@ export class OptHandler<T extends Record<string, F<any>>> {
      * @param args
      * @returns
      */
-    fromProgramArgs(args: string[]): {[k in keyof T]: ReturnType<T[k]>} {
+    fromProgramArgs(args: string[]): {[k in keyof T]: ReturnType<T[k]["get"]>} {
         const canonicalNameOf: Record<string, string> = {}
-        const knownShortOpts: Record<string, F<any>> = {}
+        const knownShortOpts: Record<string, OptWrapper<any>> = {}
         for(const [k, v] of Object.entries(this.options)) {
             for(const a of v.alias) {
                 knownShortOpts[a] = v
@@ -189,7 +186,7 @@ export class OptHandler<T extends Record<string, F<any>>> {
         }
 
         const opts = Object.fromEntries(
-            Object.entries(this.options).map(([k, o]) => [k, o.many ? [] : (o.def ?? undefined)])
+            Object.entries(this.options).map(([k, o]) => [k, o.initialValue])
         )
         const positional: string[] = []
         const mArgs = args.slice()
@@ -204,8 +201,9 @@ export class OptHandler<T extends Record<string, F<any>>> {
          * @param value
          */
         const addArg = (name: string, value: any) => {
-            if(Array.isArray(opts[name])) {
-                opts[name].push(value)
+            const existing = opts[name]
+            if(Array.isArray(existing)) {
+                existing.push(value)
             } else {
                 opts[name] = value
             }
@@ -258,7 +256,7 @@ export class OptHandler<T extends Record<string, F<any>>> {
         }
 
         return Object.fromEntries([
-            ...Object.entries(this.options).map(([k, o]) => [k, o(k, opts)]),
+            ...Object.entries(this.options).map(([k, o]) => [k, o.get(k, opts)]),
             ["_", positional],
         ])
     }
@@ -269,21 +267,10 @@ export class OptHandler<T extends Record<string, F<any>>> {
      * @param type
      * @returns Value extractor (optional, many)
      */
-    static om(alias: string[], type: "number"): F<number[]>
-    static om(alias: string[], type: "string"): F<string[]>
-    static om(alias: string[], type: "number" | "string"): F<number[] | string[]> {
-        /**
-         *
-         * @param name
-         * @param o
-         * @returns
-         */
-        const h = (name: string, o: Record<string, any>) => o[name]
-        h.alias = alias
-        h.many = true
-        h.required = false
-        h.type = type
-        return h
+    static om(alias: string[], type: "number"): OptWrapper<number[]>
+    static om(alias: string[], type: "string"): OptWrapper<string[]>
+    static om(alias: string[], type: "number" | "string"): OptWrapper<number[] | string[]> {
+        return new OptWrapperMany<any>(alias, type, false)
     }
 
     /**
@@ -292,25 +279,13 @@ export class OptHandler<T extends Record<string, F<any>>> {
      * @param type
      * @returns Value extractor (optional, single)
      */
-    static os(alias: string[], type: "boolean"): F<boolean>
-    static os(alias: string[], type: "number"): F<number | undefined>
-    static os(alias: string[], type: "number", def: number): F<number>
-    static os(alias: string[], type: "string"): F<string | undefined>
-    static os(alias: string[], type: "string", def: string): F<string>
-    static os(alias: string[], type: "boolean" | "number" | "string", def?: number | string): F<boolean | number | string | undefined> {
-        /**
-         *
-         * @param name
-         * @param o
-         * @returns
-         */
-        const h = (name: string, o: Record<string, any>) => o[name]
-        h.alias = alias
-        h.def = def
-        h.many = false
-        h.required = false
-        h.type = type
-        return h
+    static os(alias: string[], type: "boolean"): OptWrapper<boolean>
+    static os(alias: string[], type: "number"): OptWrapper<number | undefined>
+    static os(alias: string[], type: "number", def: number): OptWrapper<number>
+    static os(alias: string[], type: "string"): OptWrapper<string | undefined>
+    static os(alias: string[], type: "string", def: string): OptWrapper<string>
+    static os(alias: string[], type: "boolean" | "number" | "string", def?: number | string): OptWrapper<boolean | number | string | undefined> {
+        return new OptWrapper<any>(alias, type, false, def)
     }
 
     /**
@@ -319,21 +294,10 @@ export class OptHandler<T extends Record<string, F<any>>> {
      * @param type
      * @returns Value extractor (required, many)
      */
-    static rm(alias: string[], type: "number"): F<number[]>
-    static rm(alias: string[], type: "string"): F<string[]>
-    static rm(alias: string[], type: "number" | "string"): F<number[] | string[]> {
-        /**
-         *
-         * @param name
-         * @param o
-         * @returns
-         */
-        const h = (name: string, o: Record<string, any>) => o[name]
-        h.alias = alias
-        h.many = true
-        h.required = true
-        h.type = type
-        return h
+    static rm(alias: string[], type: "number"): OptWrapper<number[]>
+    static rm(alias: string[], type: "string"): OptWrapper<string[]>
+    static rm(alias: string[], type: "number" | "string"): OptWrapper<number[] | string[]> {
+        return new OptWrapperMany<any>(alias, type, true)
     }
 
     /**
@@ -342,20 +306,9 @@ export class OptHandler<T extends Record<string, F<any>>> {
      * @param type
      * @returns Value extractor (required, single)
      */
-    static rs(alias: string[], type: "number"): F<number>
-    static rs(alias: string[], type: "string"): F<string>
-    static rs(alias: string[], type: "number" | "string"): F<number | string> {
-        /**
-         *
-         * @param name
-         * @param o
-         * @returns
-         */
-        const h = (name: string, o: Record<string, any>) => o[name]
-        h.alias = alias
-        h.many = false
-        h.required = true
-        h.type = type
-        return h
+    static rs(alias: string[], type: "number"): OptWrapper<number>
+    static rs(alias: string[], type: "string"): OptWrapper<string>
+    static rs(alias: string[], type: "number" | "string"): OptWrapper<number | string> {
+        return new OptWrapper<any>(alias, type, true)
     }
 }
