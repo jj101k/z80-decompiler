@@ -1,25 +1,14 @@
 /**
- * @abstract
+ *
  */
-export class OptExit {
-    /**
-     * @abstract
-     * @type {number}
-     * @readonly
-     */
-    // @ts-ignore
-    exitCode
-
-    /**
-     * @readonly
-     */
-    message
+export abstract class OptExit {
+    abstract readonly exitCode: number
 
     /**
      *
-     * @param {string} message
+     * @param message
      */
-    constructor(message) {
+    constructor(public readonly message: string) {
         this.message = message
     }
 

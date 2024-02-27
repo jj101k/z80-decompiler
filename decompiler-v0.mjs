@@ -2,78 +2,34 @@ import { DataWalker } from "./lib/DataWalker.mjs"
 import { DecompileWalker } from "./lib/DecompileWalker.mjs"
 import fs from "fs"
 import path from "path"
-import { OptHandler } from "./OptHandler.mjs"
-import { OptExit } from "./OptExit.mjs"
+import { OptHandler } from "./lib-oh/OptHandler.js"
 
 const optHandler = new OptHandler({
-    boolean: ["help", "include-version"],
-    string: ["write-file", "entry-point", "load-point", "start-point"],
-    alias: {
-        "entry-point": ["e"],
-        "help": ["h"],
-        "include-version": ["v"],
-        "load-point": ["l"],
-        "start-point": ["s"],
-        "write-file": ["w"],
-    },
-    default: {
-        "start-point": 1,
-    }
+    entryPoint: OptHandler.om(["e"], "number"),
+    help: OptHandler.os(["h"], "boolean"),
+    includeVersion: OptHandler.os(["v"], "boolean"),
+    loadPoint: OptHandler.rs(["l"], "number"),
+    startPoint: OptHandler.os(["s"], "number", 1),
+    writeFile: OptHandler.os(["w"], "string"),
 }, {
-    requiredKeys: ["load-point"],
-    manyKeys: ["entry-point"],
-    numbers: ["entry-point", "load-point", "start-point"],
     positional: ["filename"],
     help: "help",
 }, process.argv[1])
 
-let opts
-try {
-    opts = optHandler.fromArgv(process.argv)
-} catch(e) {
-    if(e instanceof OptExit) {
-        e.outputAndExit()
-    }
-    throw e
-}
+const opts = optHandler.fromArgvOrExit()
+
+console.log(opts)
 
 /**
  * @type {string | undefined}
  */
 const [filename] = opts._
 
-/**
- * @type {number[]}
- */
-const entryPoints = []
-const entryPointIn = opts["entry-point"]
-if(entryPointIn) {
-    if(entryPointIn instanceof Array) {
-        entryPoints.push(...entryPointIn)
-    } else {
-        entryPoints.push(entryPointIn)
-    }
-}
-
-/**
- * @type {number}
- */
-const loadPoint = opts["load-point"]
-
-/**
- * @type {number}
- */
-const startOffset = opts["start-offset"]
-
-/**
- * @type {string | undefined}
- */
-const writeFilenameSpec = opts["write-file"]
-
-/**
- * @type {boolean}
- */
-const includeVersion = opts["include-version"]
+const entryPoints = opts.entryPoint
+const loadPoint = opts.loadPoint
+const startOffset = opts.startPoint
+const writeFilenameSpec = opts.writeFile
+const includeVersion = opts.includeVersion
 
 /**
  *
