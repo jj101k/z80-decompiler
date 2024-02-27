@@ -22,8 +22,6 @@ const optHandler = new OptHandler({
 
 const opts = optHandler.fromArgvOrExit()
 
-console.log(opts)
-
 const filename = opts.filename
 
 const entryPoints = opts.entryPoint
