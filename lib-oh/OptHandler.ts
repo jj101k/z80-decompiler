@@ -15,7 +15,7 @@ import { ShortOptions } from "./ShortOptions"
 interface OptHandlerOptions<O extends Record<string, OptWrapper>, P extends Record<string, OptWrapper>> {
     /**
      * The options to use. This will automatically translate keys like fooBar to
-     * --foo-bar
+     * --foo-bar, as well as fooBARBaz to --foo-bar-baz
      */
     options: O
     /**
@@ -137,11 +137,22 @@ export class OptHandler<O extends Record<string, OptWrapper>, P extends Record<s
 
     /**
      *
-     * @param k eg. "getAll"
+     * @param k eg. "getAll", "getALL"
      * @returns eg. "--get-all"
      */
     private toCliArg(k: string): string {
-        return "--" + k.replace(/(?<=.)([\p{Lu}]+[\d_\p{Ll}]*)/gu, (a, $1) => `-${$1.toLowerCase()}`)
+        // Either a run of upper-case characters ending the string
+        // Or a run of upper-case characters minus one, if that's before a
+        // lower-case
+        // Or a single upper-case character followed by multiple lower case.
+        //
+        // myDNSFiles -> --my-dns-files
+        // myDNS -> --my-dns
+        // myFiles -> --my-files
+        // totalGForce -> --total-g-force
+        //
+        // Note that this does not treat "s" specially, so myTVs -> my-t-vs.
+        return "--" + k.replace(/(?<=.)(\p{Lu}+$|\p{Lu}+(?=\p{Lu}[\d_\p{Ll}]*)|\p{Lu}[\d_\p{Ll}]*)/gu, (a, $1) => `-${$1.toLowerCase()}`)
     }
 
     /**
