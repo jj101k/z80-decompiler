@@ -14,6 +14,20 @@ import { OptWrapper } from "./OptWrapper"
 export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Record<string, OptWrapper<any>>> {
     /**
      *
+     */
+    private helpOption?: string
+    /**
+     *
+     */
+    private options: T
+
+    /**
+     *
+     */
+    private positional: P
+
+    /**
+     *
      * @param key
      * @param opt
      * @param getExplicitValue
@@ -158,7 +172,10 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
      * @param extendedOptions
      * @param name
      */
-    constructor(private options: T, private positional: P, private extendedOptions: { help?: string }, private name: string) {
+    constructor(options: {options: T, positional: P, help?: string }, private name: string) {
+        this.helpOption = options.help
+        this.options = options.options
+        this.positional = options.positional
     }
     /**
      *
@@ -255,7 +272,7 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
             }
         }
 
-        const helpOption = this.extendedOptions.help
+        const helpOption = this.helpOption
         if (helpOption && opts[helpOption]) {
             throw new OptHelpExit(this.helpMessage)
         }

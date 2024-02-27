@@ -5,15 +5,17 @@ import path from "path"
 import { OptHandler } from "./lib-oh/OptHandler.js"
 
 const optHandler = new OptHandler({
-    entryPoint: OptHandler.om(["e"], "number"),
-    help: OptHandler.os(["h"], "boolean"),
-    includeVersion: OptHandler.os(["v"], "boolean"),
-    loadPoint: OptHandler.rs(["l"], "number"),
-    startPoint: OptHandler.os(["s"], "number", 1),
-    writeFile: OptHandler.os(["w"], "string"),
-}, {
-    filename: OptHandler.rs([], "string"),
-}, {
+    options: {
+        entryPoint: OptHandler.om(["e"], "number"),
+        help: OptHandler.os(["h"], "boolean"),
+        includeVersion: OptHandler.os(["v"], "boolean"),
+        loadPoint: OptHandler.rs(["l"], "number"),
+        startPoint: OptHandler.os(["s"], "number", 1),
+        writeFile: OptHandler.os(["w"], "string"),
+    },
+    positional: {
+        filename: OptHandler.rs([], "string"),
+    },
     help: "help",
 }, process.argv[1])
 
