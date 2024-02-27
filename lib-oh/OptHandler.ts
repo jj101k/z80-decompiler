@@ -75,9 +75,9 @@ export class OptHandler<O extends Record<string, OptWrapper>, P extends Record<s
     private getPositionArgValue<PK extends keyof P>(key: PK & string, opt: OptWrapper, value: string): P[PK]["initialValue"] {
         switch (opt.type) {
             case "boolean":
-                if(value?.match(/^(0|false)$/)) {
+                if (value.match(/^(0|false)$/)) {
                     return false
-                } else if(value?.match(/^(1|true)$/)) {
+                } else if (value.match(/^(1|true)$/)) {
                     return true
                 } else {
                     throw new OptError(`Error: Only 0, 1, true or false are supported for boolean ${key} (${value})`, 9)
@@ -129,13 +129,18 @@ export class OptHandler<O extends Record<string, OptWrapper>, P extends Record<s
      *
      */
     get helpMessage() {
+        const optionalise = (o: string, config: OptWrapper) => {
+            if (config.required) {
+                return config.many ? `${o} [${o}]...` : o
+            } else {
+                return config.many ? `[${o}]...` : `[${o}]`
+            }
+        }
+
         const argComponents = Object.entries(this.options).sort(([a, ac], [b, bc]) => (+!!ac.required - +!!bc.required) || a.localeCompare(b)).map(([s, config]) => {
             let o: string
             const cliArg = this.toCliArg(s)
-            o = [
-                ...config.alias.map(a => `-${a}`),
-                cliArg
-            ].join("|")
+            o = [...config.alias.map(a => `-${a}`), cliArg].join("|")
             if (config.type != "boolean") {
                 if (config.def) {
                     o += ` <${config.type} = ${config.def}>`
@@ -143,26 +148,11 @@ export class OptHandler<O extends Record<string, OptWrapper>, P extends Record<s
                     o += ` <${config.type}>`
                 }
             }
-            if (config.required) {
-                return config.many ? `${o} [${o}]...` : o
-            } else {
-                return config.many ? `[${o}]...` : `[${o}]`
-            }
+            return optionalise(o, config)
         })
 
-        const positional = Object.entries(this.positional).map(([s, config]) => {
-            const o = `<${s}>`
-            if (config.required) {
-                return config.many ? `${o} [${o}]...` : o
-            } else {
-                return config.many ? `[${o}]...` : `[${o}]`
-            }
-        })
-        const components = [
-            this.name,
-            ...argComponents,
-            ...positional
-        ]
+        const positional = Object.entries(this.positional).map(([s, config]) => optionalise(`<${s}>`, config))
+        const components = [this.name, ...argComponents, ...positional]
         return `Usage: ${components.join(" ")}`
     }
 
@@ -173,7 +163,7 @@ export class OptHandler<O extends Record<string, OptWrapper>, P extends Record<s
      * @param extendedOptions
      * @param name
      */
-    constructor(options: {options: O, positional: P, help?: string }, private name: string) {
+    constructor(options: { options: O, positional: P, help?: string }, private name: string) {
         this.helpOption = options.help
         this.options = options.options
         this.positional = options.positional
@@ -213,12 +203,11 @@ export class OptHandler<O extends Record<string, OptWrapper>, P extends Record<s
      * @returns
      */
     fromProgramArgs(args: string[]): { [k in keyof O]: O[k]["initialValue"] } & { [k in keyof P]: P[k]["initialValue"] } {
-        const canonicalNameOf: Record<string, string> = {}
-        const knownShortOpts: Record<string, OptWrapper> = {}
+        const knownShortOpts: Record<string, { canonicalName: string, opt: OptWrapper }> = {}
         for (const [k, v] of Object.entries(this.options)) {
+            const config = { canonicalName: k, opt: v }
             for (const a of v.alias) {
-                knownShortOpts[a] = v
-                canonicalNameOf[a] = k
+                knownShortOpts[a] = config
             }
         }
 
@@ -245,12 +234,12 @@ export class OptHandler<O extends Record<string, OptWrapper>, P extends Record<s
                 // Short opts.
                 let optionCode: string | undefined
                 while (optionCode = parsed.next()) {
-                    const opt = knownShortOpts[optionCode]
-                    if (!opt) {
+                    const config = knownShortOpts[optionCode]
+                    if (!config) {
                         throw new OptError(`Error: Unrecognised short option ${parsed.prevOption} in ${parsed.literalArgument}`, 3)
                     }
-                    const cName = canonicalNameOf[optionCode]
-                    opts.addOptArg(cName, this.getArgValue(parsed.prevOption!, opt, () => parsed.rest.length ? parsed.rest : mArgs.shift()))
+                    const cName = config.canonicalName
+                    opts.addOptArg(cName, this.getArgValue(parsed.prevOption!, config.opt, () => parsed.rest.length ? parsed.rest : mArgs.shift()))
                 }
             } else if (parsed instanceof AbortProcessingSymbol) {
                 // Stop processing
@@ -266,15 +255,15 @@ export class OptHandler<O extends Record<string, OptWrapper>, P extends Record<s
             throw new OptHelpExit(this.helpMessage)
         }
 
-        for(const [name, opt] of Object.entries(this.positional)) {
+        for (const [name, opt] of Object.entries(this.positional)) {
             const v = positional.shift()
-            if(v === undefined && opt.required) {
+            if (v === undefined && opt.required) {
                 throw new OptError(`Argument <${name}> is required.\n${this.helpMessage}`, 1)
             }
-            if(v !== undefined) {
+            if (v !== undefined) {
                 opts.addPositionArg(name, this.getPositionArgValue(name, opt, v))
-                if(opt.many) {
-                    for(const nv of positional) {
+                if (opt.many) {
+                    for (const nv of positional) {
                         opts.addPositionArg(name, this.getPositionArgValue(name, opt, nv))
                     }
                     positional.splice(0) // Empties
