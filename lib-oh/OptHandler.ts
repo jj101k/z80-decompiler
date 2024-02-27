@@ -26,32 +26,6 @@ export class OptHandler<T extends Record<string, F<any>>> {
 
     /**
      *
-     */
-    private get optionConfig() {
-        const options = this.options
-        return {
-            boolean: Object.entries(options).filter(([, c]) => c.type == "boolean").map(([k]) => this.convert(k)),
-            string: Object.entries(options).filter(([, c]) => c.type == "string").map(([k]) => this.convert(k)),
-            alias: Object.fromEntries(
-                Object.entries(options).filter(([, c]) => c.alias.length).map(([k, c]) => [this.convert(k), c.alias])
-            ),
-            default: Object.fromEntries(
-                Object.entries(options).filter(([, c]) => c.def !== undefined).map(([k, c]) => [this.convert(k), c.def])
-            ),
-        }
-    }
-
-    /**
-     *
-     * @param s
-     * @returns
-     */
-    private convert(s: string) {
-        return s.replace(/([A-Z]+)/g, (_, $1) => "-" + $1.toLowerCase())
-    }
-
-    /**
-     *
      * @param arg
      * @returns
      */
@@ -82,65 +56,9 @@ export class OptHandler<T extends Record<string, F<any>>> {
      *
      */
     get helpMessage() {
-        type f = {alias: string[], default?: string, hint: string | undefined, many: boolean, required: boolean}
-
         const {positional, positionalOptional, positionalVar} = this.extendedOptions
 
-        const numbers = [...Object.entries(this.options).filter(([, c]) => c.type == "number").map(([k]) => k)]
-        const requiredKeys = [...Object.entries(this.options).filter(([, c]) => c.required).map(([k]) => k)]
-        const manyKeys = [...Object.entries(this.options).filter(([, c]) => c.many).map(([k]) => k)]
-
-        const optionConfig = this.optionConfig
-
-        const options: Record<string, f> = {}
-
-        const aliases: Record<string, string[]> = {}
-
-        const canonicalNameOf: Record<string, string> = {}
-        for (const [long, short] of Object.entries(optionConfig.alias)) {
-            const shortA = Array.isArray(short) ? short : [short]
-            for (const s of shortA) {
-                canonicalNameOf[s] = long
-            }
-            canonicalNameOf[long] = long
-            aliases[long] = shortA
-        }
-
-        /**
-         *
-         * @param k
-         * @param hint
-         */
-        const addOption = (k: string, hint?: string) => {
-            if(!canonicalNameOf[k]) {
-                canonicalNameOf[k] = k
-                aliases[k] = []
-            }
-            const canonicalName = canonicalNameOf[k]
-            const allNames = [canonicalName, ...aliases[k]]
-
-            const c: f = {
-                alias: aliases[canonicalName],
-                hint: numbers.includes(canonicalName) ? "number" : hint,
-                many: manyKeys.includes(canonicalName),
-                required: requiredKeys.includes(canonicalName),
-            }
-            for(const n of allNames) {
-                if (n in optionConfig.default) {
-                    c.default = optionConfig.default[n]
-                }
-            }
-
-            options[canonicalName] = c
-        }
-        for (const k of optionConfig.boolean) {
-            addOption(k)
-        }
-        for (const k of optionConfig.string) {
-            addOption(k, "string")
-        }
-
-        const argComponents = Object.entries(options).sort(([a, ac], [b, bc]) => (+!!ac.required - +!!bc.required) || a.localeCompare(b)).map(([s, config]) => {
+        const argComponents = Object.entries(this.options).sort(([a, ac], [b, bc]) => (+!!ac.required - +!!bc.required) || a.localeCompare(b)).map(([s, config]) => {
             let o: string
             if (config.alias) {
                 o = [
@@ -150,11 +68,11 @@ export class OptHandler<T extends Record<string, F<any>>> {
             } else {
                 o = `-${s}`
             }
-            if (config.hint) {
-                if (config.default) {
-                    o += ` <${config.hint} = ${config.default}>`
+            if (config.type != "boolean") {
+                if (config.def) {
+                    o += ` <${config.type} = ${config.def}>`
                 } else {
-                    o += ` <${config.hint}>`
+                    o += ` <${config.type}>`
                 }
             }
             if (config.required) {
