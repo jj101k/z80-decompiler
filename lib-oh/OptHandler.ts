@@ -49,11 +49,11 @@ export class OptHandler<T extends Record<string, F<any>>> {
 
     /**
      *
-     * @param k
-     * @returns
+     * @param k eg. "getAll"
+     * @returns eg. "--get-all"
      */
     private toCliArg(k: string): string {
-        return k.replace(/(?<=.)([\p{Lu}]+[\d_\p{Ll}]*)/gu, (a, $1) => `-${$1.toLowerCase()}`)
+        return "--" + k.replace(/(?<=.)([\p{Lu}]+[\d_\p{Ll}]*)/gu, (a, $1) => `-${$1.toLowerCase()}`)
     }
 
     /**
@@ -72,7 +72,7 @@ export class OptHandler<T extends Record<string, F<any>>> {
             const cliArg = this.toCliArg(s)
             o = [
                 ...config.alias.map(a => `-${a}`),
-                `--${cliArg}`
+                cliArg
             ].join("|")
             if (config.type != "boolean") {
                 if (config.def) {
@@ -163,19 +163,18 @@ export class OptHandler<T extends Record<string, F<any>>> {
             const parsed = this.parseArg(arg)
             if(parsed instanceof LongOption) {
                 // Long opt.
-                const {name, value} = parsed
-                const cName = cNames[name]
+                const cName = cNames[parsed.key]
                 const opt = this.options[cName]
                 if(!opt) {
                     throw new OptError(`Error: Unrecognised long option ${parsed.key}`, 5)
                 }
                 if(opt.type == "boolean") {
-                    if(value !== null) {
+                    if(parsed.value !== null) {
                         throw new OptError(`Error: Argument supplied for boolean option ${parsed.key}`, 6)
                     }
                     opts[cName] = true
-                } else if(value !== null) {
-                    opts[cName] = value
+                } else if(parsed.value !== null) {
+                    opts[cName] = parsed.value
                 } else {
                     const value = mArgs.shift()
                     if(value === undefined) {
