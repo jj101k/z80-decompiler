@@ -33,19 +33,32 @@ export class OptHandler<T extends Record<string, F<any>>> {
      * @returns
      */
     private getArgValue(key: string, opt: F<any>, getExplicitValue: () => string | undefined, value?: string) {
-        if(opt.type == "boolean") {
-            if(value !== undefined) {
-                throw new OptError(`Error: Argument supplied for boolean option ${key}`, 6)
-            }
-            return true
-        } else if(value !== undefined) {
-            return value
-        } else {
+        /**
+         *
+         * @returns
+         */
+        const getExplicitValueOrThrow = () => {
             const value = getExplicitValue()
             if(value === undefined) {
                 throw new OptError(`Error: Option ${key} required an argument`, 7)
             }
             return value
+        }
+        switch(opt.type) {
+            case "boolean":
+                if(value !== undefined) {
+                    throw new OptError(`Error: Argument supplied for boolean option ${key}`, 6)
+                }
+                return true
+            case "number": {
+                const v = value ?? getExplicitValueOrThrow()
+                if(Number.isNaN(v)) {
+                    throw new OptError(`Error: Argument must be numeric for ${key}`, 6)
+                }
+                return +v
+            }
+            case "string":
+                return value ?? getExplicitValueOrThrow()
         }
     }
 
@@ -245,24 +258,7 @@ export class OptHandler<T extends Record<string, F<any>>> {
         }
 
         return Object.fromEntries([
-            ...Object.entries(this.options).map(([k, o]) => {
-                const v = o(k, opts)
-                if(Array.isArray(v)) {
-                    if(o.type == "number") {
-                        return [k, v.map(vi => +vi)]
-                    } else {
-                        // string is native.
-                        return [k, v]
-                    }
-                } else {
-                    if(o.type == "number") {
-                        return [k, +v]
-                    } else {
-                        // boolean, string are native.
-                        return [k, v]
-                    }
-                }
-            }),
+            ...Object.entries(this.options).map(([k, o]) => [k, o(k, opts)]),
             ["_", positional],
         ])
     }
