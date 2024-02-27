@@ -114,8 +114,6 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
      *
      */
     get helpMessage() {
-        const { positional, positionalOptional, positionalVar } = this.extendedOptions
-
         const argComponents = Object.entries(this.options).sort(([a, ac], [b, bc]) => (+!!ac.required - +!!bc.required) || a.localeCompare(b)).map(([s, config]) => {
             let o: string
             const cliArg = this.toCliArg(s)
@@ -136,15 +134,20 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
                 return config.many ? `[${o}]...` : `[${o}]`
             }
         })
+
+        const positional = Object.entries(this.positional).map(([s, config]) => {
+            const o = `<${s}>`
+            if (config.required) {
+                return config.many ? `${o} [${o}]...` : o
+            } else {
+                return config.many ? `[${o}]...` : `[${o}]`
+            }
+        })
         const components = [
             this.name,
             ...argComponents,
-            ...(positional ?? []).map(p => `<${p}>`),
-            ...(positionalOptional ?? []).map(p => `[<${p}>]`),
+            ...positional
         ]
-        if (positionalVar) {
-            components.push(`[<${positionalVar}>]...`)
-        }
         return `Usage: ${components.join(" ")}`
     }
 
@@ -155,7 +158,7 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
      * @param extendedOptions
      * @param name
      */
-    constructor(private options: T, private positional: P, private extendedOptions: { positional?: string[], positionalOptional?: string[], positionalVar?: string, help?: string }, private name: string) {
+    constructor(private options: T, private positional: P, private extendedOptions: { help?: string }, private name: string) {
     }
     /**
      *
@@ -256,21 +259,11 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
         if (helpOption && opts[helpOption]) {
             throw new OptHelpExit(this.helpMessage)
         }
-        const positionalMin = (this.extendedOptions.positional?.length ?? 0)
-        const positionalMax = this.extendedOptions.positionalVar ? Infinity :
-            (positionalMin + (this.extendedOptions.positionalOptional?.length ?? 0))
-
-        if (positional.length < positionalMin) {
-            throw new OptError(`Too few arguments (${positional.length} < ${positionalMin}).\n${this.helpMessage}`, 1)
-        }
-        if (positional.length > positionalMax) {
-            throw new OptError(`Too many arguments (${positional.length} > ${positionalMax}).\n${this.helpMessage}`, 2)
-        }
 
         for(const [k, o] of Object.entries(this.positional)) {
             const v = positional.shift()
             if(v === undefined && o.required) {
-                throw new OptError(`Argument ${k} is required.\n${this.helpMessage}`, 8)
+                throw new OptError(`Argument <${k}> is required.\n${this.helpMessage}`, 1)
             }
             if(v !== undefined) {
                 addArg(k, this.getPositionArgValue(k, o, v))
@@ -281,6 +274,10 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
                     positional.splice(0) // Empties
                 }
             }
+        }
+
+        if (positional.length) {
+            throw new OptError(`Too many arguments at: ${positional[0]}.\n${this.helpMessage}`, 2)
         }
 
         return opts

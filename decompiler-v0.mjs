@@ -14,7 +14,6 @@ const optHandler = new OptHandler({
 }, {
     filename: OptHandler.rs([], "string"),
 }, {
-    positional: ["filename"],
     help: "help",
 }, process.argv[1])
 
