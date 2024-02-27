@@ -12,6 +12,25 @@ import { ShortOptions } from "./ShortOptions"
 /**
  *
  */
+interface OptHandlerOptions<O extends Record<string, OptWrapper>, P extends Record<string, OptWrapper>> {
+    /**
+     * The options to use. This will automatically translate keys like fooBar to
+     * --foo-bar
+     */
+    options: O
+    /**
+     * The positional arguments, in the order they appear.
+     */
+    positional: P
+    /**
+     * Which of the options (if any) is the help argument.
+     */
+    help?: string
+}
+
+/**
+ *
+ */
 export class OptHandler<O extends Record<string, OptWrapper>, P extends Record<string, OptWrapper>> {
     /**
      *
@@ -159,11 +178,9 @@ export class OptHandler<O extends Record<string, OptWrapper>, P extends Record<s
     /**
      *
      * @param options
-     * @param positional
-     * @param extendedOptions
      * @param name
      */
-    constructor(options: { options: O, positional: P, help?: string }, private name: string) {
+    constructor(options: OptHandlerOptions<O, P>, private name: string) {
         this.helpOption = options.help
         this.options = options.options
         this.positional = options.positional
