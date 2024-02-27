@@ -1,18 +1,18 @@
-import { OptHelpExit } from "./OptHelpExit"
-import { OptError } from "./OptError"
-import { OptExit } from "./OptExit"
-import { LongOption } from "./LongOption"
-import { ShortOptions } from "./ShortOptions"
 import { AbortProcessingSymbol } from "./AbortProcessingSymbol"
 import { LiteralArgument } from "./LiteralArgument"
-import { OptWrapperMany } from "./OptWrapperMany"
-import { OptWrapper } from "./OptWrapper"
+import { LongOption } from "./LongOption"
 import { NodeProcessLike } from "./NodeProcessLike"
+import { OptError } from "./OptError"
+import { OptExit } from "./OptExit"
+import { OptHelpExit } from "./OptHelpExit"
+import { OptWrapper } from "./OptWrapper"
+import { Opts } from "./Opts"
+import { ShortOptions } from "./ShortOptions"
 
 /**
  *
  */
-export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Record<string, OptWrapper<any>>> {
+export class OptHandler<O extends Record<string, OptWrapper>, P extends Record<string, OptWrapper>> {
     /**
      *
      */
@@ -20,7 +20,7 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
     /**
      *
      */
-    private options: T
+    private options: O
 
     /**
      *
@@ -35,7 +35,7 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
      * @param value
      * @returns
      */
-    private getArgValue(key: string, opt: OptWrapper<any>, getExplicitValue: () => string | undefined, value?: string) {
+    private getArgValue(key: string, opt: OptWrapper, getExplicitValue: () => string | undefined, value?: string) {
         /**
          *
          * @returns
@@ -72,7 +72,7 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
      * @param value
      * @returns
      */
-    private getPositionArgValue(key: string, opt: OptWrapper<any>, value: string) {
+    private getPositionArgValue<PK extends keyof P>(key: PK & string, opt: OptWrapper, value: string): P[PK]["initialValue"] {
         switch (opt.type) {
             case "boolean":
                 if(value?.match(/^(0|false)$/)) {
@@ -173,7 +173,7 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
      * @param extendedOptions
      * @param name
      */
-    constructor(options: {options: T, positional: P, help?: string }, private name: string) {
+    constructor(options: {options: O, positional: P, help?: string }, private name: string) {
         this.helpOption = options.help
         this.options = options.options
         this.positional = options.positional
@@ -212,9 +212,9 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
      * @param args
      * @returns
      */
-    fromProgramArgs(args: string[]): { [k in keyof T]: T[k]["initialValue"] } & { [k in keyof P]: P[k]["initialValue"] } {
+    fromProgramArgs(args: string[]): { [k in keyof O]: O[k]["initialValue"] } & { [k in keyof P]: P[k]["initialValue"] } {
         const canonicalNameOf: Record<string, string> = {}
-        const knownShortOpts: Record<string, OptWrapper<any>> = {}
+        const knownShortOpts: Record<string, OptWrapper> = {}
         for (const [k, v] of Object.entries(this.options)) {
             for (const a of v.alias) {
                 knownShortOpts[a] = v
@@ -222,30 +222,13 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
             }
         }
 
-        const opts = Object.fromEntries([
-            ...Object.entries(this.options).map(([k, o]) => [k, o.initialValue]),
-            ...Object.entries(this.positional).map(([k, o]) => [k, o.initialValue])
-        ])
+        const opts = new Opts(this.options, this.positional)
         const positional: string[] = []
         const mArgs = args.slice()
 
         const cNames = Object.fromEntries(
             Object.keys(this.options).map(k => [this.toCliArg(k), k])
         )
-
-        /**
-         *
-         * @param name
-         * @param value
-         */
-        const addArg = (name: string, value: any) => {
-            const existing = opts[name]
-            if (Array.isArray(existing)) {
-                existing.push(value)
-            } else {
-                opts[name] = value
-            }
-        }
 
         let arg: string | undefined
         while ((arg = mArgs.shift()) !== undefined) {
@@ -257,7 +240,7 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
                 if (!opt) {
                     throw new OptError(`Error: Unrecognised long option ${parsed.key}`, 5)
                 }
-                addArg(cName, this.getArgValue(parsed.key, opt, () => mArgs.shift(), parsed.value))
+                opts.addOptArg(cName, this.getArgValue(parsed.key, opt, () => mArgs.shift(), parsed.value))
             } else if (parsed instanceof ShortOptions) {
                 // Short opts.
                 let optionCode: string | undefined
@@ -267,7 +250,7 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
                         throw new OptError(`Error: Unrecognised short option ${parsed.prevOption} in ${parsed.literalArgument}`, 3)
                     }
                     const cName = canonicalNameOf[optionCode]
-                    addArg(cName, this.getArgValue(parsed.prevOption!, opt, () => parsed.rest.length ? parsed.rest : mArgs.shift()))
+                    opts.addOptArg(cName, this.getArgValue(parsed.prevOption!, opt, () => parsed.rest.length ? parsed.rest : mArgs.shift()))
                 }
             } else if (parsed instanceof AbortProcessingSymbol) {
                 // Stop processing
@@ -279,20 +262,20 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
         }
 
         const helpOption = this.helpOption
-        if (helpOption && opts[helpOption]) {
+        if (helpOption && opts.values[helpOption]) {
             throw new OptHelpExit(this.helpMessage)
         }
 
-        for(const [k, o] of Object.entries(this.positional)) {
+        for(const [name, opt] of Object.entries(this.positional)) {
             const v = positional.shift()
-            if(v === undefined && o.required) {
-                throw new OptError(`Argument <${k}> is required.\n${this.helpMessage}`, 1)
+            if(v === undefined && opt.required) {
+                throw new OptError(`Argument <${name}> is required.\n${this.helpMessage}`, 1)
             }
             if(v !== undefined) {
-                addArg(k, this.getPositionArgValue(k, o, v))
-                if(o.many) {
+                opts.addPositionArg(name, this.getPositionArgValue(name, opt, v))
+                if(opt.many) {
                     for(const nv of positional) {
-                        addArg(k, this.getPositionArgValue(k, o, nv))
+                        opts.addPositionArg(name, this.getPositionArgValue(name, opt, nv))
                     }
                     positional.splice(0) // Empties
                 }
@@ -303,6 +286,6 @@ export class OptHandler<T extends Record<string, OptWrapper<any>>, P extends Rec
             throw new OptError(`Too many arguments at: ${positional[0]}.\n${this.helpMessage}`, 2)
         }
 
-        return opts
+        return opts.values
     }
 }

@@ -3,7 +3,7 @@ import { TypeHintExplicit, TypeHintImplicit } from "./TypeHint"
 /**
  *
  */
-export class OptWrapper<T> {
+export class OptWrapper<T = any> {
     /**
      *
      */

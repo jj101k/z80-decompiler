@@ -24,7 +24,7 @@ export class OptWrappers {
             case "string[]":
                 return new OptWrapperMany<any>(aliases, "string", false)
             default:
-                return new OptWrapper<any>(aliases, type, false)
+                return new OptWrapper(aliases, type, false)
         }
     }
 
@@ -38,7 +38,7 @@ export class OptWrappers {
     static optDefault(type: "number", def: number, ...aliases: string[]): OptWrapper<number>
     static optDefault(type: "string", def: string, ...aliases: string[]): OptWrapper<string>
     static optDefault(type: TypeHintExplicit, def: number | string, ...aliases: string[]): OptWrapper<boolean | number | string> {
-        return new OptWrapper<any>(aliases, type, false, def)
+        return new OptWrapper(aliases, type, false, def)
     }
 
     /**
@@ -58,7 +58,7 @@ export class OptWrappers {
             case "string[]":
                 return new OptWrapperMany<any>(aliases, "string", true)
             default:
-                return new OptWrapper<any>(aliases, type, true)
+                return new OptWrapper(aliases, type, true)
         }
     }
 }
