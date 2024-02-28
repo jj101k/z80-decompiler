@@ -1,9 +1,8 @@
+import { OptHandler, OptWrappers } from "opt-handler"
 import { DataWalker } from "./lib/DataWalker.mjs"
 import { DecompileWalker } from "./lib/DecompileWalker.mjs"
 import fs from "fs"
 import path from "path"
-import { OptHandler } from "./lib-oh/OptHandler.js"
-import { OptWrappers } from "./lib-oh/OptWrappers.js"
 
 const optHandler = new OptHandler({
     options: {
