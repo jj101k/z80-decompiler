@@ -26,6 +26,9 @@ interface OptHandlerOptions<O extends Record<string, OptWrapper>, P extends Reco
      *
      * This does also support having a series of required single arguments
      * followed by a required multiple argument for cases where that makes sense.
+     *
+     * As a special accommodation to UNIX convention, this also supports having
+     * a series of fixed single arguments at the end.
      */
     positional: P
     /**
@@ -312,7 +315,47 @@ export class OptHandler<O extends Record<string, OptWrapper>, P extends Record<s
             throw new OptHelpExit(this.helpMessage)
         }
 
+        if(Object.values(this.positional).some(opt => opt.many)) {
+
+        }
+
+        const seen = new Set<string>()
+
+        // Careful ordering here to support having variable items in the middle.
+        // 1. Required single args at the start
         for (const [name, opt] of Object.entries(this.positional)) {
+            if(opt.many || !opt.required) {
+                break
+            }
+            seen.add(name)
+            const v = positional.shift()
+            if (v === undefined) {
+                throw new OptError(`Argument <${name}> is required.\n${this.helpMessage}`, 1)
+            }
+            opts.addPositionArg(name, this.getPositionArgValue(name, opt, v))
+        }
+
+        // 2. Required single args at the end
+        for (const [name, opt] of Object.entries(this.positional).reverse()) {
+            if(opt.many || !opt.required) {
+                break
+            }
+            if(seen.has(name)) {
+                break // This would happen if all were required-single.
+            }
+            seen.add(name)
+            const v = positional.pop()
+            if (v === undefined) {
+                throw new OptError(`Argument <${name}> is required.\n${this.helpMessage}`, 1)
+            }
+            opts.addPositionArg(name, this.getPositionArgValue(name, opt, v))
+        }
+
+        // 3. Everything else
+        for (const [name, opt] of Object.entries(this.positional)) {
+            if(seen.has(name)) {
+                continue
+            }
             const v = positional.shift()
             if (v === undefined && opt.required) {
                 throw new OptError(`Argument <${name}> is required.\n${this.helpMessage}`, 1)
