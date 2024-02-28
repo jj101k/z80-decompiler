@@ -19,7 +19,13 @@ interface OptHandlerOptions<O extends Record<string, OptWrapper>, P extends Reco
      */
     options: O
     /**
-     * The positional arguments, in the order they appear.
+     * The positional arguments, in the order they appear. This broadly follows
+     * the convention of method arguments, which means fixed-count (required,
+     * single) arguments first, then 0-1 count (optional, single) then a
+     * possible single final 0+ count (optional, multi) argument at the end.
+     *
+     * This does also support having a series of required single arguments
+     * followed by a required multiple argument for cases where that makes sense.
      */
     positional: P
     /**
@@ -32,6 +38,27 @@ interface OptHandlerOptions<O extends Record<string, OptWrapper>, P extends Reco
  *
  */
 export class OptHandler<O extends Record<string, OptWrapper>, P extends Record<string, OptWrapper>> {
+    /**
+     *
+     * @param options
+     */
+    public static assertValidOptions(options: OptHandlerOptions<Record<string, OptWrapper>, Record<string, OptWrapper>>): void {
+        let seenVariablePositional = false
+        let seenMultiPositional = false
+        for (const v of Object.values(options.positional)) {
+            if (seenVariablePositional && v.required) {
+                throw new Error("Required positional arguments provided after optional positional arguments")
+            }
+            if (seenMultiPositional) {
+                throw new Error("Arguments provided after spread positional arguments")
+            }
+            if (v.many) {
+                seenMultiPositional = seenVariablePositional = true
+            } else if (!v.required) {
+                seenVariablePositional = true
+            }
+        }
+    }
     /**
      *
      */
@@ -192,10 +219,12 @@ export class OptHandler<O extends Record<string, OptWrapper>, P extends Record<s
      * @param name
      */
     constructor(options: OptHandlerOptions<O, P>, private name: string) {
+        OptHandler.assertValidOptions(options)
         this.helpOption = options.help
         this.options = options.options
         this.positional = options.positional
     }
+
     /**
      *
      * @param argv
