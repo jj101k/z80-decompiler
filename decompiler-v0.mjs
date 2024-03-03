@@ -11,14 +11,14 @@ const optHandler = new OptHandler({
         writeFile: OptWrappers.opt("string", "w"),
     },
     positional: {
-        filename: OptWrappers.req("string"),
+        filenames: OptWrappers.req("string[]"),
     },
     help: "help",
 }, process.argv[1])
 
 const opts = optHandler.fromArgvOrExit(process)
 
-const filename = opts.filename
+const filenames = opts.filenames
 
 const entryPoints = opts.entryPoint
 const loadPoint = opts.loadPoint
@@ -26,13 +26,19 @@ const startOffset = opts.startPoint
 const writeFilenameSpec = opts.writeFile
 Decompiler.includeVersion = opts.includeVersion
 
-console.warn(`Reading ${filename}`)
+/**
+ * @type {Decompiler[]}
+ */
+const decompilers = []
+for(const filename of filenames) {
+    console.warn(`Reading ${filename}`)
 
-const d = new Decompiler(filename, +loadPoint, +startOffset, writeFilenameSpec)
-if(d.writeFilename) {
-    console.log(`Writing ${d.writeFilename}`)
+    const d = new Decompiler(filename, +loadPoint, +startOffset, writeFilenameSpec)
+    if(d.writeFilename) {
+        console.log(`Writing ${d.writeFilename}`)
+    }
+    decompilers.push(d)
 }
-const decompilers = [d]
 for(const decompiler of decompilers) {
     /**
      * @type {number | undefined | null}

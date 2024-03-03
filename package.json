@@ -1,6 +1,7 @@
 {
   "devDependencies": {
-    "@types/node": "^18.11.18"
+    "@types/node": "^18.11.18",
+    "eslint": "^8.57.0"
   },
   "dependencies": {
     "opt-handler": "github:jj101k/opt-handler"
