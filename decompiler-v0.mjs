@@ -1,6 +1,4 @@
-import fs from "fs"
 import { OptHandler, OptWrappers } from "opt-handler"
-import path from "path"
 import { Decompiler } from "./lib/Decompiler.mjs"
 
 const optHandler = new OptHandler({
