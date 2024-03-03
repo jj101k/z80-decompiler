@@ -1,8 +1,7 @@
-import { OptHandler, OptWrappers } from "opt-handler"
-import { DataWalker } from "./lib/DataWalker.mjs"
-import { DecompileWalker } from "./lib/DecompileWalker.mjs"
 import fs from "fs"
+import { OptHandler, OptWrappers } from "opt-handler"
 import path from "path"
+import { Decompiler } from "./lib/Decompiler.mjs"
 
 const optHandler = new OptHandler({
     options: {
@@ -27,129 +26,33 @@ const entryPoints = opts.entryPoint
 const loadPoint = opts.loadPoint
 const startOffset = opts.startPoint
 const writeFilenameSpec = opts.writeFile
-const includeVersion = opts.includeVersion
-
-/**
- *
- */
-const decompilerVersion = 2
-
-/**
- * @type {string | undefined}
- */
-let writeFilename
-if(writeFilenameSpec) {
-    if(writeFilenameSpec.endsWith("/") || (fs.existsSync(writeFilenameSpec) && fs.statSync(writeFilenameSpec).isDirectory())) {
-        const fileInBaseRoot = path.basename(filename).replace(/[.]tap$/, "")
-        let fileOutBase
-
-        if(includeVersion) {
-            fileOutBase = fileInBaseRoot + ".v" + decompilerVersion + ".txt"
-        } else {
-            fileOutBase = fileInBaseRoot + ".txt"
-        }
-        writeFilename = path.resolve(writeFilenameSpec, fileOutBase)
-    } else {
-        writeFilename = writeFilenameSpec
-    }
-}
+Decompiler.includeVersion = opts.includeVersion
 
 console.warn(`Reading ${filename}`)
-if(writeFilename) {
-    console.log(`Writing ${writeFilename}`)
+
+const d = new Decompiler(filename, +loadPoint, +startOffset, writeFilenameSpec)
+if(d.writeFilename) {
+    console.log(`Writing ${d.writeFilename}`)
 }
-
-/**
- *
- * @param {string} filename
- * @param {number} loadPoint
- * @param {number} startOffset
- */
-function decode(filename, loadPoint, startOffset) {
-    if(!filename.match(/[.]tap$/)) {
-        console.warn(`WARNING: this is only for .tap files, not: ${filename}`)
-    }
-    const size = fs.statSync(filename).size
-    if(size > 65536) {
-        console.warn(`WARNING: this is designed for a 16-bit address space, but ${filename} is larger (${size})`)
-    }
-    const contents = fs.readFileSync(filename)
-
-    const dw = new DataWalker(contents.subarray(startOffset))
-    const decompile = new DecompileWalker(dw, loadPoint)
-
-    for(const entryPoint of entryPoints) {
-        decompile.addTarget(entryPoint, "fn")
-    }
-    let bytesParsed = 0
-
+const decompilers = [d]
+for(const decompiler of decompilers) {
     /**
-     *
+     * @type {number | undefined | null}
      */
-    const traceLength = 10
-    /**
-     * @type {number[]}
-     */
-    const trace = []
-
-    /**
-     *
-     */
-    const writeToConsole = () => {
-        if(includeVersion) {
-            console.log("; v" + decompilerVersion)
-        }
-        for (const l of decompile.dump()) {
-            console.log(l)
-        }
-    }
-
-    const writeOut = () => {
-        if(writeFilename) {
-            const fh = fs.openSync(writeFilename, "wx")
-            for (const l of decompile.dump()) {
-                fs.writeSync(fh, l + "\n")
-            }
-            fs.closeSync(fh)
-        } else {
-            writeToConsole()
-        }
-    }
-
+    let i
     try {
-        for (let i = 0; i < 10_000; i++) {
-            const startPoint = dw.offset
-
-            if(i >= traceLength) {
-                trace.shift()
-            }
-            trace.push(startPoint)
-            const n = decompile.decode()
-            if (!n) {
-                console.warn(`Last ${traceLength} PC values:`)
-                for(const o of trace) {
-                    console.warn(decompile.addr(o + loadPoint))
-                }
-                dw.offset = startPoint
-                throw new Error(`Cannot decode value at offset ${decompile.addr(startPoint + loadPoint)} after ${i} points (${bytesParsed} bytes) mapped: ${decompile.u8(...dw.inspect())}`)
-            }
-            const byteLength = decompile.lastEndPoint - startPoint
-            bytesParsed += byteLength
-            if (decompile.finished) {
-                writeOut()
-                console.warn(`Stop after ${i} - nothing left to examine`)
-                break
-            }
-        }
+        i = decompiler.decode(entryPoints)
     } catch (e) {
         try {
-            writeToConsole()
+            decompiler.onError()
         } finally {
             console.error(e)
         }
     }
+
+    if ((i ?? null) !== null) {
+        decompiler.write()
+        console.warn(`Stop after ${i} - nothing left to examine`)
+    }
 }
-
-decode(filename, +loadPoint, +startOffset)
-
 // See DECOMPILER.md
