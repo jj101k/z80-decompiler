@@ -6,7 +6,7 @@ const optHandler = new OptHandler({
         entryPoint: OptWrappers.opt("number[]", "e"),
         help: OptWrappers.opt("boolean", "h"),
         includeVersion: OptWrappers.opt("boolean", "v"),
-        loadPoint: OptWrappers.req("number", "l"),
+        loadPoint: OptWrappers.opt("number", "l"),
         startPoint: OptWrappers.optDefault("number", 1, "s"),
         writeFile: OptWrappers.opt("string", "w"),
     },
@@ -30,10 +30,37 @@ Decompiler.includeVersion = opts.includeVersion
  * @type {Decompiler[]}
  */
 const decompilers = []
-for(const filename of filenames) {
+for(const filenameSpec of filenames) {
+    /**
+     * @type {string}
+     */
+    let filename
+    let loadPointCurrent
+    let startOffsetCurrent
+    let md
+    if((md = filenameSpec.match(/(.+)@(0x([a-f0-9]+)|([0-9]+))(?:[+](\d+))?$/))) {
+        filename = md[1]
+        if(md[2]) {
+            loadPointCurrent = Number.parseInt(md[2], 16)
+        } else {
+            loadPointCurrent = +md[3]
+        }
+        if(md[4]) {
+            startOffsetCurrent = +md[4]
+        } else {
+            startOffsetCurrent = startOffset
+        }
+    } else {
+        filename = filenameSpec
+        if(!loadPoint) {
+            throw new Error(`No load point supplied for ${filenameSpec}`)
+        }
+        loadPointCurrent = loadPoint
+        startOffsetCurrent = startOffset
+    }
     console.warn(`Reading ${filename}`)
 
-    const d = new Decompiler(filename, +loadPoint, +startOffset, writeFilenameSpec)
+    const d = new Decompiler(filename, loadPointCurrent, startOffsetCurrent, writeFilenameSpec)
     if(d.writeFilename) {
         console.log(`Writing ${d.writeFilename}`)
     }
