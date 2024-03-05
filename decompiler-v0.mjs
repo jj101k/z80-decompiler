@@ -66,6 +66,7 @@ for(const filenameSpec of filenames) {
     }
     decompilers.push(d)
 }
+let totalIterations = 0
 for(const decompiler of decompilers) {
     /**
      * @type {number | undefined | null}
@@ -81,9 +82,21 @@ for(const decompiler of decompilers) {
         }
     }
 
-    if ((i ?? null) !== null) {
+    if (i === null) {
         decompiler.write()
-        console.warn(`Stop after ${i} - nothing left to examine`)
+        console.warn("Stop - iterations exceeded")
+        process.exit(126)
+    } else if(i === undefined) {
+        process.exit(127)
+    } else {
+        totalIterations += i
     }
 }
+
+decompilers.sort((a, b) => a.loadPoint - b.loadPoint)
+
+for(const decompiler of decompilers) {
+    decompiler.write()
+}
+console.warn(`Stop after a total of ${totalIterations} iterations - nothing left to examine`)
 // See DECOMPILER.md
