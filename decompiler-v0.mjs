@@ -20,7 +20,7 @@ const opts = optHandler.fromArgvOrExit(process)
 
 const filenames = opts.filenames
 
-const entryPoints = opts.entryPoint
+const entryPoints = new Set(opts.entryPoint)
 const loadPoint = opts.loadPoint
 const startOffset = opts.startPoint
 const writeFilenameSpec = opts.writeFile
@@ -67,31 +67,48 @@ for(const filenameSpec of filenames) {
     decompilers.push(d)
 }
 let totalIterations = 0
-for(const decompiler of decompilers) {
-    /**
-     * @type {number | undefined | null}
-     */
-    let i
-    try {
-        i = decompiler.decode(entryPoints)
-    } catch (e) {
+/**
+ * @type {Set<number>}
+ */
+const memoryLocations = new Set()
+
+/**
+ * @type {number}
+ */
+let mlSize
+/**
+ * @type {number}
+ */
+let epSize
+do {
+    mlSize = memoryLocations.size
+    epSize = entryPoints.size
+    for(const decompiler of decompilers) {
+        /**
+         * @type {number | undefined | null}
+         */
+        let i
         try {
-            decompiler.onError()
-        } finally {
-            console.error(e)
+            i = decompiler.decode(entryPoints, memoryLocations)
+        } catch (e) {
+            try {
+                decompiler.onError()
+            } finally {
+                console.error(e)
+            }
+        }
+
+        if (i === null) {
+            decompiler.write()
+            console.warn("Stop - iterations exceeded")
+            process.exit(126)
+        } else if(i === undefined) {
+            process.exit(127)
+        } else {
+            totalIterations += i
         }
     }
-
-    if (i === null) {
-        decompiler.write()
-        console.warn("Stop - iterations exceeded")
-        process.exit(126)
-    } else if(i === undefined) {
-        process.exit(127)
-    } else {
-        totalIterations += i
-    }
-}
+} while(mlSize != memoryLocations.size || epSize != entryPoints.size)
 
 decompilers.sort((a, b) => a.loadPoint - b.loadPoint)
 
