@@ -99,7 +99,7 @@ do {
         }
 
         if (i === null) {
-            decompiler.write()
+            decompiler.write(true)
             console.warn("Stop - iterations exceeded")
             process.exit(126)
         } else if(i === undefined) {
