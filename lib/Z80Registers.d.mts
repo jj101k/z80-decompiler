@@ -18,3 +18,9 @@ export enum Z80Registers16B {
     IY = "IY",
     SP = "SP",
 }
+
+export const Z80CompoundRegisters = Object.freeze([
+    Z80Registers16B.BC,
+    Z80Registers16B.DE,
+    Z80Registers16B.HL,
+])
