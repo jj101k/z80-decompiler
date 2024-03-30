@@ -19,8 +19,6 @@ export enum Z80Registers16B {
     SP = "SP",
 }
 
-export const Z80CompoundRegisters = Object.freeze([
-    Z80Registers16B.BC,
-    Z80Registers16B.DE,
-    Z80Registers16B.HL,
-])
+export type Z80AtomicRegister = Z80Registers8B | Z80Registers16B.IX | Z80Registers16B.IX | Z80Registers16B.SP
+
+export declare const Z80CompoundRegisters: (Z80Registers16B | Z80Registers8B)[]
