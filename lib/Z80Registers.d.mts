@@ -1,4 +1,4 @@
-export enum Z80Registers8B {
+export enum Z80Registers8b {
     A = "A",
     B = "B",
     C = "C",
@@ -10,7 +10,7 @@ export enum Z80Registers8B {
     R = "R",
 }
 
-export enum Z80Registers16B {
+export enum Z80Registers16b {
     BC = "BC",
     DE = "DE",
     HL = "HL",
@@ -19,6 +19,6 @@ export enum Z80Registers16B {
     SP = "SP",
 }
 
-export type Z80AtomicRegister = Z80Registers8B | Z80Registers16B.IX | Z80Registers16B.IX | Z80Registers16B.SP
+export type Z80AtomicRegister = Z80Registers8b | Z80Registers16b.IX | Z80Registers16b.IX | Z80Registers16b.SP
 
-export declare const Z80CompoundRegisters: (Z80Registers16B | Z80Registers8B)[]
+export declare const Z80CompoundRegisters: (Z80Registers16b | Z80Registers8b)[]
