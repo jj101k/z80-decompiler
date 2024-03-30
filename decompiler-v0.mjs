@@ -6,6 +6,7 @@ const optHandler = new OptHandler({
         entryPoint: OptWrappers.opt("number[]", "e"),
         help: OptWrappers.opt("boolean", "h"),
         includeVersion: OptWrappers.opt("boolean", "v"),
+        limit: OptWrappers.optDefault("number", 10_000),
         loadPoint: OptWrappers.opt("number", "l"),
         startPoint: OptWrappers.optDefault("number", 1, "s"),
         writeFile: OptWrappers.opt("string", "w"),
@@ -21,6 +22,7 @@ const opts = optHandler.fromArgvOrExit(process)
 const filenames = opts.filenames
 
 const entryPoints = new Set(opts.entryPoint)
+const limit = opts.limit
 const loadPoint = opts.loadPoint
 const startOffset = opts.startPoint
 const writeFilenameSpec = opts.writeFile
@@ -64,6 +66,7 @@ for(const filenameSpec of filenames) {
     if(d.writeFilename) {
         console.log(`Writing ${d.writeFilename}`)
     }
+    d.limit = limit
     decompilers.push(d)
 }
 let totalIterations = 0
