@@ -7,7 +7,7 @@ import { UnknownRegisterValue } from "./UnknownRegisterValue.mjs"
 /**
  *
  */
-export type actionHandler<DI extends DecomposedInstruction = DecomposedInstruction> = (dw: DataWalker, context: DecompileContext, di: DI | null | undefined) => any
+export type actionHandler<DI extends DecomposedInstruction = DecomposedInstruction> = (dw: DataWalker, context: DecompileContext, di: DI) => any
 
 /**
  *
