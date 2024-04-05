@@ -1,5 +1,6 @@
 import { OptHandler, OptWrappers } from "opt-handler"
 import { Decompiler } from "./lib/Decompiler.mjs"
+import { UnknownEntryValue } from "./lib/UnknownEntryValue.mjs"
 
 const optHandler = new OptHandler({
     options: {
@@ -8,6 +9,7 @@ const optHandler = new OptHandler({
         includeVersion: OptWrappers.opt("boolean", "v"),
         limit: OptWrappers.optDefault("number", 10_000),
         loadPoint: OptWrappers.opt("number", "l"),
+        showEntryPoints: OptWrappers.opt("boolean"),
         startPoint: OptWrappers.optDefault("number", 1, "s"),
         writeFile: OptWrappers.opt("string", "w"),
     },
@@ -27,6 +29,7 @@ const loadPoint = opts.loadPoint
 const startOffset = opts.startPoint
 const writeFilenameSpec = opts.writeFile
 Decompiler.includeVersion = opts.includeVersion
+UnknownEntryValue.showEntryPoints = opts.showEntryPoints
 
 /**
  * @type {Decompiler[]}
