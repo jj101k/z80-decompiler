@@ -5,6 +5,7 @@ import { UnknownClampedValue } from "./UnknownClampedValue.mjs"
 import { UnknownExpressionValue } from "./UnknownExpressionValue.mjs"
 import { UnknownMemoryValue } from "./UnknownMemoryValue.mjs"
 import { UnknownRegisterValue } from "./UnknownRegisterValue.mjs"
+import { UnknownValue } from "./UnknownValue.mjs"
 
 /**
  *
@@ -14,4 +15,4 @@ export type actionHandler<DI extends DecomposedInstruction = DecomposedInstructi
 /**
  *
  */
-export type anyValue = number | UnknownMemoryValue | UnknownRegisterValue | UnknownExpressionValue | UnknownClampedValue
+export type anyValue = number | UnknownMemoryValue | UnknownRegisterValue | UnknownExpressionValue | UnknownClampedValue | UnknownValue
