@@ -33,6 +33,11 @@ export enum Z80Registers16b {
     SP = "SP",
 }
 
+/**
+ *
+ */
+export type Z80AnyRegister = Z80Registers16b | Z80Registers8b
+
 export type Z80AtomicRegister = Z80Registers8b | Z80Registers16b.IX | Z80Registers16b.IX | Z80Registers16b.SP
 
 export declare const Z80CompoundRegisters: Partial<Record<Z80Registers16b, Z80AtomicRegister[]>>
