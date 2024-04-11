@@ -2,9 +2,11 @@ import { OptHandler, OptWrappers } from "opt-handler"
 import { Decompiler } from "./lib/Decompiler.mjs"
 import { UnknownEntryValue } from "./lib/UnknownEntryValue.mjs"
 import { UnknownExpressionValue } from "./lib/UnknownExpressionValue.mjs"
+import { DecompileContext } from "./lib/DecompileContext.mjs"
 
 const optHandler = new OptHandler({
     options: {
+        dumpInstructionStats: OptWrappers.opt("boolean"),
         entryPoint: OptWrappers.opt("number[]", "e"),
         help: OptWrappers.opt("boolean", "h"),
         includeVersion: OptWrappers.opt("boolean", "v"),
@@ -33,6 +35,7 @@ const writeFilenameSpec = opts.writeFile
 Decompiler.includeVersion = opts.includeVersion
 UnknownEntryValue.showEntryPoints = opts.showEntryPoints
 UnknownExpressionValue.optimiseBrackets = !opts.noOptimiseBrackets
+DecompileContext.dumpInstructionStats = opts.dumpInstructionStats
 
 /**
  * @type {Decompiler[]}
