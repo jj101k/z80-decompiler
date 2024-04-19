@@ -1,8 +1,7 @@
 import { OptHandler, OptWrappers } from "opt-handler"
-import { Decompiler } from "./lib/Decompiler.mjs"
-import { UnknownEntryValue } from "./lib/UnknownEntryValue.mjs"
-import { UnknownExpressionValue } from "./lib/UnknownExpressionValue.mjs"
 import { DecompileContext } from "./lib/DecompileContext.mjs"
+import { Decompiler } from "./lib/Decompiler.mjs"
+import { UnknownEntryValue, UnknownExpressionValue } from "./lib/Value/index.mjs"
 
 const optHandler = new OptHandler({
     options: {
